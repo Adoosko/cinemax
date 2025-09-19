@@ -1,0 +1,389 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// BETTER AUTH CORE MODELS
+// ============================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String?
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Better Auth Admin Plugin Fields
+  role          String   @default("customer") // customer, admin, manager
+  banned        Boolean  @default(false)
+  banReason     String?
+  banExpires    DateTime?
+  
+  // Two-Factor Authentication
+  twoFactorEnabled Boolean @default(false)
+  
+  // CinemaX specific fields (extending Better Auth)
+  firstName     String?
+  lastName      String?
+  phoneNumber   String?
+  isActive      Boolean  @default(true)
+  
+  // Relations
+  sessions      Session[]
+  accounts      Account[]
+  bookings      Booking[]
+  reviews       Review[]
+
+  @@map("user")
+}
+
+model Session {
+  id            String   @id @default(cuid())
+  expiresAt     DateTime
+  token         String   @unique
+  ipAddress     String?
+  userAgent     String?
+  userId        String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Better Auth Admin Plugin Field
+  impersonatedBy String? // ID of admin impersonating this session
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("account")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("verification")
+}
+
+// ============================================
+// CINEMA & THEATER MANAGEMENT
+// ============================================
+
+model Cinema {
+  id       String @id @default(cuid())
+  name     String
+  address  String
+  city     String
+  state    String?
+  zipCode  String?
+  phone    String?
+  isActive Boolean @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  theaters Theater[]
+
+  @@map("cinemas")
+}
+
+model Theater {
+  id          String @id @default(cuid())
+  name        String // e.g., "Theater 1", "IMAX Hall"
+  cinemaId    String
+  totalSeats  Int
+  screenType  ScreenType @default(STANDARD)
+  isActive    Boolean    @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  cinema    Cinema     @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
+  seats     Seat[]
+  showtimes Showtime[]
+
+  @@map("theaters")
+}
+
+model Seat {
+  id         String   @id @default(cuid())
+  theaterId  String
+  row        String   // A, B, C, etc.
+  number     Int      // 1, 2, 3, etc.
+  seatType   SeatType @default(STANDARD)
+  isActive   Boolean  @default(true)
+  
+  // Relations
+  theater           Theater           @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  bookingSeats      BookingSeat[]
+  tempReservations  TempReservation[]
+
+  @@unique([theaterId, row, number])
+  @@map("seats")
+}
+
+enum ScreenType {
+  STANDARD
+  IMAX
+  DOLBY_ATMOS
+  FOUR_DX
+}
+
+enum SeatType {
+  STANDARD
+  PREMIUM
+  VIP
+  WHEELCHAIR_ACCESSIBLE
+}
+
+// ============================================
+// MOVIE MANAGEMENT
+// ============================================
+
+model Movie {
+  id          String   @id @default(cuid())
+  title       String
+  slug        String   @unique // URL-friendly version of title
+  streamingUrl String?  // URL for streaming the movie (if available)
+  description String?
+  duration    Int      // in minutes
+  genre       String[]
+  rating      String?  // PG, PG-13, R, etc.
+  director    String?
+  cast        String[] // Array of actor names
+  posterUrl   String?  // Portrait format (2:3) for cards/thumbnails
+  backdropUrl String?  // Landscape format (16:9) for hero sections
+  trailerUrl  String?
+  releaseDate DateTime?
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  showtimes Showtime[]
+  reviews   Review[]
+
+  @@map("movies")
+}
+
+// ============================================
+// SHOWTIME MANAGEMENT
+// ============================================
+
+model Showtime {
+  id          String   @id @default(cuid())
+  movieId     String
+  theaterId   String
+  startTime   DateTime
+  endTime     DateTime
+  basePrice   Decimal  @db.Decimal(10, 2)
+  isActive    Boolean  @default(true)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  movie            Movie             @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  theater          Theater           @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  bookings         Booking[]
+  tempReservations TempReservation[]
+
+  // Constraint: No overlapping showtimes in same theater
+  @@unique([theaterId, startTime])
+  @@map("showtimes")
+}
+
+// ============================================
+// BOOKING MANAGEMENT
+// ============================================
+
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  showtimeId      String
+  bookingNumber   String        @unique // e.g., "CMX-2024-001234"
+  totalAmount     Decimal       @db.Decimal(10, 2)
+  bookingFee      Decimal       @db.Decimal(10, 2) @default(0)
+  status          BookingStatus @default(PENDING)
+  paymentIntentId String?       // Stripe payment intent ID
+  qrCode          String?       // Generated QR code for ticket verification
+  
+  // Timestamps
+  bookingDate DateTime @default(now())
+  expiresAt   DateTime? // For pending bookings
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  user         User          @relation(fields: [userId], references: [id])
+  showtime     Showtime      @relation(fields: [showtimeId], references: [id])
+  bookingSeats BookingSeat[]
+  payment      Payment?
+  survey       Survey?
+
+  @@map("bookings")
+}
+
+model BookingSeat {
+  id        String @id @default(cuid())
+  bookingId String
+  seatId    String
+  price     Decimal @db.Decimal(10, 2)
+  
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  seat    Seat    @relation(fields: [seatId], references: [id])
+
+  @@unique([bookingId, seatId])
+  @@map("booking_seats")
+}
+
+// Temporary reservations to handle race conditions during booking
+model TempReservation {
+  id         String   @id @default(cuid())
+  seatId     String
+  showtimeId String
+  sessionId  String   // Frontend session ID
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  
+  // Relations
+  seat     Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
+  showtime Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
+
+  @@unique([seatId, showtimeId])
+  @@map("temp_reservations")
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  EXPIRED
+  REFUNDED
+}
+
+// ============================================
+// PAYMENT MANAGEMENT
+// ============================================
+
+model Payment {
+  id                String        @id @default(cuid())
+  bookingId         String        @unique
+  stripePaymentId   String        @unique // Stripe payment intent ID
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @default("USD")
+  status            PaymentStatus @default(PENDING)
+  paymentMethod     String?       // card, apple_pay, google_pay, etc.
+  refundAmount      Decimal?      @db.Decimal(10, 2)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// ============================================
+// REVIEW & FEEDBACK SYSTEM
+// ============================================
+
+model Review {
+  id          String @id @default(cuid())
+  userId      String
+  movieId     String
+  rating      Int    // 1-5 stars
+  comment     String?
+  isApproved  Boolean @default(false)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  user  User  @relation(fields: [userId], references: [id])
+  movie Movie @relation(fields: [movieId], references: [id])
+
+  @@unique([userId, movieId])
+  @@map("reviews")
+}
+
+model Survey {
+  id                    String @id @default(cuid())
+  bookingId             String @unique
+  overallRating         Int?   // 1-5 stars
+  bookingExperienceRating Int? // 1-5 stars
+  theaterExperienceRating Int? // 1-5 stars
+  wouldRecommend        Boolean?
+  comments              String?
+  emailSent             Boolean @default(false)
+  completedAt           DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  booking Booking @relation(fields: [bookingId], references: [id])
+
+  @@map("surveys")
+}
+
+// ============================================
+// SYSTEM CONFIGURATION
+// ============================================
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_configs")
+}

@@ -1,0 +1,131 @@
+/* Netflix-like Video Player Styling */
+.netflix-video-player {
+  border-radius: 8px;
+}
+
+/* Webkit (Chrome, Safari) video controls styling */
+.netflix-video-player::-webkit-media-controls-panel {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+  border-radius: 0 0 8px 8px;
+}
+
+.netflix-video-player::-webkit-media-controls-play-button,
+.netflix-video-player::-webkit-media-controls-pause-button {
+  background-color: rgba(229, 9, 20, 0.9);
+  border-radius: 50%;
+  margin: 0 8px;
+}
+
+.netflix-video-player::-webkit-media-controls-play-button:hover,
+.netflix-video-player::-webkit-media-controls-pause-button:hover {
+  background-color: rgba(229, 9, 20, 1);
+}
+
+.netflix-video-player::-webkit-media-controls-timeline {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+  height: 4px;
+}
+
+.netflix-video-player::-webkit-media-controls-timeline::-webkit-slider-thumb {
+  background-color: #e50914;
+  border-radius: 50%;
+  width: 12px;
+  height: 12px;
+}
+
+.netflix-video-player::-webkit-media-controls-current-time-display,
+.netflix-video-player::-webkit-media-controls-time-remaining-display {
+  color: white;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+}
+
+.netflix-video-player::-webkit-media-controls-volume-slider {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+.netflix-video-player::-webkit-media-controls-volume-slider::-webkit-slider-thumb {
+  background-color: #e50914;
+  border-radius: 50%;
+}
+
+.netflix-video-player::-webkit-media-controls-mute-button,
+.netflix-video-player::-webkit-media-controls-fullscreen-button {
+  background-color: transparent;
+  color: white;
+}
+
+.netflix-video-player::-webkit-media-controls-mute-button:hover,
+.netflix-video-player::-webkit-media-controls-fullscreen-button:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+/* Firefox video controls styling */
+.netflix-video-player::-moz-media-controls {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, transparent 100%);
+}
+
+.netflix-video-player::-moz-media-controls-play-button,
+.netflix-video-player::-moz-media-controls-pause-button {
+  background-color: #e50914;
+  border-radius: 50%;
+}
+
+/* Enhanced styling for the container */
+.netflix-video-container {
+  position: relative;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.netflix-video-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(229, 9, 20, 0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.netflix-video-container:hover::before {
+  opacity: 1;
+}
+
+/* Custom loading animation */
+.netflix-video-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.netflix-video-loading::after {
+  content: '';
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(229, 9, 20, 0.3);
+  border-top: 3px solid #e50914;
+  border-radius: 50%;
+  animation: netflix-spin 1s linear infinite;
+}
+
+@keyframes netflix-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
