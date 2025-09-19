@@ -10,18 +10,19 @@ import {
   Tag,
   User,
   Video,
-  Image,
   Info,
   Search,
   Loader,
-  Download,
+
   X,
   Plus,
   Check,
   AlertCircle,
-  Eye,
+
   Sparkles,
+  ImageIcon,
 } from 'lucide-react';
+import Image from 'next/image';
 
 interface AddMovieModalProps {
   isOpen: boolean;
@@ -352,9 +353,11 @@ export function AddMovieModal({ isOpen, onClose, onAddMovie }: AddMovieModalProp
                             onClick={() => getMovieDetails(movie.tmdbId)}
                           >
                             {movie.posterUrl ? (
-                              <img
+                              <Image
                                 src={movie.posterUrl}
                                 alt={movie.title}
+                                width={48}
+                                height={72}
                                 className="w-12 h-16 object-cover rounded-lg"
                               />
                             ) : (
@@ -710,7 +713,7 @@ export function AddMovieModal({ isOpen, onClose, onAddMovie }: AddMovieModalProp
                     <div className="space-y-2">
                       <label className="block text-white font-semibold">Poster URL</label>
                       <div className="relative">
-                        <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                        <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                         <input
                           type="text"
                           name="posterUrl"
@@ -722,9 +725,11 @@ export function AddMovieModal({ isOpen, onClose, onAddMovie }: AddMovieModalProp
                       </div>
                       {formData.posterUrl && (
                         <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                          <img
+                          <Image
                             src={formData.posterUrl}
                             alt="Poster preview"
+                            width={100}
+                            height={100}
                             className="h-32 object-contain mx-auto rounded-lg"
                             onError={(e) => {
                               e.currentTarget.style.display = 'none';
@@ -738,7 +743,7 @@ export function AddMovieModal({ isOpen, onClose, onAddMovie }: AddMovieModalProp
                     <div className="space-y-2">
                       <label className="block text-white font-semibold">Backdrop URL</label>
                       <div className="relative">
-                        <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                        <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                         <input
                           type="text"
                           name="backdropUrl"

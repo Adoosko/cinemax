@@ -117,8 +117,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function MovieDetailsPage({ params }: { params: { slug: string } }) {
-  const movie = await getMovie(params.slug);
+export default async function MovieDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
+  const movie = await getMovie((await params).slug);
 
   if (!movie) {
     notFound();
