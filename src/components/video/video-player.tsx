@@ -71,6 +71,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [playbackSpeed, setPlaybackSpeed] = useState(1);
     const [isMouseInactive, setIsMouseInactive] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
+    const [showResumePrompt, setShowResumePrompt] = useState(false);
 
     // Available playback speeds
     const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -344,9 +345,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         if (!positionRestored) {
           const savedPosition = loadSavedPosition();
           if (savedPosition > 0 && savedPosition < video.duration - 30) {
-            console.log('Restoring position to:', savedPosition);
-            video.currentTime = savedPosition;
-            setCurrentTime(savedPosition);
+            console.log('Found saved position, showing prompt:', savedPosition);
+            setShowResumePrompt(true);
+          } else {
+            // If no significant saved position, ensure playback starts from the beginning
+            video.currentTime = 0;
+            setCurrentTime(0);
           }
           positionRestored = true;
         }
@@ -835,7 +839,38 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       resetControlsTimeout,
     ]);
 
-    // Enhanced protection without breaking properties
+    const handleResume = () => {
+      const video = videoRef.current;
+      const videoId = getVideoId();
+      let savedPosition = 0;
+
+      if (videoId) {
+        try {
+          const saved = localStorage.getItem(`video-position-${videoId}`);
+          savedPosition = saved ? parseFloat(saved) : 0;
+        } catch (error) {
+          console.error('Error loading saved position:', error);
+        }
+      }
+
+      if (video && savedPosition > 0) {
+        video.currentTime = savedPosition;
+        setCurrentTime(savedPosition);
+        togglePlay();
+      }
+      setShowResumePrompt(false);
+    };
+
+    const handleStartOver = () => {
+      const video = videoRef.current;
+      if (video) {
+        video.currentTime = 0;
+        setCurrentTime(0);
+        togglePlay();
+      }
+      setShowResumePrompt(false);
+    };
+
     useEffect(() => {
       const container = containerRef.current;
       const video = videoRef.current;
@@ -952,7 +987,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               WebkitUserSelect: 'none',
             }}
             onContextMenu={(e) => e.preventDefault()}
-            onSelectStart={(e) => e.preventDefault()}
           />
         )}
 
@@ -1023,7 +1057,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
         {/* Controls Overlay */}
         <AnimatePresence>
-          {(showControls || !isPlaying) && !videoError && !isLoading && (
+          {showControls && !videoError && !isLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -1203,26 +1237,16 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                           </TooltipContent>
                         </Tooltip>
 
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div
-                              ref={volumeRef}
-                              className="w-20 md:w-24 h-1 bg-white/20 rounded-full cursor-pointer opacity-0 group-hover/volume:opacity-100 transition-opacity"
-                              onClick={handleVolumeChange}
-                            >
-                              <div
-                                className="h-full bg-white rounded-full transition-all"
-                                style={{ width: `${isMuted ? 0 : volume * 100}%` }}
-                              />
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent
-                            side="top"
-                            className="bg-black/90 text-white border-white/20"
-                          >
-                            <p>Volume: {Math.round(volume * 100)}%</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <div
+                          ref={volumeRef}
+                          className="w-0 group-hover/volume:w-24 h-1 bg-white/20 rounded-full cursor-pointer transition-all duration-300 opacity-0 group-hover/volume:opacity-100"
+                          onClick={handleVolumeChange}
+                        >
+                          <div
+                            className="h-full bg-white rounded-full transition-all"
+                            style={{ width: `${isMuted ? 0 : volume * 100}%` }}
+                          />
+                        </div>
                       </div>
                     )}
 
@@ -1341,6 +1365,60 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             onDoubleClick={toggleFullscreen}
           />
         )}
+
+        {/* Resume Prompt */}
+        <AnimatePresence>
+          {showResumePrompt && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm z-30"
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="text-center p-8 bg-black/50 border border-white/20 rounded-2xl shadow-2xl max-w-sm mx-4"
+              >
+                <h3 className="text-white font-bold text-2xl mb-2">Welcome Back!</h3>
+                <p className="text-white/80 mb-6">
+                  You left off at {(() => {
+                    const videoId = getVideoId();
+                    if (videoId) {
+                      try {
+                        const saved = localStorage.getItem(`video-position-${videoId}`);
+                        const savedPosition = saved ? parseFloat(saved) : 0;
+                        return formatTime(savedPosition);
+                      } catch (error) {
+                        return '0:00';
+                      }
+                    }
+                    return '0:00';
+                  })()}. Do you want to resume or start over?
+                </p>
+                <div className="flex justify-center space-x-4">
+                  <motion.button
+                    onClick={handleResume}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-netflix-red hover:bg-red-700 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg"
+                  >
+                    Resume
+                  </motion.button>
+                  <motion.button
+                    onClick={handleStartOver}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-white/20 hover:bg-white/30 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg"
+                  >
+                    Start Over
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Quality Badge - Only when controls hidden */}
         <AnimatePresence>

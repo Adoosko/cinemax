@@ -22,8 +22,6 @@ export function MoviePlayerClient({ title, poster, qualities = [] }: MoviePlayer
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
-  const [savedTimeInSeconds, setSavedTimeInSeconds] = useState<number | null>(null);
-  const [showResumePrompt, setShowResumePrompt] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -53,22 +51,6 @@ export function MoviePlayerClient({ title, poster, qualities = [] }: MoviePlayer
     }
 
     // Load saved progress
-    if (title) {
-      const savedProgress = localStorage.getItem(`movie-progress-${title}`);
-      const savedTime = localStorage.getItem(`movie-time-${title}`);
-
-      if (savedProgress && !isNaN(Number(savedProgress))) {
-        setProgress(parseFloat(savedProgress));
-      }
-
-      if (savedTime && !isNaN(Number(savedTime))) {
-        const timeInSeconds = parseFloat(savedTime);
-        if (timeInSeconds > 30) {
-          setSavedTimeInSeconds(timeInSeconds);
-          setShowResumePrompt(true);
-        }
-      }
-    }
 
     setIsLoading(false);
   }, [title, qualities]);
@@ -130,41 +112,6 @@ export function MoviePlayerClient({ title, poster, qualities = [] }: MoviePlayer
 
   return (
     <div className="relative w-full h-full">
-      {/* Resume Prompt */}
-      <AnimatePresence>
-        {showResumePrompt && savedTimeInSeconds && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md p-4 flex items-center justify-between"
-          >
-            <div className="flex items-center">
-              <Clock className="w-5 h-5 text-netflix-red mr-2" />
-              <span className="text-white">
-                Resume from {formatTime(savedTimeInSeconds)} ({Math.round(progress)}%)
-              </span>
-            </div>
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowResumePrompt(false)}
-                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-md flex items-center"
-              >
-                <RotateCcw className="w-4 h-4 mr-2" />
-                Start Over
-              </button>
-              <button
-                onClick={() => setShowResumePrompt(false)}
-                className="px-4 py-2 bg-netflix-red hover:bg-red-700 text-white rounded-md flex items-center"
-              >
-                <Play className="w-4 h-4 mr-2" />
-                Resume
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Video Player */}
       <VideoPlayer
         title={title}
