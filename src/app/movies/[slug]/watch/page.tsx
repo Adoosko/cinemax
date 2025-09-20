@@ -1,7 +1,9 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { Metadata } from 'next';
 import Link from 'next/link';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 import {
   ArrowLeft,
   Download,
@@ -14,6 +16,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { MoviePlayerClient } from '@/components/movies/movie-player-client';
+import { CachedMovieVideoData } from '@/components/movies/cached-movie-data';
 
 interface WatchPageProps {
   params: { slug: string };
@@ -41,14 +44,24 @@ interface MovieData {
 }
 
 // Get movie data from database with S3 video URLs
-async function getMovieForStreaming(slug: string): Promise<MovieData | null> {
+async function getMovieForStreaming(
+  slug: string,
+  useDirect: boolean = true
+): Promise<MovieData | null> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
-    const response = await fetch(`${baseUrl}/api/movies/${slug}/video`, {
+    // Add direct=true parameter to use direct URLs instead of presigned URLs
+    const url = useDirect
+      ? `${baseUrl}/api/movies/${slug}/video?direct=true`
+      : `${baseUrl}/api/movies/${slug}/video`;
+
+    console.log(`Fetching movie data from: ${url}`);
+
+    const response = await fetch(url, {
       cache: 'no-store',
       headers: {
         'Content-Type': 'application/json',
@@ -91,61 +104,22 @@ function VideoPlayerSkeleton() {
   );
 }
 
-// Stats component
-function MovieStats({ movie }: { movie: MovieData }) {
-  const formatDuration = (minutes?: number) => {
-    if (!minutes) return 'N/A';
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  // Helper function to ensure genre is treated correctly
-  const getGenreDisplay = () => {
-    if (!movie.genre) return 'N/A';
-    return Array.isArray(movie.genre) ? movie.genre.join(', ') : movie.genre;
-  };
-
-  return (
-    <div className="flex flex-wrap items-center gap-4 mb-4">
-      {/* Year */}
-      {movie.year && (
-        <div className="flex items-center px-2 py-1 bg-white/5 rounded-md">
-          <Calendar className="w-3.5 h-3.5 text-netflix-red mr-1.5" />
-          <span className="text-white/90 text-xs font-medium">{movie.year}</span>
-        </div>
-      )}
-
-      {/* Duration */}
-      {movie.duration && (
-        <div className="flex items-center px-2 py-1 bg-white/5 rounded-md">
-          <Clock className="w-3.5 h-3.5 text-netflix-red mr-1.5" />
-          <span className="text-white/90 text-xs font-medium">
-            {formatDuration(movie.duration)}
-          </span>
-        </div>
-      )}
-
-      {/* Rating */}
-      {movie.rating && (
-        <div className="flex items-center px-2 py-1 bg-white/5 rounded-md">
-          <Star className="w-3.5 h-3.5 text-yellow-500 mr-1.5 fill-current" />
-          <span className="text-white/90 text-xs font-medium">{movie.rating}/10</span>
-        </div>
-      )}
-
-      {/* Quality */}
-      <div className="flex items-center px-2 py-1 bg-white/5 rounded-md">
-        <Eye className="w-3.5 h-3.5 text-netflix-red mr-1.5" />
-        <span className="text-white/90 text-xs font-medium">HD</span>
-      </div>
-    </div>
-  );
-}
-
 export default async function WatchPage({ params }: WatchPageProps) {
   const { slug } = await params;
-  const movie = await getMovieForStreaming(slug);
+
+  // Check if user is authenticated using server-side auth
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  // Redirect to login if not authenticated
+  if (!session) {
+    // Redirect to sign in page with callback URL to return after login
+    redirect(`/auth/signin?callbackUrl=/movies/${slug}/watch`);
+  }
+
+  // Use cached data for movie video
+  const { videoData: movie } = await CachedMovieVideoData({ slug });
 
   if (!movie || !movie.streamingUrl) {
     notFound();
@@ -165,7 +139,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
       qualityCount: movie.qualities?.length || 0,
       hasPoster: Boolean(movie.poster),
       hasBackdrop: Boolean(movie.backdrop),
-      qualities: movie.qualities?.map((q) => ({
+      qualities: movie.qualities?.map((q: any) => ({
         quality: q.quality,
         url: q.url.substring(0, 50) + '...',
       })),

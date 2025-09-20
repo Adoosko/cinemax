@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { Star, Clock, Play, Info } from 'lucide-react';
 
@@ -55,11 +54,8 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
   return (
     <section className="relative h-[80vh] overflow-hidden">
       {/* Background Image */}
-      <motion.div
+      <div
         key={currentHeroIndex}
-        initial={{ scale: 1.1 }}
-        animate={{ scale: 1 }}
-        transition={{ duration: 1.5 }}
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${currentMovie.backdropUrl})` }}
       />
@@ -71,21 +67,14 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
       {/* Content */}
       <div className="relative z-10 h-full flex items-center px-6 lg:px-12">
         <div className="max-w-2xl">
-          <motion.h1
+          <h1
             key={`title-${currentHeroIndex}`}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
             className="text-4xl lg:text-6xl font-bold text-white mb-4"
           >
             {currentMovie.title}
-          </motion.h1>
+          </h1>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="flex items-center space-x-4 mb-6"
-          >
+          <div className="flex items-center space-x-4 mb-6">
             <div className="flex items-center space-x-1">
               <Star className="w-5 h-5 text-yellow-500 fill-current" />
               <span className="text-white font-semibold">{currentMovie.rating}</span>
@@ -95,23 +84,13 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
               <Clock className="w-4 h-4" />
               <span>{currentMovie.duration}</span>
             </div>
-          </motion.div>
+          </div>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="text-white/90 text-lg leading-relaxed mb-8 max-w-xl"
-          >
+          <p className="text-white/90 text-lg leading-relaxed mb-8 max-w-xl">
             {currentMovie.description}
-          </motion.p>
+          </p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex space-x-4"
-          >
+          <div className="flex space-x-4">
             <Link href={`/movies/${currentMovie.slug}/book`}>
               <button className="bg-white hover:bg-white/90 text-black px-8 py-3 rounded font-semibold transition-colors flex items-center space-x-2">
                 <Play className="w-5 h-5 fill-current" />
@@ -125,7 +104,7 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
                 <span>More Info</span>
               </button>
             </Link>
-          </motion.div>
+          </div>
         </div>
       </div>
 

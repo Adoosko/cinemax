@@ -1,31 +1,19 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import Link from 'next/link';
+import { SimilarMovies } from './similar-movies';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Star, Calendar, Clock, Play, Heart, Share, Users, ArrowLeft } from 'lucide-react';
 
-interface Movie {
-  id: string;
-  slug: string;
-  title: string;
-  description: string;
-  duration: string;
-  durationMinutes: number;
-  genre: string;
-  genreArray: string[];
-  rating: number;
-  releaseDate: string;
-  releaseDateFull: Date | null;
-  director: string;
-  cast: string[];
-  posterUrl: string;
-  backdropUrl: string;
-  trailerUrl: string | null;
-  streamingUrl: string | null;
-  showtimes: Record<
+// Import the Movie type from the cached data
+import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
+
+// Use the imported type with additional properties
+export type Movie = CachedMovie & {
+  // Add any additional properties needed by this component
+  showtimes?: Record<
     string,
     Array<{
       id: string;
@@ -38,25 +26,14 @@ interface Movie {
       available: number;
     }>
   >;
-  reviews: Array<{
-    id: string;
-    rating: number;
-    comment: string | null;
-    createdAt: string;
-    user: {
-      name: string;
-    };
-  }>;
-  averageReview: number | null;
-  createdAt: string;
-  updatedAt: string;
-}
+};
 
 interface MovieDetailClientProps {
   movie: Movie;
+  allMovies?: Movie[];
 }
 
-export function MovieDetailClient({ movie }: MovieDetailClientProps) {
+export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientProps) {
   const router = useRouter();
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [isFavorite, setIsFavorite] = useState(false);
@@ -85,7 +62,6 @@ export function MovieDetailClient({ movie }: MovieDetailClientProps) {
     } else {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href);
-     
     }
   };
 
@@ -108,56 +84,38 @@ export function MovieDetailClient({ movie }: MovieDetailClientProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-netflix-black via-netflix-black/60 to-netflix-black/20" />
 
         {/* Back Button */}
-        <motion.button
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
+        <button
           onClick={() => router.back()}
           className="absolute top-6 left-6 z-20 bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
-        </motion.button>
+        </button>
 
         {/* Action Buttons */}
         <div className="absolute top-6 right-6 z-20 flex space-x-3">
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+          <button
             onClick={toggleFavorite}
             className={`bg-black/50 backdrop-blur-sm p-3 rounded-full hover:bg-black/70 transition-colors ${
               isFavorite ? 'text-netflix-red' : 'text-white'
             }`}
           >
             <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
-          </motion.button>
+          </button>
 
-          <motion.button
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.1 }}
+          <button
             onClick={handleShare}
             className="bg-black/50 backdrop-blur-sm text-white p-3 rounded-full hover:bg-black/70 transition-colors"
           >
             <Share className="w-5 h-5" />
-          </motion.button>
+          </button>
         </div>
 
         {/* Movie Info Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 lg:p-8">
           <div className="max-w-4xl">
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl lg:text-5xl font-bold text-white mb-4"
-            >
-              {movie.title}
-            </motion.h1>
+            <h1 className="text-3xl lg:text-5xl font-bold text-white mb-4">{movie.title}</h1>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex flex-wrap items-center gap-4 mb-6"
-            >
+            <div className="flex flex-wrap items-center gap-4 mb-6">
               <div className="flex items-center space-x-1">
                 <Star className="w-5 h-5 text-yellow-500 fill-current" />
                 <span className="text-white font-semibold">{movie.rating}</span>
@@ -170,23 +128,13 @@ export function MovieDetailClient({ movie }: MovieDetailClientProps) {
               <span className="px-3 py-1 bg-netflix-medium-gray text-white text-sm rounded">
                 {movie.genre}
               </span>
-            </motion.div>
+            </div>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="text-white mb-6 leading-relaxed max-w-2xl"
-            >
+            <div className="text-white/80 text-lg lg:text-xl max-w-3xl mb-8">
               {movie.description}
-            </motion.p>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4"
-            >
+            <div className="flex flex-wrap gap-3 mb-8">
               {/* Primary Action - Watch Full Movie or Book Tickets */}
               {movie.streamingUrl ? (
                 <Link href={`/movies/${movie.slug}/watch`}>
@@ -236,7 +184,7 @@ export function MovieDetailClient({ movie }: MovieDetailClientProps) {
                   </button>
                 </Link>
               )}
-            </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -369,6 +317,14 @@ export function MovieDetailClient({ movie }: MovieDetailClientProps) {
           </div>
         </div>
       </div>
+
+      {/* Recommended Movies Section */}
+      <div className="bg-netflix-black">
+        <div className="container mx-auto px-4">
+          <SimilarMovies currentMovie={movie} allMovies={allMovies} />
+        </div>
+      </div>
     </div>
   );
+
 }

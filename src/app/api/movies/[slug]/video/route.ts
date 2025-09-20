@@ -1,181 +1,128 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3VideoService } from '@/lib/video-service';
+import { PrismaClient } from '@prisma/client';
+import { S3Client, GetObjectCommand, HeadObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
 interface RouteParams {
   params: { slug: string };
 }
 
+const prisma = new PrismaClient();
+
+const s3Client = new S3Client({
+  region: process.env.NEXT_PUBLIC_S3_REGION || 'eu-north-1',
+  credentials: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+  },
+});
+
+async function generatePresignedUrl(bucket: string, key: string): Promise<string> {
+  const command = new GetObjectCommand({ Bucket: bucket, Key: key });
+  return await getSignedUrl(s3Client, command, { expiresIn: 7200 }); // 2 hours
+}
+
+async function checkFileExists(bucket: string, key: string): Promise<boolean> {
+  try {
+    await s3Client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     const { slug } = await params;
+    const url = new URL(request.url);
+    const useDirect = url.searchParams.get('direct') === 'true';
 
-    // Check if movie has streaming available
-    if (!S3VideoService.hasStreamingAvailable(slug)) {
-      return NextResponse.json(
-        { error: 'Movie not found or not available for streaming' },
-        { status: 404 }
-      );
+    console.log(`Fetching video for: ${slug}, useDirect: ${useDirect}`);
+
+    const movie = await prisma.movie.findUnique({
+      where: { slug: slug, isActive: true },
+    });
+
+    if (!movie) {
+      return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
-    // For now, handle the beekeeper movie specifically
-    // You can expand this to fetch from your database later
-    let movieId: string;
-    let movieTitle: string;
+    const bucket = process.env.NEXT_PUBLIC_S3_BUCKET || 'cinemx';
+    const qualityFiles = [
+      { quality: '4K', file: '4k.mp4', bitrate: 25000 },
+      { quality: '1080P', file: '1080p.mp4', bitrate: 8000 },
+      { quality: '720P', file: '720p.mp4', bitrate: 4000 },
+      { quality: '480P', file: '480p.mp4', bitrate: 2000 },
+    ];
 
-    if (slug === 'the-beekeeper' || slug === 'beekeeper') {
-      movieId = 'the-beekeeper'; // Use the actual slug instead of 'beekeeper-2024'
-      movieTitle = 'The Beekeeper';
-    } else {
-      return NextResponse.json(
-        { error: 'Movie not found or not available for streaming' },
-        { status: 404 }
-      );
-    }
+    const qualities = [];
+    let primaryUrl = '';
 
-    // Generate video URLs for different qualities
-    const videoQualities = ['480p', '720p', '1080p', '4k'];
-    const availableQualities = [];
+    for (const { quality, file, bitrate } of qualityFiles) {
+      const key = `videos/${slug}/${file}`;
+      const exists = await checkFileExists(bucket, key);
 
-    for (const quality of videoQualities) {
-      try {
-        // Generate presigned URL to check if file exists and get streaming URL
-        const videoUrl = await S3VideoService.getPresignedVideoUrl(movieId, quality, 7200); // 2 hours
-        availableQualities.push({
-          quality: quality.toUpperCase(),
-          url: videoUrl,
-          bitrate: getEstimatedBitrate(quality),
+      if (exists) {
+        // ALWAYS use presigned URLs now - no more direct URLs
+        const presignedUrl = await generatePresignedUrl(bucket, key);
+
+        qualities.push({
+          quality,
+          url: presignedUrl,
+          bitrate,
         });
-      } catch (error) {
-        // If presigned URL fails, try direct URL
-        const directUrl = S3VideoService.getVideoUrl(movieId, quality);
-        availableQualities.push({
-          quality: quality.toUpperCase(),
-          url: directUrl,
-          bitrate: getEstimatedBitrate(quality),
-        });
+
+        // Set primary URL to highest quality available
+        if (!primaryUrl) {
+          primaryUrl = presignedUrl;
+        }
       }
     }
 
-    // Get thumbnail and poster URLs
-    const thumbnailUrl = S3VideoService.getThumbnailUrl(movieId, 0);
-    const posterUrl = S3VideoService.getPosterUrl(movieId);
+    if (!primaryUrl && qualities.length === 0) {
+      return NextResponse.json({ error: 'No video files available' }, { status: 404 });
+    }
 
-    // Get additional metadata including backdrop
-    const additionalMetadata = getMovieMetadata(slug);
-
-    const videoMetadata = {
-      id: movieId,
-      title: movieTitle,
-      slug: slug,
-      duration: '1h 46m', // 1h 46m for The Beekeeper
-      thumbnail: thumbnailUrl,
-      poster: posterUrl,
-      backdrop: additionalMetadata.backdrop,
-      trailer: null,
-      qualities: availableQualities,
-      streamingUrl:
-        availableQualities.find((q) => q.quality.toLowerCase() === '4k')?.url ||
-        availableQualities[0]?.url,
-      // Additional metadata
-      description: additionalMetadata.description,
-      year: additionalMetadata.year,
-      genre: additionalMetadata.genre,
-      rating: additionalMetadata.rating,
-      director: additionalMetadata.director,
-      cast: additionalMetadata.cast,
+    const movieData = {
+      id: movie.id,
+      slug: movie.slug,
+      title: movie.title,
+      description: movie.description,
+      streamingUrl: primaryUrl, // Always presigned URL
+      poster: movie.posterUrl,
+      backdrop: movie.backdropUrl,
+      duration: movie.duration,
+      year: movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : undefined,
+      genre: movie.genre,
+      rating: movie.rating,
+      director: movie.director,
+      cast: movie.cast,
+      qualities, // All presigned URLs
     };
 
     const response = NextResponse.json({
       success: true,
-      movie: videoMetadata,
+      movie: movieData,
     });
 
-    // Add CORS headers
+    // CORS headers
     response.headers.set('Access-Control-Allow-Origin', '*');
-    response.headers.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    response.headers.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
 
     return response;
   } catch (error) {
-    console.error('Error fetching movie video data:', error);
-    return NextResponse.json({ error: 'Failed to fetch movie video data' }, { status: 500 });
+    console.error('Error in video endpoint:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-function getEstimatedBitrate(quality: string): number {
-  switch (quality) {
-    case '4k':
-      return 15000;
-    case '1080p':
-      return 8000;
-    case '720p':
-      return 5000;
-    case '480p':
-      return 2500;
-    default:
-      return 5000;
-  }
-}
-
-
-function getMovieMetadata(slug: string) {
-  const movieData: { [key: string]: any } = {
-    'the-beekeeper': {
-      description:
-        "One man's brutal campaign for vengeance takes on national stakes after he is revealed to be a former operative of a powerful and clandestine organization known as 'Beekeepers'.",
-      year: 2024,
-      genre: 'Action',
-      rating: 7.2,
-      director: 'David Ayer',
-      cast: ['Jason Statham', 'Emmy Raver-Lampman', 'Bobby Naderi', 'Josh Hutcherson'],
-      backdrop:
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
-    'big-buck-bunny': {
-      description:
-        'Big Buck Bunny is a 2008 computer-animated comedy short film featuring animals of the forest, made by the Blender Institute, part of the Blender Foundation. Follow the adventures of a giant rabbit as he faces off against a trio of rodents.',
-      year: 2008,
-      genre: 'Animation, Comedy, Family',
-      rating: 7.8,
-      director: 'Sacha Goedegebure',
-      cast: ['Big Buck Bunny', 'Frank the Flying Squirrel', 'Rinky the Squirrel'],
-      backdrop:
-        'https://images.unsplash.com/photo-1489599162914-09c5b83ac8c5?w=1920&h=1080&fit=crop',
-    },
-    'elephant-dream': {
-      description:
-        "Elephant's Dream is a 2006 computer animated short film produced by Blender Foundation using primarily free software. The film is set in a surreal world where two characters explore a strange mechanical landscape.",
-      year: 2006,
-      genre: 'Animation, Fantasy, Sci-Fi',
-      rating: 7.2,
-      director: 'Bassam Kurdali',
-      cast: ['Proog', 'Emo'],
-      backdrop:
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
-    },
-    sintel: {
-      description:
-        "Sintel is a 2010 computer-animated fantasy short film. The film follows a girl named Sintel who is searching for a baby dragon she calls Scales. A dangerous journey leads her to discover that the dragon she's been looking for is not what she expected.",
-      year: 2010,
-      genre: 'Animation, Fantasy, Adventure',
-      rating: 8.1,
-      director: 'Colin Levy',
-      cast: ['Sintel', 'Scales', 'The Shaman'],
-      backdrop:
-        'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=1920&h=1080&fit=crop',
-    },
-  };
-
-  return (
-    movieData[slug] || {
-      description: 'No description available.',
-      year: 2024,
-      genre: 'Unknown',
-      rating: 7.0,
-      director: 'Unknown Director',
-      cast: [],
-      backdrop:
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
-    }
-  );
+  });
 }

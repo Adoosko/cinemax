@@ -2,7 +2,21 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, Film, Calendar, Star, Filter, ChevronDown } from 'lucide-react';
+import { Film, Calendar, Star, Filter, ChevronDown, Check, X } from 'lucide-react';
+
+// shadcn/ui imports
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SearchBar } from '@/components/ui/searchbar';
 
 export interface Genre {
   id: string;
@@ -11,7 +25,7 @@ export interface Genre {
 
 export interface FilterOptions {
   genre?: string;
-  year?: number;
+  years?: number[]; // Changed to array for multiple selection
   rating?: number;
   sortBy?: 'popularity' | 'rating' | 'releaseDate' | 'title';
 }
@@ -34,6 +48,7 @@ export function SearchFilterBar({
   const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
   const [filters, setFilters] = useState<FilterOptions>(initialFilters);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isYearPopoverOpen, setIsYearPopoverOpen] = useState(false);
 
   // Generate years from current year down to 1980
   const currentYear = new Date().getFullYear();
@@ -60,6 +75,19 @@ export function SearchFilterBar({
     onFilterChange(newFilters);
   };
 
+  const handleYearToggle = (year: number, checked: boolean) => {
+    const currentYears = filters.years || [];
+    let newYears: number[];
+
+    if (checked) {
+      newYears = [...currentYears, year];
+    } else {
+      newYears = currentYears.filter((y) => y !== year);
+    }
+
+    handleFilterChange('years', newYears.length > 0 ? newYears : undefined);
+  };
+
   const clearSearch = () => {
     setSearchTerm('');
     onSearch('');
@@ -70,6 +98,12 @@ export function SearchFilterBar({
     onFilterChange({});
   };
 
+  const removeFilter = (filterType: keyof FilterOptions) => {
+    const { [filterType]: _, ...remainingFilters } = filters;
+    setFilters(remainingFilters);
+    onFilterChange(remainingFilters);
+  };
+
   const activeFiltersCount = Object.keys(filters).filter(
     (key) => filters[key as keyof FilterOptions]
   ).length;
@@ -78,50 +112,34 @@ export function SearchFilterBar({
     <div className="bg-black/50 backdrop-blur-xl border border-white/10 rounded-xl p-6">
       <div className="space-y-4">
         {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-          <input
-            type="text"
-            placeholder="Search movies..."
-            value={searchTerm}
-            onChange={handleSearch}
-            className="w-full bg-white/5 text-white placeholder-white/40 pl-12 pr-12 py-4 rounded-xl border border-white/10 focus:border-netflix-red focus:outline-none focus:bg-white/10 transition-all"
-          />
-          {searchTerm && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              onClick={clearSearch}
-              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-white/40 hover:text-white transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </motion.button>
-          )}
-        </div>
+        <SearchBar
+          placeholder="Search movies..."
+          value={searchTerm}
+          onChange={(value) => {
+            setSearchTerm(value);
+            onSearch(value);
+          }}
+          onClear={clearSearch}
+        />
 
-        {/* Filter Controls */}
+        {/* Filter Controls - Using AnimatePresence instead of DropdownMenu */}
         <div className="flex items-center justify-between">
-          <motion.button
+          <Button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            variant="outline"
             className="flex items-center space-x-3 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white px-4 py-3 rounded-xl transition-all"
           >
             <Filter className="w-5 h-5" />
             <span className="font-medium">Filters</span>
             {activeFiltersCount > 0 && (
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                className="w-6 h-6 bg-netflix-red rounded-full flex items-center justify-center"
-              >
+              <Badge className="w-6 h-6 bg-netflix-red rounded-full flex items-center justify-center p-0">
                 <span className="text-white text-xs font-bold">{activeFiltersCount}</span>
-              </motion.div>
+              </Badge>
             )}
             <motion.div animate={{ rotate: isFilterOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="w-4 h-4" />
             </motion.div>
-          </motion.button>
+          </Button>
 
           {activeFiltersCount > 0 && (
             <motion.button
@@ -135,7 +153,7 @@ export function SearchFilterBar({
           )}
         </div>
 
-        {/* Filter Dropdown */}
+        {/* Filter Panel */}
         <AnimatePresence>
           {isFilterOpen && (
             <motion.div
@@ -145,95 +163,136 @@ export function SearchFilterBar({
               transition={{ duration: 0.3 }}
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-white/10 overflow-hidden"
             >
-              {/* Genre */}
+              {/* Genre Filter */}
               <div>
                 <label className="block text-white text-sm font-semibold mb-2 flex items-center">
                   <Film className="w-4 h-4 mr-2 text-netflix-red" />
                   Genre
                 </label>
-                <select
-                  value={filters.genre || ''}
-                  onChange={(e) => handleFilterChange('genre', e.target.value || undefined)}
-                  className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 focus:border-netflix-red focus:outline-none"
-                >
-                  <option value="">All Genres</option>
-                  {genres.map((genre) => (
-                    <option key={genre.id} value={genre.id} className="bg-black">
-                      {genre.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Year */}
-              <div>
-                <label className="block text-white text-sm font-semibold mb-2 flex items-center">
-                  <Calendar className="w-4 h-4 mr-2 text-netflix-red" />
-                  Year
-                </label>
-                <select
-                  value={filters.year || ''}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      'year',
-                      e.target.value ? parseInt(e.target.value) : undefined
-                    )
+                <Select
+                  value={filters.genre || 'all-genres'}
+                  onValueChange={(value: string) =>
+                    handleFilterChange('genre', value === 'all-genres' ? undefined : value)
                   }
-                  className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 focus:border-netflix-red focus:outline-none"
                 >
-                  <option value="">Any Year</option>
-                  {years.slice(0, 15).map((year) => (
-                    <option key={year} value={year} className="bg-black">
-                      {year}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+                    <SelectValue placeholder="All Genres" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border border-white/20">
+                    <SelectItem value="all-genres">All Genres</SelectItem>
+                    {genres.map((genre) => (
+                      <SelectItem
+                        key={genre.id}
+                        value={genre.id}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {genre.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Rating */}
+              {/* Multi-Year Filter */}
+              <div>
+                <label className=" text-white text-sm font-semibold mb-2 flex items-center">
+                  <Calendar className="w-4 h-4 mr-2 text-netflix-red" />
+                  Years
+                </label>
+                <Popover open={isYearPopoverOpen} onOpenChange={setIsYearPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full bg-white/5 border border-white/10 text-white justify-between cursor-pointer"
+                    >
+                      {filters.years && filters.years.length > 0
+                        ? `${filters.years.length} year${filters.years.length > 1 ? 's' : ''} selected`
+                        : 'Any Year'}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-netflix-red scrollbar-track-white/10">
+                    <div className="space-y-2">
+                      {years.slice(0, 15).map((year) => (
+                        <div key={year} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`year-${year}`}
+                            checked={filters.years?.includes(year) || false}
+                            onCheckedChange={(checked: boolean) =>
+                              handleYearToggle(year, checked as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor={`year-${year}`}
+                            className="text-white text-sm cursor-pointer flex-1"
+                          >
+                            {year}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Rating Filter */}
               <div>
                 <label className="block text-white text-sm font-semibold mb-2 flex items-center">
                   <Star className="w-4 h-4 mr-2 text-netflix-red" />
                   Min Rating
                 </label>
-                <select
-                  value={filters.rating || ''}
-                  onChange={(e) =>
+                <Select
+                  value={filters.rating?.toString() || 'any-rating'}
+                  onValueChange={(value: string) =>
                     handleFilterChange(
                       'rating',
-                      e.target.value ? parseInt(e.target.value) : undefined
+                      value === 'any-rating' ? undefined : parseInt(value)
                     )
                   }
-                  className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 focus:border-netflix-red focus:outline-none"
                 >
-                  <option value="">Any Rating</option>
-                  {ratings.map((rating) => (
-                    <option key={rating} value={rating} className="bg-black">
-                      {rating}.0+
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+                    <SelectValue placeholder="Any Rating" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border border-white/20">
+                    <SelectItem value="any-rating">Any Rating</SelectItem>
+                    {ratings.map((rating) => (
+                      <SelectItem
+                        key={rating}
+                        value={rating.toString()}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {rating}.0+
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Sort */}
+              {/* Sort Filter */}
               <div>
                 <label className="block text-white text-sm font-semibold mb-2 flex items-center">
                   <Filter className="w-4 h-4 mr-2 text-netflix-red" />
                   Sort By
                 </label>
-                <select
-                  value={filters.sortBy || ''}
-                  onChange={(e) =>
-                    handleFilterChange('sortBy', (e.target.value as any) || undefined)
-                  }
-                  className="w-full bg-white/5 border border-white/10 text-white rounded-lg px-3 py-2 focus:border-netflix-red focus:outline-none"
+                <Select
+                  value={filters.sortBy || 'popularity'}
+                  onValueChange={(value: string) => handleFilterChange('sortBy', value as any)}
                 >
-                  {sortOptions.map((option) => (
-                    <option key={option.id} value={option.id} className="bg-black">
-                      {option.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-black border border-white/20">
+                    {sortOptions.map((option) => (
+                      <SelectItem
+                        key={option.id}
+                        value={option.id}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {option.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </motion.div>
           )}
@@ -247,48 +306,46 @@ export function SearchFilterBar({
             className="flex flex-wrap gap-2 pt-2 border-t border-white/10"
           >
             {filters.genre && (
-              <span className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red px-3 py-1 rounded-full text-sm flex items-center space-x-2">
+              <Badge
+                variant="secondary"
+                className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red hover:bg-netflix-red/30 cursor-pointer"
+                onClick={() => removeFilter('genre')}
+              >
                 <span>{genres.find((g) => g.id === filters.genre)?.name}</span>
-                <button
-                  onClick={() => handleFilterChange('genre', undefined)}
-                  className="hover:text-white transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+                <X className="w-3 h-3 ml-2" />
+              </Badge>
             )}
-            {filters.year && (
-              <span className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red px-3 py-1 rounded-full text-sm flex items-center space-x-2">
-                <span>{filters.year}</span>
-                <button
-                  onClick={() => handleFilterChange('year', undefined)}
-                  className="hover:text-white transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+            {filters.years && filters.years.length > 0 && (
+              <Badge
+                variant="secondary"
+                className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red hover:bg-netflix-red/30 cursor-pointer"
+                onClick={() => removeFilter('years')}
+              >
+                <span>
+                  {filters.years.length === 1 ? filters.years[0] : `${filters.years.length} years`}
+                </span>
+                <X className="w-3 h-3 ml-2" />
+              </Badge>
             )}
             {filters.rating && (
-              <span className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red px-3 py-1 rounded-full text-sm flex items-center space-x-2">
+              <Badge
+                variant="secondary"
+                className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red hover:bg-netflix-red/30 cursor-pointer"
+                onClick={() => removeFilter('rating')}
+              >
                 <span>{filters.rating}.0+</span>
-                <button
-                  onClick={() => handleFilterChange('rating', undefined)}
-                  className="hover:text-white transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+                <X className="w-3 h-3 ml-2" />
+              </Badge>
             )}
             {filters.sortBy && (
-              <span className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red px-3 py-1 rounded-full text-sm flex items-center space-x-2">
+              <Badge
+                variant="secondary"
+                className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red hover:bg-netflix-red/30 cursor-pointer"
+                onClick={() => removeFilter('sortBy')}
+              >
                 <span>{sortOptions.find((s) => s.id === filters.sortBy)?.name}</span>
-                <button
-                  onClick={() => handleFilterChange('sortBy', undefined)}
-                  className="hover:text-white transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+                <X className="w-3 h-3 ml-2" />
+              </Badge>
             )}
           </motion.div>
         )}

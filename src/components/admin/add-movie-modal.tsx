@@ -13,12 +13,10 @@ import {
   Info,
   Search,
   Loader,
-
   X,
   Plus,
   Check,
   AlertCircle,
-
   Sparkles,
   ImageIcon,
 } from 'lucide-react';

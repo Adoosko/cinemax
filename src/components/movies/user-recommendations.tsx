@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -14,53 +14,22 @@ import {
 } from '@/components/ui/carousel';
 import { NetflixCard } from '@/components/ui/glass-card';
 
-interface Movie {
-  id: string;
-  slug: string;
-  title: string;
-  genre: string;
-  duration: string;
-  rating: number;
-  releaseDate: string;
-  description: string;
-  posterUrl: string;
-  backdropUrl: string;
-  showtimes: string[];
-  featured?: boolean;
-}
+import { type Movie } from '@/lib/data/movies-with-use-cache';
+
+import { useMoviesContext } from './movies-context';
 
 export function UserRecommendations() {
-  const [recommendedMovies, setRecommendedMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { movies, isLoading } = useMoviesContext();
 
-  useEffect(() => {
-    fetchRecommendations();
-  }, []);
+  // Create recommendations by taking a random subset of movies
+  const recommendedMovies = useMemo(() => {
+    if (!movies || movies.length === 0) return [];
 
-  const fetchRecommendations = async () => {
-    try {
-      // In a real app, this would call a personalized recommendations API
-      // For now, we'll simulate by fetching all movies and taking a subset
-      const response = await fetch('/api/movies');
-      if (response.ok) {
-        const allMovies = await response.json();
-        // Simulate personalized recommendations by taking a random subset
-        const randomMovies = [...allMovies].sort(() => 0.5 - Math.random()).slice(0, 8);
+    // Create a copy of the movies array and shuffle it
+    return [...movies].sort(() => 0.5 - Math.random()).slice(0, 8);
+  }, [movies]);
 
-        setRecommendedMovies(randomMovies);
-      } else {
-        console.error('API response not ok:', response.status);
-        setRecommendedMovies([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch recommendations:', error);
-      setRecommendedMovies([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-[200px] flex items-center justify-center">
         <div className="text-white text-xl">Loading recommendations...</div>
@@ -84,14 +53,9 @@ export function UserRecommendations() {
         className="w-full"
       >
         <CarouselContent className="-ml-4">
-          {recommendedMovies.map((movie, index) => (
+          {recommendedMovies.map((movie: Movie, index: number) => (
             <CarouselItem key={movie.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="h-full"
-              >
+              <div className="h-full">
                 <NetflixCard className="overflow-hidden group relative h-full">
                   <div className="relative aspect-[2/3] overflow-hidden h-full">
                     <Image
@@ -133,7 +97,7 @@ export function UserRecommendations() {
                     </div>
                   </div>
                 </NetflixCard>
-              </motion.div>
+              </div>
             </CarouselItem>
           ))}
         </CarouselContent>

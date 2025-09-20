@@ -9,146 +9,84 @@ import { NetflixCard } from '@/components/ui/glass-card';
 import { FilterOptions } from '@/components/movies/search-filter-bar';
 import { useMoviesContext } from './movies-context';
 
-interface Movie {
-  id: string;
-  slug: string;
-  title: string;
-  genre: string;
-  duration: string;
-  rating: number;
-  releaseDate: string;
-  description: string;
-  posterUrl: string;
-  backdropUrl: string;
-  showtimes: string[];
-  featured?: boolean;
-}
+// Use the Movie type from the cached data
+import { type Movie } from '@/lib/data/movies-with-use-cache';
 
 export function MovieGrid() {
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const { searchTerm, filterOptions } = useMoviesContext();
+  const { searchTerm, filterOptions, movies, isLoading } = useMoviesContext();
 
   const MOVIES_PER_PAGE = 10;
 
   useEffect(() => {
-    // Reset all state when component mounts
-    setMovies([]);
-    setPage(1);
-    setHasMore(true);
-    setLoading(true);
-    fetchMovies(1, true);
-
-    // Cleanup function to reset state when component unmounts
-    return () => {
-      setMovies([]);
-      setPage(1);
-      setHasMore(true);
-      setLoading(false);
-      setLoadingMore(false);
-    };
-  }, []);
-
-  useEffect(() => {
     // Reset pagination when filters change
-    setMovies([]);
     setPage(1);
     setHasMore(true);
-    fetchMovies(1, true);
   }, [searchTerm, filterOptions]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop >=
-          document.documentElement.offsetHeight - 1000 &&
-        !loadingMore &&
-        hasMore &&
-        !loading
-      ) {
-        loadMore();
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [loadingMore, hasMore, loading, page]);
-
-  const fetchMovies = async (pageNum: number, reset = false) => {
-    try {
-      if (pageNum === 1) setLoading(true);
-      else setLoadingMore(true);
-
-      const response = await fetch(`/api/movies?page=${pageNum}&limit=${MOVIES_PER_PAGE}`);
-      if (response.ok) {
-        const moviesData = await response.json();
-
-        if (reset) {
-          setMovies(moviesData);
-        } else {
-          // Prevent duplicates by filtering out movies that already exist
-          setMovies((prev) => {
-            const existingIds = new Set(prev.map((movie) => movie.id));
-            const newMovies = moviesData.filter((movie: Movie) => !existingIds.has(movie.id));
-            return [...prev, ...newMovies];
-          });
-        }
-
-        setHasMore(moviesData.length === MOVIES_PER_PAGE);
-      } else {
-        console.error('API response not ok:', response.status);
-        if (reset) setMovies([]);
-      }
-    } catch (error) {
-      console.error('Failed to fetch movies:', error);
-      if (reset) setMovies([]);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
-
+  // We're now using the movies from context, so we don't need to fetch them here
+  // This is just a placeholder for pagination if needed in the future
   const loadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    fetchMovies(nextPage, false);
+    // We would fetch more movies here if needed
   };
 
   // Filter movies based on search term and filter options
   const filteredMovies = useMemo(() => {
+    if (!movies || movies.length === 0) {
+      return [];
+    }
+    
     return movies
       .filter((movie) => {
         // Search term filter
-        if (
-          searchTerm &&
-          !movie.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !movie.genre.toLowerCase().includes(searchTerm.toLowerCase()) &&
-          !(movie.description && movie.description.toLowerCase().includes(searchTerm.toLowerCase()))
-        ) {
-          return false;
-        }
-
-        // Genre filter
-        if (filterOptions.genre && filterOptions.genre !== 'all') {
-          if (!movie.genre.toLowerCase().includes(filterOptions.genre.toLowerCase())) {
+        if (searchTerm) {
+          const searchLower = searchTerm.toLowerCase();
+          const titleMatch = movie.title.toLowerCase().includes(searchLower);
+          const genreMatch = typeof movie.genre === 'string' 
+            ? movie.genre.toLowerCase().includes(searchLower)
+            : Array.isArray(movie.genre) && movie.genre.some(g => g.toLowerCase().includes(searchLower));
+          const descMatch = movie.description && movie.description.toLowerCase().includes(searchLower);
+          
+          if (!titleMatch && !genreMatch && !descMatch) {
             return false;
           }
         }
 
-        // Year filter
-        if (filterOptions.year && movie.releaseDate) {
+        // Genre filter
+        if (filterOptions.genre && filterOptions.genre !== 'all') {
+          const genreFilter = filterOptions.genre.toLowerCase();
+          if (typeof movie.genre === 'string') {
+            if (!movie.genre.toLowerCase().includes(genreFilter)) {
+              return false;
+            }
+          } else if (Array.isArray(movie.genre)) {
+            if (!movie.genre.some(g => g.toLowerCase().includes(genreFilter))) {
+              return false;
+            }
+          } else {
+            return false;
+          }
+        }
+
+        // Year filter (using years array from filterOptions)
+        if (filterOptions.years && filterOptions.years.length > 0 && movie.releaseDate) {
           const movieYear = new Date(movie.releaseDate).getFullYear();
-          if (movieYear !== filterOptions.year) {
+          if (!filterOptions.years.includes(movieYear)) {
             return false;
           }
         }
 
         // Rating filter
         if (filterOptions.rating && movie.rating) {
-          if (movie.rating < filterOptions.rating) {
+          const movieRating = typeof movie.rating === 'string' 
+            ? parseFloat(movie.rating) 
+            : movie.rating;
+            
+          if (movieRating < filterOptions.rating) {
             return false;
           }
         }
@@ -159,8 +97,10 @@ export function MovieGrid() {
         // Sort based on sort option
         if (filterOptions.sortBy === 'title') {
           return a.title.localeCompare(b.title);
-        } else if (filterOptions.sortBy === 'rating' && a.rating && b.rating) {
-          return b.rating - a.rating;
+        } else if (filterOptions.sortBy === 'rating') {
+          const ratingA = typeof a.rating === 'string' ? parseFloat(a.rating) : (a.rating || 0);
+          const ratingB = typeof b.rating === 'string' ? parseFloat(b.rating) : (b.rating || 0);
+          return ratingB - ratingA;
         } else if (filterOptions.sortBy === 'releaseDate' && a.releaseDate && b.releaseDate) {
           return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
         }
@@ -170,7 +110,7 @@ export function MovieGrid() {
       });
   }, [movies, searchTerm, filterOptions]);
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-[300px] flex items-center justify-center">
         <div className="text-white text-xl">Loading movies...</div>
@@ -190,12 +130,7 @@ export function MovieGrid() {
           </div>
         ) : (
           filteredMovies.map((movie, index) => (
-            <motion.div
-              key={`${movie.id}-${index}`}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
+            <div key={`${movie.id}-${index}`}>
               <NetflixCard className="overflow-hidden group relative h-full">
                 {/* Use backdrop if available, otherwise use poster */}
                 <div className="relative aspect-[2/3] overflow-hidden h-full">
@@ -232,27 +167,29 @@ export function MovieGrid() {
                       <span className="text-xs bg-white/20 px-2 py-1 rounded">{movie.genre}</span>
                     </div>
 
-                    {/* Showtimes Preview */}
-                    <div className="mb-2">
-                      <p className="text-xs text-white/80 mb-2">Today's Showtimes</p>
-                      <div className="flex flex-wrap gap-1">
-                        {movie.showtimes.slice(0, 3).map((time) => (
-                          <span
-                            key={time}
-                            className="text-xs bg-netflix-red/90 text-white px-2 py-1 rounded"
-                          >
-                            {time}
-                          </span>
-                        ))}
-                        {movie.showtimes.length > 3 && (
-                          <Link href={`/movies/${movie.slug}/book`}>
-                            <span className="text-xs text-netflix-red bg-white/90 hover:bg-white px-2 py-1 rounded cursor-pointer">
-                              +{movie.showtimes.length - 3} more
+                    {/* Showtimes Preview - Only show if movie has showtimes */}
+                    {movie.showtimes && Array.isArray(movie.showtimes) && movie.showtimes.length > 0 && (
+                      <div className="mb-2">
+                        <p className="text-xs text-white/80 mb-2">Today's Showtimes</p>
+                        <div className="flex flex-wrap gap-1">
+                          {movie.showtimes.slice(0, 3).map((time: string) => (
+                            <span
+                              key={time}
+                              className="text-xs bg-netflix-red/90 text-white px-2 py-1 rounded"
+                            >
+                              {time}
                             </span>
-                          </Link>
-                        )}
+                          ))}
+                          {movie.showtimes.length > 3 && (
+                            <Link href={`/movies/${movie.slug}/book`}>
+                              <span className="text-xs text-netflix-red bg-white/90 hover:bg-white px-2 py-1 rounded cursor-pointer">
+                                +{movie.showtimes.length - 3} more
+                              </span>
+                            </Link>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Action button */}
                     <Link href={`/movies/${movie.slug}`} className="block w-full">
@@ -264,7 +201,7 @@ export function MovieGrid() {
                   </div>
                 </div>
               </NetflixCard>
-            </motion.div>
+            </div>
           ))
         )}
       </div>

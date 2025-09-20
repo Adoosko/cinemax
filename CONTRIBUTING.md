@@ -30,6 +30,7 @@ Thank you for considering contributing to CinemX! We appreciate your interest in
 ## Reporting Issues
 
 When reporting issues, please include:
+
 - Steps to reproduce the issue
 - Expected vs actual behavior
 - Any relevant error messages or screenshots

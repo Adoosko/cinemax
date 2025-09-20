@@ -17,7 +17,9 @@ export function AdminMoviesProvider({ children }: { children: ReactNode }) {
   const [filterOptions, setFilterOptions] = useState<FilterOptions>({});
 
   return (
-    <AdminMoviesContext.Provider value={{ searchTerm, setSearchTerm, filterOptions, setFilterOptions }}>
+    <AdminMoviesContext.Provider
+      value={{ searchTerm, setSearchTerm, filterOptions, setFilterOptions }}
+    >
       {children}
     </AdminMoviesContext.Provider>
   );

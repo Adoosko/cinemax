@@ -1,4 +1,5 @@
-// AWS S3 video delivery service
+'use client';
+
 import {
   S3Client,
   GetObjectCommand,
@@ -7,71 +8,108 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-export interface VideoQuality {
-  quality: string;
-  url: string;
-  bitrate: number;
-}
+export class VideoService {
+  protected static readonly S3_BUCKET = process.env.NEXT_PUBLIC_S3_BUCKET || 'cinemx';
+  protected static readonly S3_REGION = process.env.NEXT_PUBLIC_S3_REGION || 'eu-north-1';
+  protected static readonly CLOUDFRONT_URL = process.env.NEXT_PUBLIC_CLOUDFRONT_URL;
 
-export interface VideoMetadata {
-  id: string;
-  title: string;
-  duration: number;
-  thumbnail: string;
-  poster: string;
-  qualities: VideoQuality[];
-  subtitles?: Array<{
-    language: string;
-    label: string;
-    url: string;
-  }>;
-}
+  // Initialize S3 client (only on server-side)
+  private static getS3Client() {
+    // Only create the client on server-side where credentials are available
+    if (typeof window === 'undefined') {
+      return new S3Client({
+        region: this.S3_REGION,
+        credentials: {
+          accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
+        },
+      });
+    }
+    return null;
+  }
 
-export class S3VideoService {
-  private static readonly S3_BUCKET = process.env.NEXT_PUBLIC_AWS_S3_BUCKET || '';
-  private static readonly S3_REGION = process.env.NEXT_PUBLIC_AWS_S3_REGION || 'us-east-1';
-  private static readonly CLOUDFRONT_URL = process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_URL || '';
-
-  private static s3Client = new S3Client({
-    region: this.S3_REGION,
-    credentials: {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-    },
-  });
-
+  // Check if streaming is available for a movie
+  static hasStreamingAvailable(movieSlug: string): boolean {
+    // Support all movies - we'll check in the database if they're available
+    return true;
+  }
+  
   // Get direct S3 URL or CloudFront URL if available
-  static getVideoUrl(videoSlug: string, quality: string = '1080p'): string {
+  static getVideoUrl(videoSlug: string, quality: string = '1080p', fileName?: string): string {
     const baseUrl =
       this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`;
-    return `${baseUrl}/videos/${videoSlug}/${quality}.mp4`;
+
+    // If a specific fileName is provided, use it directly
+    if (fileName) {
+      return `${baseUrl}/videos/${videoSlug}/${fileName}`;
+    }
+
+    // Otherwise map quality to file name based on our conventions
+    let videoFileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        videoFileName = '4k.mp4';
+        break;
+      case '1080p':
+        videoFileName = '1080p.mp4';
+        break;
+      case '720p':
+        videoFileName = '720p.mp4';
+        break;
+      case '480p':
+        videoFileName = '480p.mp4';
+        break;
+      default:
+        // Fallback to standard format if quality doesn't match our specific files
+        videoFileName = `${quality}.mp4`;
+    }
+
+    return `${baseUrl}/videos/${videoSlug}/${videoFileName}`;
   }
 
   static getThumbnailUrl(videoSlug: string, timeOffset: number = 0): string {
     const baseUrl =
       this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`;
-    return `${baseUrl}/videos/${videoSlug}/thumbnails/${timeOffset}.jpg`;
+    return `${baseUrl}/thumbnails/${videoSlug}/thumb_${timeOffset}.jpg`;
   }
-
+  
+  // Get poster URL for a movie
   static getPosterUrl(videoSlug: string): string {
     const baseUrl =
       this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`;
     return `${baseUrl}/videos/${videoSlug}/poster.jpg`;
   }
 
-  // Generate presigned URL for secure video streaming
+  // Generate presigned URL for secure video access
   static async getPresignedVideoUrl(
     videoSlug: string,
     quality: string = '1080p',
     expiresIn: number = 3600
   ): Promise<string> {
+    // Map quality to actual file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
     const command = new GetObjectCommand({
       Bucket: this.S3_BUCKET,
-      Key: `videos/${videoSlug}/${quality}.mp4`,
+      Key: `videos/${videoSlug}/${fileName}`,
     });
 
     try {
-      return await getSignedUrl(this.s3Client, command, { expiresIn });
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      return await getSignedUrl(s3Client, command, { expiresIn });
     } catch (error) {
       console.error('Error generating presigned URL:', error);
       return this.getVideoUrl(videoSlug, quality); // Fallback to direct URL
@@ -84,128 +122,263 @@ export class S3VideoService {
     quality: string,
     contentType: string = 'video/mp4'
   ): Promise<string> {
+    // Map quality to actual file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
     const command = new PutObjectCommand({
       Bucket: this.S3_BUCKET,
-      Key: `videos/${videoSlug}/${quality}.mp4`,
+      Key: `videos/${videoSlug}/${fileName}`,
       ContentType: contentType,
     });
 
-    return await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
-  }
-
-  // Sample video metadata for The Beekeeper (educational showcase)
-  static getBeekeeperVideo(): VideoMetadata {
-    return {
-      id: 'beekeeper-2024',
-      title: 'The Beekeeper',
-      duration: 6360, // 1h 46m in seconds
-      thumbnail: this.getThumbnailUrl('beekeeper-2024'),
-      poster: this.getPosterUrl('beekeeper-2024'),
-      qualities: [
-        {
-          quality: '4K',
-          url: this.getVideoUrl('beekeeper-2024', '4k'),
-          bitrate: 15000,
-        },
-        {
-          quality: '1080p',
-          url: this.getVideoUrl('beekeeper-2024', '1080p'),
-          bitrate: 8000,
-        },
-        {
-          quality: '720p',
-          url: this.getVideoUrl('beekeeper-2024', '720p'),
-          bitrate: 5000,
-        },
-        {
-          quality: '480p',
-          url: this.getVideoUrl('beekeeper-2024', '480p'),
-          bitrate: 2500,
-        },
-      ],
-      subtitles: [
-        {
-          language: 'en',
-          label: 'English',
-          url: `${this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`}/videos/beekeeper-2024/subtitles/en.vtt`,
-        },
-      ],
-    };
-  }
-
-  // Check if a movie has streaming available
-  static hasStreamingAvailable(movieSlug: string): boolean {
-    // For now, only The Beekeeper has streaming
-    return movieSlug === 'the-beekeeper' || movieSlug === 'beekeeper';
-  }
-
-  // Get streaming URL for a movie
-  static getStreamingUrl(movieSlug: string): string | null {
-    if (this.hasStreamingAvailable(movieSlug)) {
-      return this.getVideoUrl('beekeeper-2024', '1080p');
-    }
-    return null;
-  }
-
-  // Upload video file to S3
-  static async uploadVideo(file: File, videoSlug: string, quality: string): Promise<string> {
     try {
-      const uploadUrl = await this.getUploadPresignedUrl(videoSlug, quality, file.type);
-
-      const response = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: {
-          'Content-Type': file.type,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`);
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
       }
-
-      return this.getVideoUrl(videoSlug, quality);
+      return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
     } catch (error) {
-      console.error('Error uploading video:', error);
+      console.error('Error generating upload presigned URL:', error);
       throw error;
     }
   }
 
-  // Convert movie title to a valid slug for S3 paths
-  static titleToSlug(title: string): string {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric chars with hyphens
-      .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+  // Get video metadata
+  static async getVideoMetadata(videoSlug: string): Promise<any> {
+    try {
+      const command = new GetObjectCommand({
+        Bucket: this.S3_BUCKET,
+        Key: `videos/${videoSlug}/metadata.json`,
+      });
+
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      const response = await s3Client.send(command);
+      const metadata = await response.Body?.transformToString();
+      return metadata ? JSON.parse(metadata) : null;
+    } catch (error) {
+      console.error('Error fetching video metadata:', error);
+      return null;
+    }
   }
 
-  // Delete video from S3
+  // Upload video metadata
+  static async uploadVideoMetadata(videoSlug: string, metadata: any): Promise<void> {
+    try {
+      const command = new PutObjectCommand({
+        Bucket: this.S3_BUCKET,
+        Key: `videos/${videoSlug}/metadata.json`,
+        Body: JSON.stringify(metadata),
+        ContentType: 'application/json',
+      });
+
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      await s3Client.send(command);
+    } catch (error) {
+      console.error('Error uploading video metadata:', error);
+      throw error;
+    }
+  }
+
+  // Delete video file
   static async deleteVideo(videoSlug: string, quality: string): Promise<void> {
+    // Map quality to actual file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
     const command = new DeleteObjectCommand({
       Bucket: this.S3_BUCKET,
-      Key: `videos/${videoSlug}/${quality}.mp4`,
+      Key: `videos/${videoSlug}/${fileName}`,
     });
 
     try {
-      await this.s3Client.send(command);
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      await s3Client.send(command);
     } catch (error) {
       console.error('Error deleting video:', error);
       throw error;
     }
   }
+
+  // Check if video quality exists
+  static async videoQualityExists(videoSlug: string, quality: string): Promise<boolean> {
+    // In development mode, simulate file existence
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      // For testing purposes, let's say only 720p and 4k exist
+      return quality === '720p' || quality === '4k';
+    }
+
+    // Map quality to actual file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
+    // In production, actually check if the file exists in S3
+    const command = new GetObjectCommand({
+      Bucket: this.S3_BUCKET,
+      Key: `videos/${videoSlug}/${fileName}`,
+    });
+
+    try {
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      await s3Client.send(command);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Discover all available video qualities for a movie
+  static async discoverVideoQualities(
+    videoSlug: string
+  ): Promise<Array<{ quality: string; url: string; bitrate: number }>> {
+    // Define all possible video file patterns to check
+    const possibleFiles = [
+      // Standard quality designations
+      { file: '4k.mp4', quality: '4K', bitrate: 15000 },
+      { file: '1080p.mp4', quality: '1080P', bitrate: 8000 },
+      { file: '720p.mp4', quality: '720P', bitrate: 5000 },
+      { file: '480p.mp4', quality: '480P', bitrate: 2500 },
+      { file: '360p.mp4', quality: '360P', bitrate: 1500 },
+      { file: '240p.mp4', quality: '240P', bitrate: 800 },
+
+      // Alternative naming patterns
+      { file: 'uhd.mp4', quality: '4K', bitrate: 15000 },
+      { file: 'hd.mp4', quality: 'HD', bitrate: 5000 },
+      { file: 'sd.mp4', quality: 'SD', bitrate: 2500 },
+      { file: 'high.mp4', quality: 'HIGH', bitrate: 8000 },
+      { file: 'medium.mp4', quality: 'MEDIUM', bitrate: 5000 },
+      { file: 'low.mp4', quality: 'LOW', bitrate: 2500 },
+
+      // Numeric naming
+      { file: '2160.mp4', quality: '4K', bitrate: 15000 },
+      { file: '1080.mp4', quality: '1080P', bitrate: 8000 },
+      { file: '720.mp4', quality: '720P', bitrate: 5000 },
+      { file: '480.mp4', quality: '480P', bitrate: 2500 },
+    ];
+
+    // In development mode, simulate file discovery
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      console.log(`[DEV] Simulating video quality discovery for ${videoSlug}`);
+
+      // For demo purposes, let's say we have 720p and 4K
+      try {
+        // Generate presigned URLs for secure access
+        const url4K = await this.getPresignedVideoUrl(videoSlug, '4k', 7200); // 2 hour expiry
+        const url720p = await this.getPresignedVideoUrl(videoSlug, '720p', 7200); // 2 hour expiry
+        
+        return [
+          {
+            quality: '4K',
+            url: url4K,
+            bitrate: 15000,
+          },
+          {
+            quality: '720P',
+            url: url720p,
+            bitrate: 5000,
+          },
+        ];
+      } catch (error) {
+        console.error('Error generating presigned URLs in development:', error);
+        // Fallback to direct URLs (will likely cause 403 errors)
+        return [
+          {
+            quality: '4K',
+            url: this.getVideoUrl(videoSlug, '4k', '4k.mp4'),
+            bitrate: 15000,
+          },
+          {
+            quality: '720P',
+            url: this.getVideoUrl(videoSlug, '720p', '720p.mp4'),
+            bitrate: 5000,
+          },
+        ];
+      }
+    }
+
+    // In production, we would list objects in the S3 bucket
+    // For now, we'll check for each possible file pattern
+    const availableQualities = [];
+
+    // Check each possible file pattern
+    for (const filePattern of possibleFiles) {
+      try {
+        // Check if this file exists in S3
+        const command = new GetObjectCommand({
+          Bucket: this.S3_BUCKET,
+          Key: `videos/${videoSlug}/${filePattern.file}`,
+        });
+
+        try {
+          const s3Client = this.getS3Client();
+          if (!s3Client) {
+            throw new Error('S3 client not available (client-side environment)');
+          }
+          await s3Client.send(command);
+          // File exists, generate a presigned URL
+          const url = await this.getPresignedVideoUrl(videoSlug, filePattern.quality, 7200); // 2 hours
+
+          // Add to available qualities
+          availableQualities.push({
+            quality: filePattern.quality,
+            url,
+            bitrate: filePattern.bitrate,
+          });
+
+          console.log(`Found video quality: ${filePattern.quality} (${filePattern.file})`);
+        } catch (error) {
+          // File doesn't exist, skip silently
+        }
+      } catch (error) {
+        console.error(`Error checking for file ${filePattern.file}:`, error);
+      }
+    }
+
+    // Sort qualities by bitrate (highest first)
+    availableQualities.sort((a, b) => b.bitrate - a.bitrate);
+
+    return availableQualities;
+  }
 }
 
-// Video player configuration
-export const videoPlayerConfig = {
-  controls: true,
-  responsive: true,
-  fluid: true,
-  playbackRates: [0.5, 1, 1.25, 1.5, 2],
-  plugins: {
-    hotkeys: {
-      volumeStep: 0.1,
-      seekStep: 5,
-      enableModifiersForNumbers: false,
-    },
-  },
-};
+// Export VideoService as S3VideoService for backward compatibility
+export const S3VideoService = VideoService;

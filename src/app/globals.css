@@ -288,4 +288,32 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Netflix-style custom scrollbars */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: #e50914 rgba(255, 255, 255, 0.1);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #e50914;
+    border-radius: 3px;
+  }
+
+  .scrollbar-thumb-netflix-red::-webkit-scrollbar-thumb {
+    background-color: #e50914;
+  }
+
+  .scrollbar-track-white\/10::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }

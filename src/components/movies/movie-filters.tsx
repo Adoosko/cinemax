@@ -23,7 +23,6 @@ export function MovieFilters() {
     { id: 'western', name: 'Western' },
     { id: 'documentary', name: 'Documentary' },
     { id: 'history', name: 'History' },
-    
   ];
 
   return (

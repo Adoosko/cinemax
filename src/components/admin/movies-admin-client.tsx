@@ -1,46 +1,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+import { getMovies, addMovie, updateMovie, deleteMovie, type Movie } from '@/lib/data/movies';
 import { VideoUpload } from '@/components/admin/video-upload';
 import { EditMovieModal } from '@/components/admin/edit-movie-modal';
 import { AdminMovieFilters } from '@/components/admin/admin-movie-filters';
-import { AdminMoviesProvider, useAdminMoviesContext } from '@/components/admin/admin-movies-context';
 import {
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  Star,
-  Clock,
-  Upload,
-  AlertCircle,
-  CheckCircle,
-  Film,
-} from 'lucide-react';
-
-interface Movie {
-  id: string;
-  title: string;
-  description: string;
-  duration: number;
-  genre: string[];
-  rating?: string;
-  director: string;
-  cast: string[];
-  posterUrl?: string;
-  backdropUrl?: string;
-  trailerUrl?: string;
-  releaseDate: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
+  AdminMoviesProvider,
+  useAdminMoviesContext,
+} from '@/components/admin/admin-movies-context';
+import { Plus, Edit, Trash2, Eye, Star, Clock, Upload, AlertCircle, Film } from 'lucide-react';
+interface MoviesAdminContentProps {
+  initialMovies?: Movie[];
 }
 
-function MoviesAdminContent() {
+function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
   const { searchTerm, filterOptions } = useAdminMoviesContext();
-  const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [movies, setMovies] = useState<Movie[]>(initialMovies);
+  const [loading, setLoading] = useState(initialMovies.length === 0);
   const [error, setError] = useState<string | null>(null);
   const [showVideoUpload, setShowVideoUpload] = useState(false);
   const [selectedMovieForUpload, setSelectedMovieForUpload] = useState<string | null>(null);
@@ -50,22 +28,20 @@ function MoviesAdminContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedMovieForEdit, setSelectedMovieForEdit] = useState<Movie | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [showAddMovieModal, setShowAddMovieModal] = useState(false);
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    // Only fetch movies if we don't have initial movies
+    if (initialMovies.length === 0) {
+      fetchMovies();
+    }
+  }, [initialMovies.length]);
 
   const fetchMovies = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/movies');
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch movies');
-      }
-
-      const data = await response.json();
-      setMovies(data.movies || []);
+      const moviesData = await getMovies(true); // true for admin mode
+      setMovies(moviesData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -77,7 +53,10 @@ function MoviesAdminContent() {
   const filteredMovies = movies
     .filter((movie) => {
       const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesGenre = !filterOptions.genre || filterOptions.genre === 'all' || movie.genre.includes(filterOptions.genre);
+      const matchesGenre =
+        !filterOptions.genre ||
+        filterOptions.genre === 'all' ||
+        movie.genre.includes(filterOptions.genre);
       return matchesSearch && matchesGenre;
     })
     .sort((a, b) => {
@@ -103,11 +82,8 @@ function MoviesAdminContent() {
     if (!confirm('Are you sure you want to delete this movie?')) return;
 
     try {
-      const response = await fetch(`/api/admin/movies/${movieId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
+      const success = await deleteMovie(movieId);
+      if (success) {
         setMovies((prev) => prev.filter((movie) => movie.id !== movieId));
       }
     } catch (error) {
@@ -119,17 +95,10 @@ function MoviesAdminContent() {
     if (!selectedMovieForEdit) return;
 
     try {
-      const response = await fetch(`/api/admin/movies/${selectedMovieForEdit.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(movieData),
-      });
+      const updatedMovie = await updateMovie(selectedMovieForEdit.id, movieData);
 
-      if (response.ok) {
-        const { movie } = await response.json();
-        setMovies((prev) => prev.map((m) => (m.id === movie.id ? movie : m)));
+      if (updatedMovie) {
+        setMovies((prev) => prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m)));
         setShowEditModal(false);
         setSelectedMovieForEdit(null);
       }
@@ -154,87 +123,22 @@ function MoviesAdminContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-4xl font-bold text-white mb-2"
-          >
-            Movies Management
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="text-white/60"
-          >
-            Manage your movie catalog and content
-          </motion.p>
+          <h1 className="text-4xl font-bold text-white mb-2">Movies Management</h1>
+          <p className="text-white/60">Manage your movie catalog and content</p>
         </div>
-        <motion.button
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+        <button
+          onClick={() => setShowAddMovieModal(true)}
           className="bg-netflix-red hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold transition-all flex items-center space-x-3 shadow-lg hover:shadow-netflix-red/25"
         >
           <Plus className="w-5 h-5" />
           <span>Add Movie</span>
-        </motion.button>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[
-          {
-            label: 'Total Movies',
-            value: stats.total,
-            icon: Film,
-            color: 'from-netflix-red to-red-700',
-          },
-          {
-            label: 'Active Movies',
-            value: stats.active,
-            icon: CheckCircle,
-            color: 'from-green-500 to-green-600',
-          },
-          {
-            label: 'Avg Rating',
-            value: stats.avgRating.toFixed(1),
-            icon: Star,
-            color: 'from-yellow-500 to-yellow-600',
-          },
-        ].map((stat, index) => (
-          <motion.div
-            key={stat.label}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + index * 0.1 }}
-            className="bg-black/50 backdrop-blur-xl border border-white/10 rounded-xl p-6 hover:border-netflix-red/50 transition-all"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-white/60 text-sm mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-white">{stat.value}</p>
-              </div>
-              <div
-                className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center`}
-              >
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </motion.div>
-        ))}
+        </button>
       </div>
 
       {/* Filters & Search */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
+      <div>
         <AdminMovieFilters />
-      </motion.div>
+      </div>
 
       {/* View Mode Toggle */}
       <div className="flex justify-end">
@@ -242,9 +146,7 @@ function MoviesAdminContent() {
           <button
             onClick={() => setViewMode('grid')}
             className={`p-3 rounded-lg transition-all ${
-              viewMode === 'grid'
-                ? 'bg-netflix-red text-white'
-                : 'text-white/60 hover:text-white'
+              viewMode === 'grid' ? 'bg-netflix-red text-white' : 'text-white/60 hover:text-white'
             }`}
           >
             <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
@@ -256,9 +158,7 @@ function MoviesAdminContent() {
           <button
             onClick={() => setViewMode('list')}
             className={`p-3 rounded-lg transition-all ${
-              viewMode === 'list'
-                ? 'bg-netflix-red text-white'
-                : 'text-white/60 hover:text-white'
+              viewMode === 'list' ? 'bg-netflix-red text-white' : 'text-white/60 hover:text-white'
             }`}
           >
             <div className="w-4 h-4 flex flex-col space-y-1">
@@ -272,31 +172,48 @@ function MoviesAdminContent() {
 
       {/* Loading State */}
       {loading && (
-        <div className="text-center py-16">
-          <div className="w-16 h-16 border-4 border-netflix-red border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
-          <p className="text-white/60 text-lg">Loading movies...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, index) => (
+            <div
+              key={index}
+              className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden animate-pulse"
+            >
+              {/* Skeleton Image */}
+              <div className="aspect-video bg-white/5"></div>
+
+              {/* Skeleton Content */}
+              <div className="p-6 space-y-3">
+                <div className="h-6 bg-white/5 rounded-lg w-3/4"></div>
+                <div className="flex space-x-2">
+                  <div className="h-4 bg-white/5 rounded-full w-16"></div>
+                  <div className="h-4 bg-white/5 rounded-full w-12"></div>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <div className="h-6 bg-white/5 rounded-full w-14"></div>
+                  <div className="h-6 bg-white/5 rounded-full w-16"></div>
+                  <div className="h-6 bg-white/5 rounded-full w-12"></div>
+                </div>
+                <div className="h-4 bg-white/5 rounded-lg w-full"></div>
+                <div className="h-4 bg-white/5 rounded-lg w-5/6"></div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Error State */}
       {error && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 text-center"
-        >
+        <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 text-center">
           <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h3 className="text-red-400 text-xl font-semibold mb-2">Error Loading Movies</h3>
           <p className="text-white/60 mb-6">{error}</p>
-          <motion.button
+          <button
             onClick={fetchMovies}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
             className="bg-netflix-red hover:bg-red-700 text-white px-6 py-3 rounded-xl font-semibold transition-all"
           >
             Try Again
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       )}
 
       {/* Movies Content */}
@@ -312,11 +229,7 @@ function MoviesAdminContent() {
 
           {filteredMovies.length === 0 ? (
             /* Empty State */
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16"
-            >
+            <div className="text-center py-16">
               <div className="w-24 h-24 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
                 <Film className="w-12 h-12 text-white/40" />
               </div>
@@ -326,26 +239,19 @@ function MoviesAdminContent() {
                   ? 'Try adjusting your search criteria'
                   : 'Start building your movie catalog'}
               </p>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
+                onClick={() => setShowAddMovieModal(true)}
                 className="bg-netflix-red hover:bg-red-700 text-white px-8 py-4 rounded-xl font-semibold transition-all flex items-center space-x-3 mx-auto shadow-lg"
               >
                 <Plus className="w-5 h-5" />
                 <span>Add Your First Movie</span>
-              </motion.button>
-            </motion.div>
+              </button>
+            </div>
           ) : (
             /* Movies Grid */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredMovies.map((movie, index) => (
-                <motion.div
-                  key={movie.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group relative"
-                >
+              {filteredMovies.map((movie) => (
+                <div key={movie.id} className="group relative">
                   <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-netflix-red/50 transition-all duration-300 hover:shadow-lg hover:shadow-black/50">
                     {/* Movie Image */}
                     <div className="relative aspect-video overflow-hidden">
@@ -388,52 +294,44 @@ function MoviesAdminContent() {
 
                       {/* Action Buttons */}
                       <div className="absolute bottom-4 right-4 flex space-x-2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => handleViewMovie(movie)}
-                          className="bg-white/90 hover:bg-white text-black p-2 rounded-full transition-all shadow-lg"
+                          className="bg-white/90 hover:bg-white text-black p-2 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95"
                           title="View Movie"
                         >
                           <Eye className="w-4 h-4" />
-                        </motion.button>
+                        </button>
 
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => {
                             setSelectedMovieForEdit(movie);
                             setShowEditModal(true);
                           }}
-                          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-all shadow-lg"
+                          className="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95"
                           title="Edit Movie"
                         >
                           <Edit className="w-4 h-4" />
-                        </motion.button>
+                        </button>
 
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => {
                             setSelectedMovieForUpload(movie.id);
                             setSelectedMovieTitleForUpload(movie.title);
                             setShowVideoUpload(true);
                           }}
-                          className="bg-netflix-red hover:bg-red-700 text-white p-2 rounded-full transition-all shadow-lg"
+                          className="bg-netflix-red hover:bg-red-700 text-white p-2 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95"
                           title="Upload Videos"
                         >
                           <Upload className="w-4 h-4" />
-                        </motion.button>
+                        </button>
 
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
+                        <button
                           onClick={() => handleDeleteMovie(movie.id)}
-                          className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-all shadow-lg"
+                          className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95"
                           title="Delete Movie"
                         >
                           <Trash2 className="w-4 h-4" />
-                        </motion.button>
+                        </button>
                       </div>
                     </div>
 
@@ -476,7 +374,7 @@ function MoviesAdminContent() {
                       <p className="text-white/60 text-sm line-clamp-2">{movie.description}</p>
                     </div>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           )}
@@ -519,14 +417,41 @@ function MoviesAdminContent() {
           />
         )}
       </AnimatePresence>
+
+      {/* Add Movie Modal */}
+      <AnimatePresence>
+        {showAddMovieModal && (
+          <EditMovieModal
+            isOpen={showAddMovieModal}
+            isNew={true}
+            onUpdateMovie={async (movieData) => {
+              try {
+                const newMovie = await addMovie(movieData);
+
+                if (newMovie) {
+                  setMovies((prev) => [newMovie, ...prev]);
+                  setShowAddMovieModal(false);
+                }
+              } catch (error) {
+                console.error('Failed to add movie:', error);
+              }
+            }}
+            onClose={() => setShowAddMovieModal(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
 
-export function MoviesAdminClient() {
+interface MoviesAdminClientProps {
+  initialMovies?: Movie[];
+}
+
+export function MoviesAdminClient({ initialMovies = [] }: MoviesAdminClientProps) {
   return (
     <AdminMoviesProvider>
-      <MoviesAdminContent />
+      <MoviesAdminContent initialMovies={initialMovies} />
     </AdminMoviesProvider>
   );
 }

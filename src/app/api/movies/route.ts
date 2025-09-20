@@ -20,7 +20,7 @@ export async function GET() {
           where: {
             isActive: true,
             startTime: {
-              gte: new Date(), // Only future showtimes
+              gte: new Date(),
             },
           },
           orderBy: {
