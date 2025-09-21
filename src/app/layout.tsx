@@ -6,8 +6,8 @@ import { Navbar } from '@/components/layout/navbar';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'CinemaX - Movie Ticket Booking',
-  description: 'Book your favorite movies with ease',
+  title: 'CINEMX - Movie Streaming',
+  description: 'Watch movies online for free',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

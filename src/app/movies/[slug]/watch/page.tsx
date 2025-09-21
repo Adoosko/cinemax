@@ -15,7 +15,7 @@ import {
   Eye,
   Loader2,
 } from 'lucide-react';
-import { MoviePlayerClient } from '@/components/movies/movie-player-client';
+import { VideoPlayerWithResume } from '@/components/movies/video-player-with-resume';
 import { CachedMovieVideoData } from '@/components/movies/cached-movie-data';
 
 interface WatchPageProps {
@@ -193,10 +193,11 @@ export default async function WatchPage({ params }: WatchPageProps) {
           <div className="max-w-6xl mx-auto px-0 sm:px-4">
             <Suspense fallback={<VideoPlayerSkeleton />}>
               <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl border border-white/5">
-                <MoviePlayerClient
-                  src={movie.streamingUrl}
-                  poster={movie.backdrop || movie.poster}
+                <VideoPlayerWithResume
+                  movieId={movie.id}
+                  streamingUrl={movie.streamingUrl}
                   title={movie.title}
+                  posterUrl={movie.backdrop || movie.poster}
                   qualities={movie.qualities || []}
                 />
               </div>
