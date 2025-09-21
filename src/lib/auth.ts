@@ -39,6 +39,8 @@ export const auth = betterAuth({
           successUrl: '/success?checkout_id={CHECKOUT_ID}',
           authenticatedUsersOnly: true,
         }),
+        usage(),
+        portal(),
 
         webhooks({
           secret: process.env.POLAR_WEBHOOK_SECRET!,

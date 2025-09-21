@@ -35,7 +35,7 @@ export function Navbar() {
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
-  const { subscription } = useSubscription();
+  const { subscription, loading } = useSubscription();
   console.log(subscription);
 
   // Handle sign out
@@ -103,12 +103,23 @@ export function Navbar() {
               >
                 <Search className="w-5 h-5" />
               </Button>
-              {!subscription ? (
-                <UpgradeModal open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen} />
+
+              {!subscription && isAuthenticated ? (
+                <div>
+                  <Button
+                    onClick={() => setIsUpgradeModalOpen(true)}
+                    className="hidden sm:flex p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl"
+                  >
+                    Upgrade
+                  </Button>
+                  <UpgradeModal open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen} />
+                </div>
               ) : (
-                <Badge className="text-white">
-                  {subscription?.plan.slug === 'cinemx-yearly' ? 'Yearly' : 'Monthly'}
-                </Badge>
+                isAuthenticated && (
+                  <Badge className="text-white">
+                    {subscription?.recurringInterval === 'year' ? 'Cinemx+' : 'Cinemx+'}
+                  </Badge>
+                )
               )}
 
               {/* Desktop User Menu */}
