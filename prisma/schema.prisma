@@ -15,51 +15,51 @@ datasource db {
 // ============================================
 
 model User {
-  id            String   @id @default(cuid())
-  name          String?
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id               String        @id @default(cuid())
+  name             String?
+  email            String        @unique
+  emailVerified    Boolean       @default(false)
+  image            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  // subscription
+  subscription     Subscription?
   // Better Auth Admin Plugin Fields
-  role          String   @default("customer") // customer, admin, manager
-  banned        Boolean  @default(false)
-  banReason     String?
-  banExpires    DateTime?
-  
+  role             String        @default("customer") // customer, admin, manager
+  banned           Boolean       @default(false)
+  banReason        String?
+  banExpires       DateTime?
   // Two-Factor Authentication
-  twoFactorEnabled Boolean @default(false)
-  
+  twoFactorEnabled Boolean       @default(false)
   // CinemaX specific fields (extending Better Auth)
-  firstName     String?
-  lastName      String?
-  phoneNumber   String?
-  isActive      Boolean  @default(true)
-  
+  firstName        String?
+  lastName         String?
+  phoneNumber      String?
+  isActive         Boolean       @default(true)
+
   // Relations
-  sessions      Session[]
-  accounts      Account[]
-  bookings      Booking[]
-  reviews       Review[]
+  sessions     Session[]
+  accounts     Account[]
+  bookings     Booking[]
+  reviews      Review[]
+  WatchHistory WatchHistory[]
 
   @@map("user")
 }
 
 model Session {
-  id            String   @id @default(cuid())
-  expiresAt     DateTime
-  token         String   @unique
-  ipAddress     String?
-  userAgent     String?
-  userId        String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   // Better Auth Admin Plugin Field
   impersonatedBy String? // ID of admin impersonating this session
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -80,7 +80,7 @@ model Account {
   password              String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
-  
+
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -103,7 +103,7 @@ model Verification {
 // ============================================
 
 model Cinema {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   name     String
   address  String
   city     String
@@ -111,10 +111,10 @@ model Cinema {
   zipCode  String?
   phone    String?
   isActive Boolean @default(true)
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   theaters Theater[]
 
@@ -122,16 +122,16 @@ model Cinema {
 }
 
 model Theater {
-  id          String @id @default(cuid())
-  name        String // e.g., "Theater 1", "IMAX Hall"
-  cinemaId    String
-  totalSeats  Int
-  screenType  ScreenType @default(STANDARD)
-  isActive    Boolean    @default(true)
-  
+  id         String     @id @default(cuid())
+  name       String // e.g., "Theater 1", "IMAX Hall"
+  cinemaId   String
+  totalSeats Int
+  screenType ScreenType @default(STANDARD)
+  isActive   Boolean    @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   cinema    Cinema     @relation(fields: [cinemaId], references: [id], onDelete: Cascade)
   seats     Seat[]
@@ -141,17 +141,17 @@ model Theater {
 }
 
 model Seat {
-  id         String   @id @default(cuid())
-  theaterId  String
-  row        String   // A, B, C, etc.
-  number     Int      // 1, 2, 3, etc.
-  seatType   SeatType @default(STANDARD)
-  isActive   Boolean  @default(true)
-  
+  id        String   @id @default(cuid())
+  theaterId String
+  row       String // A, B, C, etc.
+  number    Int // 1, 2, 3, etc.
+  seatType  SeatType @default(STANDARD)
+  isActive  Boolean  @default(true)
+
   // Relations
-  theater           Theater           @relation(fields: [theaterId], references: [id], onDelete: Cascade)
-  bookingSeats      BookingSeat[]
-  tempReservations  TempReservation[]
+  theater          Theater           @relation(fields: [theaterId], references: [id], onDelete: Cascade)
+  bookingSeats     BookingSeat[]
+  tempReservations TempReservation[]
 
   @@unique([theaterId, row, number])
   @@map("seats")
@@ -176,28 +176,29 @@ enum SeatType {
 // ============================================
 
 model Movie {
-  id          String   @id @default(cuid())
-  title       String
-  slug        String   @unique // URL-friendly version of title
-  streamingUrl String?  // URL for streaming the movie (if available)
-  description String?
-  duration    Int      // in minutes
-  genre       String[]
-  rating      String?  // PG, PG-13, R, etc.
-  director    String?
-  cast        String[] // Array of actor names
-  posterUrl   String?  // Portrait format (2:3) for cards/thumbnails
-  backdropUrl String?  // Landscape format (16:9) for hero sections
-  trailerUrl  String?
-  releaseDate DateTime?
-  isActive    Boolean  @default(true)
-  
+  id           String    @id @default(cuid())
+  title        String
+  slug         String    @unique // URL-friendly version of title
+  streamingUrl String? // URL for streaming the movie (if available)
+  description  String?
+  duration     Int // in minutes
+  genre        String[]
+  rating       String? // PG, PG-13, R, etc.
+  director     String?
+  cast         String[] // Array of actor names
+  posterUrl    String? // Portrait format (2:3) for cards/thumbnails
+  backdropUrl  String? // Landscape format (16:9) for hero sections
+  trailerUrl   String?
+  releaseDate  DateTime?
+  isActive     Boolean   @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
-  showtimes Showtime[]
-  reviews   Review[]
+  showtimes    Showtime[]
+  reviews      Review[]
+  WatchHistory WatchHistory[]
 
   @@map("movies")
 }
@@ -207,17 +208,17 @@ model Movie {
 // ============================================
 
 model Showtime {
-  id          String   @id @default(cuid())
-  movieId     String
-  theaterId   String
-  startTime   DateTime
-  endTime     DateTime
-  basePrice   Decimal  @db.Decimal(10, 2)
-  isActive    Boolean  @default(true)
-  
+  id        String   @id @default(cuid())
+  movieId   String
+  theaterId String
+  startTime DateTime
+  endTime   DateTime
+  basePrice Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   movie            Movie             @relation(fields: [movieId], references: [id], onDelete: Cascade)
   theater          Theater           @relation(fields: [theaterId], references: [id], onDelete: Cascade)
@@ -239,17 +240,17 @@ model Booking {
   showtimeId      String
   bookingNumber   String        @unique // e.g., "CMX-2024-001234"
   totalAmount     Decimal       @db.Decimal(10, 2)
-  bookingFee      Decimal       @db.Decimal(10, 2) @default(0)
+  bookingFee      Decimal       @default(0) @db.Decimal(10, 2)
   status          BookingStatus @default(PENDING)
-  paymentIntentId String?       // Stripe payment intent ID
-  qrCode          String?       // Generated QR code for ticket verification
-  
+  paymentIntentId String? // Stripe payment intent ID
+  qrCode          String? // Generated QR code for ticket verification
+
   // Timestamps
-  bookingDate DateTime @default(now())
+  bookingDate DateTime  @default(now())
   expiresAt   DateTime? // For pending bookings
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
   // Relations
   user         User          @relation(fields: [userId], references: [id])
   showtime     Showtime      @relation(fields: [showtimeId], references: [id])
@@ -261,11 +262,11 @@ model Booking {
 }
 
 model BookingSeat {
-  id        String @id @default(cuid())
+  id        String  @id @default(cuid())
   bookingId String
   seatId    String
   price     Decimal @db.Decimal(10, 2)
-  
+
   // Relations
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
   seat    Seat    @relation(fields: [seatId], references: [id])
@@ -279,10 +280,10 @@ model TempReservation {
   id         String   @id @default(cuid())
   seatId     String
   showtimeId String
-  sessionId  String   // Frontend session ID
+  sessionId  String // Frontend session ID
   expiresAt  DateTime
   createdAt  DateTime @default(now())
-  
+
   // Relations
   seat     Seat     @relation(fields: [seatId], references: [id], onDelete: Cascade)
   showtime Showtime @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
@@ -304,18 +305,18 @@ enum BookingStatus {
 // ============================================
 
 model Payment {
-  id                String        @id @default(cuid())
-  bookingId         String        @unique
-  stripePaymentId   String        @unique // Stripe payment intent ID
-  amount            Decimal       @db.Decimal(10, 2)
-  currency          String        @default("USD")
-  status            PaymentStatus @default(PENDING)
-  paymentMethod     String?       // card, apple_pay, google_pay, etc.
-  refundAmount      Decimal?      @db.Decimal(10, 2)
-  
+  id              String        @id @default(cuid())
+  bookingId       String        @unique
+  stripePaymentId String        @unique // Stripe payment intent ID
+  amount          Decimal       @db.Decimal(10, 2)
+  currency        String        @default("USD")
+  status          PaymentStatus @default(PENDING)
+  paymentMethod   String? // card, apple_pay, google_pay, etc.
+  refundAmount    Decimal?      @db.Decimal(10, 2)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
@@ -331,20 +332,95 @@ enum PaymentStatus {
 }
 
 // ============================================
+// SUBSCRIPTION & CREDITS SYSTEM
+// ============================================
+model Subscription {
+  id               String             @id @default(cuid())
+  userId           String             @unique
+  plan             SubscriptionPlan
+  status           SubscriptionStatus
+  currentPeriodEnd DateTime
+  credits          Int                @default(0) // optional, for bundled credits
+  startedAt        DateTime           @default(now())
+  canceledAt       DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  // Relations
+  user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  watchHistory     WatchHistory[]
+  creditEvents     CreditEvent[]
+
+  @@map("subscriptions")
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  YEARLY
+  
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  EXPIRED
+  PAST_DUE
+}
+
+model WatchHistory {
+  id             String        @id @default(cuid())
+  userId         String
+  movieId        String
+  progress       Float // 0.0 - 1.0 (fraction watched)
+  completed      Boolean       @default(false)
+  completedAt    DateTime?
+  startedAt      DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  // Relations
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  movie          Movie         @relation(fields: [movieId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String? // optional: to relate to subscription
+
+  @@unique([userId, movieId])
+  @@map("watch_histories")
+}
+
+model CreditEvent {
+  id             String          @id @default(cuid())
+  subscriptionId String
+  type           CreditEventType
+  amount         Int
+  description    String?
+  createdAt      DateTime        @default(now())
+  // Relations
+  subscription   Subscription    @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@map("credit_events")
+}
+
+enum CreditEventType {
+  GRANT
+  DEDUCT
+  EXPIRE
+  MANUAL
+}
+
+// ============================================
 // REVIEW & FEEDBACK SYSTEM
 // ============================================
 
 model Review {
-  id          String @id @default(cuid())
-  userId      String
-  movieId     String
-  rating      Int    // 1-5 stars
-  comment     String?
-  isApproved  Boolean @default(false)
-  
+  id         String  @id @default(cuid())
+  userId     String
+  movieId    String
+  rating     Int // 1-5 stars
+  comment    String?
+  isApproved Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   user  User  @relation(fields: [userId], references: [id])
   movie Movie @relation(fields: [movieId], references: [id])
@@ -354,19 +430,19 @@ model Review {
 }
 
 model Survey {
-  id                    String @id @default(cuid())
-  bookingId             String @unique
-  overallRating         Int?   // 1-5 stars
+  id                      String    @id @default(cuid())
+  bookingId               String    @unique
+  overallRating           Int? // 1-5 stars
   bookingExperienceRating Int? // 1-5 stars
   theaterExperienceRating Int? // 1-5 stars
-  wouldRecommend        Boolean?
-  comments              String?
-  emailSent             Boolean @default(false)
-  completedAt           DateTime?
-  
+  wouldRecommend          Boolean?
+  comments                String?
+  emailSent               Boolean   @default(false)
+  completedAt             DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   booking Booking @relation(fields: [bookingId], references: [id])
 
@@ -381,7 +457,7 @@ model SystemConfig {
   id    String @id @default(cuid())
   key   String @unique
   value String
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

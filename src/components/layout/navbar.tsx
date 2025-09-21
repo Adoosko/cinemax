@@ -21,14 +21,22 @@ import {
   LogOut,
 } from 'lucide-react';
 import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { UpgradeButton } from '../polar/upgrade-button';
+import { useSubscription } from '@/lib/hooks/use-subscription';
+import { Badge } from '../ui/badge';
+import { UpgradeModal } from '../modals/upgrade-modal';
 
 export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const router = useRouter();
   const { user, isAuthenticated } = useAuth();
+  const { subscription } = useSubscription();
+  console.log(subscription);
 
   // Handle sign out
   const handleSignOut = async () => {
@@ -89,12 +97,19 @@ export function Navbar() {
             {/* Right Side Actions */}
             <div className="flex items-center space-x-2 sm:space-x-4">
               {/* Search Toggle */}
-              <button
+              <Button
                 onClick={() => setIsSearchOpen(!isSearchOpen)}
                 className="hidden sm:flex p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl"
               >
                 <Search className="w-5 h-5" />
-              </button>
+              </Button>
+              {!subscription ? (
+                <UpgradeModal open={isUpgradeModalOpen} onOpenChange={setIsUpgradeModalOpen} />
+              ) : (
+                <Badge className="text-white">
+                  {subscription?.plan.slug === 'cinemx-yearly' ? 'Yearly' : 'Monthly'}
+                </Badge>
+              )}
 
               {/* Desktop User Menu */}
               <div className="hidden lg:block relative">
@@ -109,9 +124,9 @@ export function Navbar() {
               {/* Mobile Menu Button with Sheet */}
               <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
-                  <button className="lg:hidden p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl relative">
+                  <Button className="lg:hidden p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl relative">
                     <Menu className="w-6 h-6" />
-                  </button>
+                  </Button>
                 </SheetTrigger>
               </Sheet>
             </div>
@@ -129,13 +144,13 @@ export function Navbar() {
                     autoFocus
                     className="flex-1"
                   />
-                  <button
+                  <Button
                     onClick={() => setIsSearchOpen(false)}
                     className="ml-3 p-2 text-white/40 hover:text-white transition-colors"
                     aria-label="Close search"
                   >
                     <X className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -192,13 +207,13 @@ export function Navbar() {
               {/* Search - Mobile */}
               <div>
                 <SheetClose asChild>
-                  <button
+                  <Button
                     onClick={() => setIsSearchOpen(true)}
                     className="flex items-center space-x-4 text-white hover:text-netflix-red hover:bg-white/10 transition-all duration-200 py-4 px-4 -mx-4 w-full rounded-xl group text-left"
                   >
                     <Search className="w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
                     <span className="text-lg font-medium">Search</span>
-                  </button>
+                  </Button>
                 </SheetClose>
               </div>
             </div>
@@ -208,9 +223,9 @@ export function Navbar() {
               <div className="px-6 pt-6 border-t border-white/10">
                 <SheetClose asChild>
                   <Link href="/auth/signin">
-                    <button className="w-full bg-netflix-red hover:bg-red-700 text-white py-4 text-lg font-semibold transition-all duration-200 rounded-xl shadow-lg">
+                    <Button className="w-full bg-netflix-red hover:bg-red-700 text-white py-4 text-lg font-semibold transition-all duration-200 rounded-xl shadow-lg">
                       Sign In to CinemaX
-                    </button>
+                    </Button>
                   </Link>
                 </SheetClose>
               </div>
