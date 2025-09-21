@@ -43,6 +43,7 @@ model User {
   bookings     Booking[]
   reviews      Review[]
   WatchHistory WatchHistory[]
+  watchParties WatchParty[] @relation("HostWatchParties")
 
   @@map("user")
 }
@@ -199,6 +200,7 @@ model Movie {
   showtimes    Showtime[]
   reviews      Review[]
   WatchHistory WatchHistory[]
+  watchParties WatchParty[]
 
   @@map("movies")
 }
@@ -462,4 +464,24 @@ model SystemConfig {
   updatedAt DateTime @updatedAt
 
   @@map("system_configs")
+}
+
+// ============================================
+// WATCH PARTY SYSTEM
+// ============================================
+
+model WatchParty {
+  id           String   @id @default(cuid())
+  hostUserId   String
+  movieId      String
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  maxGuests    Int      @default(5)
+
+  // Relations
+  host         User     @relation("HostWatchParties", fields: [hostUserId], references: [id], onDelete: Cascade)
+  movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@map("watch_parties")
 }

@@ -9,6 +9,7 @@ import { Star, Calendar, Clock, Play, Heart, Share, Users, ArrowLeft } from 'luc
 
 // Import the Movie type from the cached data
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
+import { CreateWatchPartyButton } from '@/components/watch-party/create-watch-party-button';
 
 // Use the imported type with additional properties
 export type Movie = CachedMovie & {
@@ -71,7 +72,6 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
   };
 
   const availableDates = Object.keys(movie.showtimes || {});
-  const selectedShowtimes = selectedDate ? movie.showtimes[selectedDate] || [] : [];
 
   return (
     <div className="min-h-screen">
@@ -184,6 +184,15 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                   </button>
                 </Link>
               )}
+
+              {/* Create Watch Party Button */}
+              {movie.streamingUrl && (
+                <CreateWatchPartyButton
+                  movieId={movie.id}
+                  movieTitle={movie.title}
+                  className="px-6 py-3 font-semibold flex items-center justify-center rounded-lg"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -222,7 +231,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
           </div>
 
           {/* Showtimes Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
+          {/* <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
             {selectedShowtimes.map((showtime) => (
               <Link
                 key={showtime.id}
@@ -239,7 +248,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                 </div>
               </Link>
             ))}
-          </div>
+          </div> */}
         </div>
       )}
 
@@ -259,15 +268,11 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                 <span className="text-netflix-text-gray w-20">Cast:</span>
                 <span className="text-white">{movie.cast.join(', ')}</span>
               </div>
-              <div className="flex">
-                <span className="text-netflix-text-gray w-20">Genres:</span>
-                <span className="text-white">{movie.genreArray.join(', ')}</span>
-              </div>
             </div>
           </div>
 
           {/* Reviews */}
-          {movie.reviews && movie.reviews.length > 0 && (
+          {/* {movie.reviews && movie.reviews.length > 0 && (
             <div>
               <h3 className="text-xl font-bold text-white mb-4">
                 Reviews ({movie.reviews.length})
@@ -287,7 +292,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                 ))}
               </div>
             </div>
-          )}
+          )} */}
         </div>
 
         {/* Sidebar */}
@@ -326,5 +331,4 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
       </div>
     </div>
   );
-
 }

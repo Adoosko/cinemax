@@ -9,7 +9,15 @@ export async function GET(req: NextRequest) {
     const session = await auth.api.getSession({
       headers: req.headers,
     });
+
+    console.log('Watch remaining API - Session:', {
+      hasSession: !!session,
+      user: session?.user,
+      userId: session?.user?.id
+    });
+
     if (!session?.user) {
+      console.log('Watch remaining API - No authenticated user');
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -23,8 +31,15 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    console.log('Watch remaining API - Subscription check:', {
+      userId,
+      hasSubscription: !!subscription,
+      subscriptionStatus: subscription?.status
+    });
+
     // If the user has an active subscription, they have unlimited watches
     if (subscription) {
+      console.log('Watch remaining API - User has premium subscription');
       return NextResponse.json({
         isPremium: true,
         watchedCount: 0,
@@ -38,6 +53,11 @@ export async function GET(req: NextRequest) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
 
+    console.log('Watch remaining API - Date range:', {
+      startOfMonth: startOfMonth.toISOString(),
+      endOfMonth: endOfMonth.toISOString()
+    });
+
     // Count completed movies for the current month
     const watchedCount = await db.watchHistory.count({
       where: {
@@ -50,8 +70,22 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    console.log('Watch remaining API - Watch count:', {
+      userId,
+      watchedCount,
+      limit: FREE_USER_MONTHLY_LIMIT
+    });
+
     // Calculate remaining watches
     const remaining = Math.max(0, FREE_USER_MONTHLY_LIMIT - watchedCount);
+
+    console.log('Watch remaining API - Final result:', {
+      isPremium: false,
+      watchedCount,
+      remaining,
+      limit: FREE_USER_MONTHLY_LIMIT,
+      canWatchMore: remaining > 0
+    });
 
     return NextResponse.json({
       isPremium: false,

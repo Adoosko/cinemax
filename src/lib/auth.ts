@@ -90,6 +90,13 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 7, // 7 days
     updateAge: 60 * 60 * 24,
+    cookie: {
+      sameSite: 'lax',
+      path: '/',
+      secure: process.env.NODE_ENV === 'production',
+      domain: undefined, // Use default domain
+      httpOnly: true,
+    },
   },
   user: {
     additionalFields: {

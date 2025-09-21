@@ -24,16 +24,31 @@ export function useSubscription() {
     let mounted = true;
     authClient.customer.subscriptions
       .list({ query: { page: 1, limit: 1, active: true } })
-      .then(({ data }: any) => {
-        console.log('[useSubscription] Raw response data:', data);
+      .then((response: any) => {
+        console.log('[useSubscription] Full response:', response);
+        console.log('[useSubscription] Response data:', response?.data);
 
         let first: Subscription | null = null;
-        if (Array.isArray(data?.result?.items)) {
-          first = data.result.items[0] || null;
-          console.log('[useSubscription] First subscription object:', first);
+
+        // Try different possible response structures
+        if (response?.data?.result?.items && Array.isArray(response.data.result.items)) {
+          first = response.data.result.items[0] || null;
+          console.log('[useSubscription] Found subscription in data.result.items:', first);
+        } else if (response?.data && Array.isArray(response.data)) {
+          first = response.data[0] || null;
+          console.log('[useSubscription] Found subscription in data array:', first);
+        } else if (response?.result?.items && Array.isArray(response.result.items)) {
+          first = response.result.items[0] || null;
+          console.log('[useSubscription] Found subscription in result.items:', first);
+        } else if (Array.isArray(response)) {
+          first = response[0] || null;
+          console.log('[useSubscription] Found subscription in response array:', first);
         } else {
-          console.log('[useSubscription] No subscriptions found in result.items array.');
+          console.log('[useSubscription] Could not find subscription in response. Response structure:', response);
         }
+
+        console.log('[useSubscription] Final subscription object:', first);
+        console.log('[useSubscription] Subscription status:', first?.status);
 
         if (mounted) setSubscription(first);
       })

@@ -34,10 +34,16 @@ interface VideoPlayerProps {
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   onEnded?: () => void;
   className?: string;
+  // Watch party props
+  isWatchParty?: boolean;
+  isHost?: boolean;
+  externalPlaying?: boolean;
+  onPlayPause?: () => void;
+  onSeek?: (time: number) => void;
 }
 
 export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
-  ({ title, poster, qualities = [], onTimeUpdate, onEnded, className = '' }, ref) => {
+  ({ title, poster, qualities = [], onTimeUpdate, onEnded, className = '', isWatchParty, isHost, externalPlaying, onPlayPause, onSeek }, ref) => {
     console.log('VideoPlayer initialized:', { title, qualitiesCount: qualities.length });
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -484,6 +490,26 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       saveCurrentPosition,
     ]);
 
+    // Sync with external playing state for watch party
+    useEffect(() => {
+      if (!isWatchParty || externalPlaying === undefined) return;
+
+      const video = videoRef.current;
+      if (!video) return;
+
+      // Only sync if there's a significant difference (>1 second)
+      const shouldBePlaying = externalPlaying;
+      const isCurrentlyPlaying = !video.paused;
+
+      if (shouldBePlaying !== isCurrentlyPlaying) {
+        if (shouldBePlaying) {
+          video.play().catch(console.error);
+        } else {
+          video.pause();
+        }
+      }
+    }, [externalPlaying, isWatchParty]);
+
     // Save position on page unload
     useEffect(() => {
       const handleBeforeUnload = () => {
@@ -499,15 +525,74 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
     // Control functions
     const togglePlay = async () => {
+      console.log('Toggle play called, isWatchParty:', isWatchParty, 'isHost:', isHost);
+      
+      // For watch party non-host users, delegate to external control
+      if (isWatchParty && !isHost && onPlayPause) {
+        console.log('Non-host delegating play control');
+        onPlayPause();
+        return;
+      }
+
       const video = videoRef.current;
-      if (!video) return;
+      if (!video) {
+        console.error('Video element not found');
+        return;
+      }
 
       try {
         if (isPlaying) {
+          console.log('Pausing video');
           await video.pause();
         } else {
+          console.log('Playing video, current src:', video.src);
           setIsLoading(true);
-          await video.play();
+          
+          // First, make sure video has a valid source
+          if (!video.src) {
+            console.error('Video has no source');
+            setVideoError('Video source not available');
+            setIsLoading(false);
+            return;
+          }
+          
+          // Force play with user interaction
+          try {
+            // First attempt - normal play
+            await video.play();
+            console.log('Video playback started successfully');
+          } catch (err) {
+            console.error('First playback attempt failed:', err);
+            
+            try {
+              // Second attempt - try with user interaction simulation
+              const userEvent = new MouseEvent('click', {
+                view: window,
+                bubbles: true,
+                cancelable: true,
+              });
+              video.dispatchEvent(userEvent);
+              await video.play();
+              console.log('Video playback started after user event simulation');
+            } catch (err2) {
+              console.error('Second playback attempt failed:', err2);
+              
+              // Third attempt - try with muted (autoplay policy workaround)
+              video.muted = true;
+              try {
+                await video.play();
+                console.log('Video playing muted as fallback');
+                // Unmute after playback starts if possible
+                setTimeout(() => {
+                  video.muted = false;
+                  console.log('Unmuted video after successful playback');
+                }, 1000);
+              } catch (err3) {
+                console.error('Even muted playback failed:', err3);
+                setVideoError('Browser prevented video playback. Try clicking the video directly.');
+              }
+            }
+          }
         }
       } catch (error) {
         console.error('Play/pause error:', error);
@@ -599,6 +684,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         const newTime = percent * duration;
 
         console.log('Seeking to:', newTime);
+
+        // For watch party non-host users, delegate to external control
+        if (isWatchParty && !isHost && onSeek) {
+          onSeek(newTime);
+          return;
+        }
+
         setIsSeeking(true);
         setCurrentTime(newTime);
         video.currentTime = newTime;
@@ -608,7 +700,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           setIsSeeking(false);
         }, 200);
       },
-      [duration]
+      [duration, isWatchParty, isHost, onSeek]
     );
 
     // FIXED: Mouse events for timeline
@@ -976,15 +1068,31 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             }}
             src={currentSrc}
             poster={poster}
-            preload="metadata"
+            preload="auto"
             playsInline
             controls={false}
             crossOrigin="anonymous"
+            autoPlay={false}
+            muted={false}
+            width="1920"
+            height="1080"
             className="w-full h-full object-contain select-none"
             style={{
-              pointerEvents: 'none',
+              pointerEvents: isWatchParty ? 'auto' : 'none', // Allow direct interaction in watch party mode
               userSelect: 'none',
               WebkitUserSelect: 'none',
+              transform: 'translateZ(0)', /* Hardware acceleration */
+              WebkitTransform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              if (isWatchParty) {
+                console.log('Direct video element click');
+                togglePlay();
+              }
             }}
             onContextMenu={(e) => e.preventDefault()}
           />

@@ -47,7 +47,7 @@
     "lucide-react": "^0.544.0",
     "multer": "^2.0.2",
     "multer-s3": "^3.0.1",
-    "next": "^15.6.0-canary.17",
+    "next": "^15.6.0-canary.20",
     "ngrok": "^5.0.0-beta.2",
     "prisma": "^6.16.2",
     "qrcode": "^1.5.4",
