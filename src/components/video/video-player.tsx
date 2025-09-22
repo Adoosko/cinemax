@@ -348,15 +348,23 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         video.playbackRate = playbackSpeed;
 
         // Restore saved position - FIXED
+        // WATCH PARTY: Skip resume prompts for watch party members (live sync takes priority)
         if (!positionRestored) {
-          const savedPosition = loadSavedPosition();
-          if (savedPosition > 0 && savedPosition < video.duration - 30) {
-            console.log('Found saved position, showing prompt:', savedPosition);
-            setShowResumePrompt(true);
-          } else {
-            // If no significant saved position, ensure playback starts from the beginning
+          if (isWatchParty) {
+            // In watch party, always start from beginning and let sync handle positioning
+            console.log('🎬 Watch party mode: skipping resume prompt, waiting for sync');
             video.currentTime = 0;
             setCurrentTime(0);
+          } else {
+            const savedPosition = loadSavedPosition();
+            if (savedPosition > 0 && savedPosition < video.duration - 30) {
+              console.log('Found saved position, showing prompt:', savedPosition);
+              setShowResumePrompt(true);
+            } else {
+              // If no significant saved position, ensure playback starts from the beginning
+              video.currentTime = 0;
+              setCurrentTime(0);
+            }
           }
           positionRestored = true;
         }
@@ -527,11 +535,11 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const togglePlay = async () => {
       console.log('Toggle play called, isWatchParty:', isWatchParty, 'isHost:', isHost);
       
-      // For watch party non-host users, delegate to external control
-      if (isWatchParty && !isHost && onPlayPause) {
-        console.log('Non-host delegating play control');
-        onPlayPause();
-        return;
+      // WATCH PARTY CONTROL LOCK: Only hosts can control video playback
+      // Non-host members are completely locked out of video controls
+      if (isWatchParty && !isHost) {
+        console.log('🔒 Non-host member blocked from video control - host-only mode');
+        return; // Block all video control for non-host members
       }
 
       const video = videoRef.current;
@@ -679,17 +687,17 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         const progressBar = progressRef.current;
         if (!video || !progressBar || !duration) return;
 
+        // WATCH PARTY CONTROL LOCK: Only hosts can seek in watch parties
+        if (isWatchParty && !isHost) {
+          console.log('🔒 Non-host member blocked from seeking - host-only mode');
+          return; // Block all seeking for non-host members
+        }
+
         const rect = progressBar.getBoundingClientRect();
         const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
         const newTime = percent * duration;
 
         console.log('Seeking to:', newTime);
-
-        // For watch party non-host users, delegate to external control
-        if (isWatchParty && !isHost && onSeek) {
-          onSeek(newTime);
-          return;
-        }
 
         setIsSeeking(true);
         setCurrentTime(newTime);
@@ -813,6 +821,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const skip = (seconds: number) => {
       const video = videoRef.current;
       if (!video || !duration) return;
+
+      // WATCH PARTY CONTROL LOCK: Only hosts can skip in watch parties
+      if (isWatchParty && !isHost) {
+        console.log('🔒 Non-host member blocked from skipping - host-only mode');
+        return; // Block all skipping for non-host members
+      }
 
       const newTime = Math.max(0, Math.min(duration, video.currentTime + seconds));
       video.currentTime = newTime;
@@ -1076,7 +1090,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             muted={false}
             width="1920"
             height="1080"
-            className="w-full h-full object-contain select-none"
+            className="w-full h-full object-contain select-none !block !visible"
             style={{
               pointerEvents: isWatchParty ? 'auto' : 'none', // Allow direct interaction in watch party mode
               userSelect: 'none',
@@ -1085,6 +1099,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               WebkitTransform: 'translateZ(0)',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
+              display: 'block', /* Force visibility */
+              visibility: 'visible', /* Force visibility */
+              zIndex: 20, /* Ensure video is above other elements */
             }}
             onClick={(e) => {
               e.preventDefault();
@@ -1226,11 +1243,15 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                 <div className="mb-2 md:mb-4">
                   <div
                     ref={progressRef}
-                    className="relative w-full h-3 md:h-2 bg-white/20 rounded-full cursor-pointer group touch-manipulation hover:h-4 md:hover:h-3 transition-all duration-200"
-                    onMouseDown={handleProgressMouseDown}
-                    onClick={handleProgressClick}
-                    onTouchStart={handleProgressTouch}
-                    style={{ pointerEvents: 'auto' }} // Ensure clicks work
+                    className={`relative w-full h-3 md:h-2 bg-white/20 rounded-full group touch-manipulation transition-all duration-200 ${
+                      isWatchParty && !isHost 
+                        ? 'cursor-not-allowed opacity-60' // Locked for non-host members
+                        : 'cursor-pointer hover:h-4 md:hover:h-3'
+                    }`}
+                    onMouseDown={isWatchParty && !isHost ? undefined : handleProgressMouseDown}
+                    onClick={isWatchParty && !isHost ? undefined : handleProgressClick}
+                    onTouchStart={isWatchParty && !isHost ? undefined : handleProgressTouch}
+                    style={{ pointerEvents: isWatchParty && !isHost ? 'none' : 'auto' }} // Block interaction for non-host
                   >
                     {/* Progress Fill with Gradient */}
                     <div
@@ -1257,67 +1278,83 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   <div
                     className={`flex items-center ${isMobile ? 'space-x-2' : 'space-x-3 md:space-x-6'}`}
                   >
-                    {/* Play/Pause */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={togglePlay}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="text-white hover:text-netflix-red transition-colors"
-                        >
-                          {isPlaying ? (
-                            <Pause
-                              className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8 md:w-10 md:h-10'}`}
-                            />
-                          ) : (
-                            <Play
-                              className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8 md:w-10 md:h-10'}`}
-                            />
-                          )}
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
-                        <p>{isPlaying ? 'Pause' : 'Play'} (Space)</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    {/* Play/Pause - Hidden for non-host members in watch party */}
+                    {!(isWatchParty && !isHost) && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <motion.button
+                            onClick={togglePlay}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className="text-white hover:text-netflix-red transition-colors"
+                          >
+                            {isPlaying ? (
+                              <Pause
+                                className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8 md:w-10 md:h-10'}`}
+                              />
+                            ) : (
+                              <Play
+                                className={`${isMobile ? 'w-6 h-6' : 'w-8 h-8 md:w-10 md:h-10'}`}
+                              />
+                            )}
+                          </motion.button>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                          <p>{isPlaying ? 'Pause' : 'Play'} (Space)</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
 
-                    {/* Skip Controls */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={() => skip(-10)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="text-white hover:text-netflix-red transition-colors"
-                        >
-                          <SkipBack
-                            className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6 md:w-7 md:h-7'}`}
-                          />
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
-                        <p>-10s</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    {/* Skip Controls - Hidden for non-host members in watch party */}
+                    {!(isWatchParty && !isHost) && (
+                      <>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <motion.button
+                              onClick={() => skip(-10)}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="text-white hover:text-netflix-red transition-colors"
+                            >
+                              <SkipBack
+                                className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6 md:w-7 md:h-7'}`}
+                              />
+                            </motion.button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                            <p>-10s</p>
+                          </TooltipContent>
+                        </Tooltip>
 
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <motion.button
-                          onClick={() => skip(10)}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          className="text-white hover:text-netflix-red transition-colors"
-                        >
-                          <SkipForward
-                            className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6 md:w-7 md:h-7'}`}
-                          />
-                        </motion.button>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
-                        <p>+10s</p>
-                      </TooltipContent>
-                    </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <motion.button
+                              onClick={() => skip(10)}
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="text-white hover:text-netflix-red transition-colors"
+                            >
+                              <SkipForward
+                                className={`${isMobile ? 'w-4 h-4' : 'w-6 h-6 md:w-7 md:h-7'}`}
+                              />
+                            </motion.button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                            <p>+10s</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </>
+                    )}
+
+                    {/* Watch Party Viewer Mode Indicator - Show for non-host members */}
+                    {isWatchParty && !isHost && (
+                      <div className="flex items-center space-x-2 px-3 py-1 bg-netflix-red/20 border border-netflix-red/30 rounded-full">
+                        <div className="w-2 h-2 bg-netflix-red rounded-full animate-pulse" />
+                        <span className="text-netflix-red text-xs font-medium">
+                          {isMobile ? 'LIVE' : 'VIEWER MODE'}
+                        </span>
+                      </div>
+                    )}
 
                     {/* Volume Control - Hidden on mobile */}
                     {!isMobile && (

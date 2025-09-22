@@ -1,20 +1,40 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { io, Socket } from 'socket.io-client';
-import { MessageCircle, Users, Send, Smile, X, Crown, Play, DoorOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  MessageCircle,
+  Users,
+  Send,
+  Smile,
+  Play,
+  Crown,
+  DoorOpen,
+  Link as LinkIcon,
+  Check,
+  X,
+} from 'lucide-react';
 
-interface Participant {
-  id: string;
+const formatTime = (timestamp: number) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const EMOJI_REACTIONS = ['😀', '😂', '😢', '😮', '😍', '🤔', '😡', '👍', '👎', '❤️', '🔥', '🎉'];
+
+interface WatchPartyOverlayProps {
+  partyId: string;
+  userId: string;
   nickname: string;
-  joinedAt: number;
+  movieTitle?: string;
   isHost: boolean;
+  onLeaveParty: () => void;
+  className?: string;
 }
 
 interface ChatMessage {
@@ -24,65 +44,80 @@ interface ChatMessage {
   timestamp: number;
 }
 
-interface WatchPartyOverlayProps {
-  partyId: string;
-  nickname: string;
-  movieTitle: string;
-  isHost: boolean;
-  onLeaveParty: () => void;
-  className?: string;
-}
-
-const EMOJI_REACTIONS = ['😀', '😂', '😢', '😮', '😍', '🤔', '😡', '👍', '👎', '❤️', '🔥', '🎉'];
-
 export function WatchPartyOverlay({
   partyId,
+  userId,
   nickname,
-  movieTitle,
+  movieTitle = 'Movie',
   isHost,
   onLeaveParty,
   className = '',
 }: WatchPartyOverlayProps) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [participants, setParticipants] = useState<
+    Array<{
+      id: string;
+      nickname: string;
+      joinedAt: number;
+      isHost: boolean;
+    }>
+  >([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [showChat, setShowChat] = useState(false);
+  const [showChat, setShowChat] = useState(true);
   const [showParticipants, setShowParticipants] = useState(false);
   const [reactions, setReactions] = useState<
     Array<{ emoji: string; from: string; timestamp: number }>
   >([]);
+  const [inviteLinkCopied, setInviteLinkCopied] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // WebSocket connection
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_WEBSOCKET_URL || 'http://localhost:3001';
-    const newSocket = io(socketUrl, {
+    if (!partyId || !nickname || !userId) return;
+
+    if (socket?.connected) {
+      return;
+    }
+
+    const newSocket = io(process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001', {
       query: {
-        watchPartyId: partyId,
-        nickname: nickname,
+        partyId,
+        nickname,
+        isHost: isHost.toString(),
+        userId,
       },
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      forceNew: true,
     });
 
     newSocket.on('connect', () => {
-      console.log('Connected to watch party');
       setIsConnected(true);
+      newSocket.emit('join-party', {
+        partyId,
+        nickname,
+        isHost,
+        userId,
+      });
     });
 
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from watch party');
+    newSocket.on('disconnect', (reason) => {
       setIsConnected(false);
     });
 
-    // Watch party events
     newSocket.on('watch-party-joined', (data) => {
       setParticipants(data.participants);
-      setMessages(data.recentMessages || []);
     });
 
     newSocket.on('participant-joined', (data) => {
-      setParticipants((prev) => [...prev, data.participant]);
+      setParticipants((prev) => {
+        const exists = prev.some((p) => p.id === data.participant.id);
+        if (exists) return prev;
+        return [...prev, data.participant];
+      });
     });
 
     newSocket.on('participant-left', (data) => {
@@ -95,142 +130,243 @@ export function WatchPartyOverlay({
 
     newSocket.on('new-reaction', (reaction) => {
       setReactions((prev) => [...prev, reaction]);
-      // Remove reaction after 3 seconds
       setTimeout(() => {
-        setReactions((prev) => prev.filter((r) => r !== reaction));
+        setReactions((prev) => prev.slice(1));
       }, 3000);
     });
 
     setSocket(newSocket);
 
     return () => {
-      newSocket.disconnect();
+      if (newSocket.connected) {
+        newSocket.emit('leave-party', { partyId, userId });
+        newSocket.disconnect();
+      }
+      setSocket(null);
+      setIsConnected(false);
     };
-  }, [partyId, nickname]);
+  }, [partyId, nickname, userId]);
 
-  // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const sendMessage = () => {
-    if (!socket || !newMessage.trim()) return;
+    if (!socket || !isConnected || !newMessage.trim()) return;
     socket.emit('send-message', { message: newMessage.trim() });
     setNewMessage('');
   };
 
   const sendReaction = (emoji: string) => {
-    if (!socket) return;
+    if (!socket || !isConnected) return;
     socket.emit('send-reaction', { emoji });
   };
 
-  const formatTime = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const copyInviteLink = async () => {
+    try {
+      const currentUrl = window.location.href;
+      const url = new URL(currentUrl);
+      url.searchParams.set('party', partyId);
+      url.searchParams.delete('nickname');
+      const inviteLink = url.toString();
+      await navigator.clipboard.writeText(inviteLink);
+      setInviteLinkCopied(true);
+      setTimeout(() => setInviteLinkCopied(false), 2000);
+    } catch (error) {
+      const currentUrl = window.location.href;
+      const url = new URL(currentUrl);
+      url.searchParams.set('party', partyId);
+      url.searchParams.delete('nickname');
+      alert(`Invite link: ${url.toString()}`);
+    }
   };
 
   return (
-    <>
-      {/* Connection Status */}
-      <div className={`absolute top-4 right-4 z-50 ${className} flex flex-col gap-2`}>
-        <Badge
-          variant={isConnected ? 'default' : 'destructive'}
-          className={
-            isConnected
-              ? 'bg-netflix-red text-netflix-white border-netflix-red'
-              : 'bg-netflix-medium-gray text-netflix-text-gray'
-          }
-        >
-          {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
-        </Badge>
-        
-        {/* Host Status Debug */}
-        <Badge
-          variant="outline"
-          className={isHost ? 'bg-green-600/80 text-white' : 'bg-gray-600/80 text-white'}
-        >
-          {isHost ? '👑 Host Mode' : '👤 Guest Mode'}
-        </Badge>
-      </div>
+    <div className={`w-full flex flex-col bg-black ${className}`}>
+      {/* Watch Party Controls Panel - Positioned BELOW the video with proper z-index */}
+      <div
+        className="w-full bg-netflix-dark-gray border-t border-netflix-light-gray/20 rounded-md shadow-lg z-5"
+        style={{ position: 'relative' }}
+      >
+        {/* Watch Party Header */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h3 className="text-netflix-white font-semibold">Watch Party: {movieTitle}</h3>
+            <Badge
+              variant={isConnected ? 'default' : 'destructive'}
+              className={
+                isConnected
+                  ? 'bg-netflix-red text-netflix-white border-netflix-red'
+                  : 'bg-netflix-medium-gray text-netflix-text-gray'
+              }
+            >
+              {isConnected ? '🟢 Connected' : '🔴 Disconnected'}
+            </Badge>
+            {isHost ? (
+              <Badge
+                variant="outline"
+                className="bg-green-600/20 text-green-400 border-green-500/30"
+              >
+                👑 Host Mode
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="bg-gray-600/20 text-gray-400 border-gray-500/30">
+                👤 Viewer Mode
+              </Badge>
+            )}
+          </div>
 
-      {/* Main Controls */}
-      <div className="absolute top-4 left-4 z-50 flex gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setShowChat(!showChat)}
-          className="bg-netflix-dark-gray/80 hover:bg-netflix-medium-gray text-netflix-white border-netflix-light-gray/50 backdrop-blur-sm"
-        >
-          <MessageCircle className="w-4 h-4 mr-1" />
-          Chat ({messages.length})
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={() => setShowParticipants(!showParticipants)}
-          className="bg-netflix-dark-gray/80 hover:bg-netflix-medium-gray text-netflix-white border-netflix-light-gray/50 backdrop-blur-sm"
-        >
-          <Users className="w-4 h-4 mr-1" />
-          {participants.length}
-        </Button>
-        {isHost && (
-          <Badge
-            variant="secondary"
-            className="bg-netflix-red/20 text-netflix-red border-netflix-red/30"
-          >
-            <Crown className="w-3 h-3 mr-1" />
-            Host
-          </Badge>
-        )}
-      </div>
+          <div className="flex items-center gap-2">
+            {/* Invite Link Button (Host Only) */}
+            {isHost && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={copyInviteLink}
+                className="bg-netflix-dark-gray hover:bg-netflix-medium-gray text-netflix-white border-netflix-light-gray/50"
+              >
+                {inviteLinkCopied ? (
+                  <>
+                    <Check className="w-4 h-4 mr-1" />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="w-4 h-4 mr-1" />
+                    Invite
+                  </>
+                )}
+              </Button>
+            )}
 
-      {/* Chat Panel */}
-      <AnimatePresence>
-        {showChat && (
-          <motion.div
-            initial={{ opacity: 0, x: -300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -300 }}
-            className="absolute left-4 top-16 w-80 h-96 bg-netflix-dark-gray/95 backdrop-blur-lg rounded-lg border border-netflix-light-gray/50 z-40 shadow-2xl"
+            {/* Play/Pause Button (Host Only) */}
+            {isHost && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const videoElement = document.querySelector('video');
+                  if (videoElement) {
+                    if (videoElement.paused) {
+                      videoElement.play().catch(console.error);
+                    } else {
+                      videoElement.pause();
+                    }
+                  }
+                }}
+                className="bg-netflix-red hover:bg-netflix-red/80 text-white border-netflix-light-gray/50"
+              >
+                <Play className="w-4 h-4 mr-1" />
+                {'Control Video'}
+              </Button>
+            )}
+
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={onLeaveParty}
+              className="bg-netflix-medium-gray hover:bg-netflix-light-gray text-netflix-white border-netflix-light-gray/50"
+            >
+              <DoorOpen className="w-4 h-4 mr-1" />
+              Leave
+            </Button>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-netflix-light-gray/20">
+          <button
+            onClick={() => {
+              setShowChat(true);
+              setShowParticipants(false);
+            }}
+            className={`flex-1 px-4 py-3 text-sm font-medium ${
+              showChat
+                ? 'text-netflix-red border-b-2 border-netflix-red bg-netflix-medium-gray/20'
+                : 'text-netflix-white/70 hover:text-netflix-white hover:bg-netflix-medium-gray/10'
+            }`}
           >
-            <div className="p-4 border-b border-netflix-medium-gray">
-              <div className="flex items-center justify-between">
-                <h3 className="text-netflix-white font-semibold">Watch Party Chat</h3>
+            <div className="flex items-center justify-center gap-2">
+              <MessageCircle className="w-4 h-4" />
+              Chat ({messages.length})
+            </div>
+          </button>
+
+          <button
+            onClick={() => {
+              setShowChat(false);
+              setShowParticipants(true);
+            }}
+            className={`flex-1 px-4 py-3 text-sm font-medium ${
+              showParticipants
+                ? 'text-netflix-red border-b-2 border-netflix-red bg-netflix-medium-gray/20'
+                : 'text-netflix-white/70 hover:text-netflix-white hover:bg-netflix-medium-gray/10'
+            }`}
+          >
+            <div className="flex items-center justify-center gap-2">
+              <Users className="w-4 h-4" />
+              Participants ({participants.length})
+            </div>
+          </button>
+
+          <div className="px-4 py-3">
+            <Popover>
+              <PopoverTrigger asChild>
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => setShowChat(false)}
-                  className="text-netflix-text-gray hover:text-netflix-white"
+                  className="text-netflix-white/70 hover:text-netflix-white"
                 >
-                  <X className="w-4 h-4" />
+                  <Smile className="w-4 h-4" />
                 </Button>
-              </div>
-            </div>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2 bg-netflix-dark-gray border-netflix-light-gray/50">
+                <div className="grid grid-cols-6 gap-1">
+                  {EMOJI_REACTIONS.map((emoji) => (
+                    <Button
+                      key={emoji}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => sendReaction(emoji)}
+                      className="w-8 h-8 p-0 text-lg hover:bg-netflix-medium-gray"
+                    >
+                      {emoji}
+                    </Button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
 
-            <ScrollArea className="flex-1 p-4 h-64">
-              <div className="space-y-3">
-                {messages.map((message) => (
-                  <div key={message.id} className="text-sm">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-netflix-red font-medium">{message.nickname}</span>
-                      <span className="text-netflix-text-gray text-xs">
-                        {formatTime(message.timestamp)}
-                      </span>
+        {/* Content */}
+        <div className="p-4">
+          {/* Chat Panel */}
+          {showChat && (
+            <div className="space-y-4">
+              <ScrollArea className="h-64 w-full rounded-md border border-netflix-light-gray/20 p-4">
+                <div className="space-y-3">
+                  {messages.map((message) => (
+                    <div key={message.id} className="text-sm">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-netflix-red font-medium">{message.nickname}</span>
+                        <span className="text-netflix-text-gray text-xs">
+                          {formatTime(message.timestamp)}
+                        </span>
+                      </div>
+                      <p className="text-netflix-white/90">{message.message}</p>
                     </div>
-                    <p className="text-netflix-white/90">{message.message}</p>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
-            <div className="p-4 border-t border-netflix-medium-gray">
+                  ))}
+                  <div ref={messagesEndRef} />
+                </div>
+              </ScrollArea>
               <div className="flex gap-2">
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Type a message..."
                   className="bg-netflix-medium-gray border-netflix-light-gray text-netflix-white placeholder:text-netflix-text-gray focus:border-netflix-red focus:outline-none"
-                  onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
                   maxLength={200}
                 />
                 <Button
@@ -243,38 +379,17 @@ export function WatchPartyOverlay({
                 </Button>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
 
-      {/* Participants Panel */}
-      <AnimatePresence>
-        {showParticipants && (
-          <motion.div
-            initial={{ opacity: 0, x: 300 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 300 }}
-            className="absolute right-4 top-16 w-64 bg-netflix-dark-gray/95 backdrop-blur-lg rounded-lg border border-netflix-light-gray/50 z-40 shadow-2xl"
-          >
-            <div className="p-4 border-b border-netflix-medium-gray">
-              <div className="flex items-center justify-between">
-                <h3 className="text-netflix-white font-semibold">
-                  Participants ({participants.length})
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowParticipants(false)}
-                  className="text-netflix-text-gray hover:text-netflix-white"
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-            <ScrollArea className="p-4 max-h-80">
+          {/* Participants Panel */}
+          {showParticipants && (
+            <ScrollArea className="h-64 w-full rounded-md border border-netflix-light-gray/20 p-4">
               <div className="space-y-3">
                 {participants.map((participant) => (
-                  <div key={participant.id} className="flex items-center gap-3">
+                  <div
+                    key={participant.id}
+                    className="flex items-center gap-3 p-3 rounded-lg hover:bg-netflix-medium-gray/20"
+                  >
                     <div className="w-8 h-8 bg-netflix-red/20 rounded-full flex items-center justify-center">
                       <span className="text-netflix-white font-semibold text-sm">
                         {participant.nickname[0].toUpperCase()}
@@ -285,7 +400,15 @@ export function WatchPartyOverlay({
                         <span className="text-netflix-white text-sm font-medium">
                           {participant.nickname}
                         </span>
-                        {participant.isHost && <Crown className="w-3 h-3 text-netflix-red" />}
+                        {participant.isHost && (
+                          <Badge
+                            variant="outline"
+                            className="bg-netflix-red/20 text-netflix-red border-netflix-red/30 text-xs py-0 px-1"
+                          >
+                            <Crown className="w-3 h-3 mr-1" />
+                            Host
+                          </Badge>
+                        )}
                       </div>
                       <span className="text-netflix-text-gray text-xs">
                         Joined {formatTime(participant.joinedAt)}
@@ -295,96 +418,29 @@ export function WatchPartyOverlay({
                 ))}
               </div>
             </ScrollArea>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Emoji Reactions */}
-      <div className="absolute bottom-20 right-4 z-40">
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="bg-netflix-dark-gray/80 hover:bg-netflix-medium-gray text-netflix-white border-netflix-light-gray/50 rounded-full w-10 h-10 p-0 backdrop-blur-sm"
-            >
-              <Smile className="w-4 h-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-2 bg-netflix-dark-gray/95 border-netflix-light-gray/50 backdrop-blur-lg">
-            <div className="grid grid-cols-6 gap-1">
-              {EMOJI_REACTIONS.map((emoji) => (
-                <Button
-                  key={emoji}
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => sendReaction(emoji)}
-                  className="w-8 h-8 p-0 text-lg hover:bg-netflix-medium-gray"
-                >
-                  {emoji}
-                </Button>
-              ))}
-            </div>
-          </PopoverContent>
-        </Popover>
+          )}
+        </div>
       </div>
 
       {/* Floating Reactions */}
-      <div className="absolute bottom-32 right-4 z-30 pointer-events-none">
-        <AnimatePresence>
-          {reactions.map((reaction, index) => (
-            <motion.div
-              key={`${reaction.timestamp}-${reaction.from}`}
-              initial={{ opacity: 0, scale: 0, y: 0 }}
-              animate={{
-                opacity: [0, 1, 1, 0],
-                scale: [0, 1, 1, 0],
-                y: [-20, -60, -100],
-              }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 3, delay: index * 0.1 }}
-              className="absolute text-2xl"
-              style={{ right: `${index * 40}px` }}
-            >
-              {reaction.emoji}
-            </motion.div>
-          ))}
-        </AnimatePresence>
+      <div className="fixed bottom-20 left-0 right-0 pointer-events-none z-50">
+        <div className="flex justify-center">
+          <div className="relative h-16 w-full max-w-md">
+            {reactions.map((reaction, index) => (
+              <div
+                key={`${reaction.timestamp}-${reaction.from}`}
+                className="absolute text-4xl animate-bounce"
+                style={{
+                  left: `${(index - reactions.length / 2) * 60 + 50}%`,
+                  animationDelay: `${index * 0.1}s`,
+                }}
+              >
+                {reaction.emoji}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-
-      {/* Control Buttons */}
-      <div className="absolute bottom-4 right-4 z-40 flex gap-2">
-        {/* Play/Pause Button (Host Only) */}
-        {isHost && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              const videoElement = document.querySelector('video');
-              if (videoElement) {
-                if (videoElement.paused) {
-                  videoElement.play().catch(console.error);
-                } else {
-                  videoElement.pause();
-                }
-              }
-            }}
-            className="bg-netflix-red hover:bg-netflix-red/80 text-white border-netflix-light-gray/50"
-          >
-            <Play className="w-4 h-4 mr-1" />
-            {'Control Video'}
-          </Button>
-        )}
-        {/* Leave Party Button */}
-        <Button
-          variant="destructive"
-          size="sm"
-          onClick={onLeaveParty}
-          className="bg-netflix-medium-gray hover:bg-netflix-light-gray text-netflix-white border-netflix-light-gray/50"
-        >
-          Leave Party
-        </Button>
-      </div>
-    </>
+    </div>
   );
 }

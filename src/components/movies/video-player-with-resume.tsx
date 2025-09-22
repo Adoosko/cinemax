@@ -14,6 +14,7 @@ interface VideoPlayerWithResumeProps {
   streamingUrl: string;
   title: string;
   posterUrl?: string;
+  className?: string; // Added className prop
   qualities?: Array<{
     quality: string;
     url: string;
@@ -26,6 +27,7 @@ export function VideoPlayerWithResume({
   streamingUrl,
   title,
   posterUrl,
+  className = '',
   qualities = [],
 }: VideoPlayerWithResumeProps) {
   const [savedProgress, setSavedProgress] = useState<number>(0);
@@ -56,17 +58,62 @@ export function VideoPlayerWithResume({
   const nickname = manualNickname || (isAuthenticated && user ? generateNickname(user) : null);
   const isInWatchParty = !!(partyId && nickname);
 
-  // Stable callback for video sync to prevent unnecessary reconnections
-  const onVideoSync = useCallback((data: { currentTime: number; isPlaying: boolean; playbackSpeed?: number }) => {
-    if (videoRef.current && Math.abs(videoRef.current.currentTime - data.currentTime) > 2) {
+  // Enhanced video sync callback for immediate response to host controls
+  const onVideoSync = useCallback(
+    (data: { currentTime: number; isPlaying: boolean; playbackSpeed?: number }) => {
+      if (!videoRef.current) return;
+
+      console.log('🔄 Applying sync from host:', data);
+
+      // CRITICAL FIX: Force sync time regardless of difference to ensure perfect sync
+      console.log(`🎯 Seeking to host position: ${data.currentTime.toFixed(2)}s`);
       videoRef.current.currentTime = data.currentTime;
-      if (data.isPlaying && videoRef.current.paused) {
-        videoRef.current.play().catch(console.error);
-      } else if (!data.isPlaying && !videoRef.current.paused) {
-        videoRef.current.pause();
+
+      // CRITICAL FIX: Always sync play state immediately with multiple attempts
+      const syncPlayState = () => {
+        if (data.isPlaying && videoRef.current?.paused) {
+          console.log('▶️ Host is playing - starting playback');
+          const playPromise = videoRef.current.play();
+
+          if (playPromise !== undefined) {
+            playPromise.catch((error) => {
+              console.error('Failed to play on sync:', error);
+              // Try again with user interaction simulation
+              setTimeout(() => {
+                if (videoRef.current) {
+                  // Force user interaction to bypass autoplay restrictions
+                  videoRef.current.muted = true;
+                  videoRef.current
+                    .play()
+                    .then(() => {
+                      videoRef.current!.muted = false;
+                      console.log('Successfully started playback after retry');
+                    })
+                    .catch(console.error);
+                }
+              }, 100);
+            });
+          }
+        } else if (!data.isPlaying && videoRef.current && !videoRef.current.paused) {
+          console.log('⏸️ Host paused - pausing playback');
+          videoRef.current.pause();
+        }
+      };
+
+      // Execute sync immediately
+      syncPlayState();
+
+      // And also after a short delay to ensure it takes effect
+      setTimeout(syncPlayState, 100);
+
+      // Sync playback speed if provided
+      if (data.playbackSpeed && videoRef.current.playbackRate !== data.playbackSpeed) {
+        console.log(`🏃 Setting playback speed to ${data.playbackSpeed}x`);
+        videoRef.current.playbackRate = data.playbackSpeed;
       }
-    }
-  }, []);
+    },
+    []
+  );
 
   // Watch party hook
   const {
@@ -76,57 +123,69 @@ export function VideoPlayerWithResume({
     isPlaying: partyIsPlaying,
     syncVideo,
     sendMessage,
-    sendReaction
+    sendReaction,
   } = useWatchParty({
     partyId: partyId || undefined,
     nickname: nickname || undefined,
     userId: user?.id, // Pass user ID to identify host
-    onVideoSync
+    onVideoSync,
   });
 
   // Determine if current user is the host
   const [isCurrentUserHost, setIsCurrentUserHost] = useState<boolean>(false);
-  
+
   // Fetch watch party details to determine if current user is the host
   useEffect(() => {
     if (!partyId || !user?.id) return;
-    
+
     const checkIfHost = async () => {
       try {
         const response = await fetch(`/api/watch-party/${partyId}`);
         if (!response.ok) return;
-        
+
         const data = await response.json();
-        const isHost = data.watchParty?.host?.id === user.id;
-        
-        console.log('🎮 Host check:', { 
-          userId: user.id, 
-          hostId: data.watchParty?.host?.id,
-          isHost 
+        const isHost = data.watchParty.host.id === user.id;
+
+        console.log('🎮 Host check:', {
+          userId: user.id,
+          hostId: data.watchParty.host.id,
+          isHost,
         });
-        
+
         setIsCurrentUserHost(isHost);
+
+        // CRITICAL FIX: If not host, request immediate sync from host
+        if (!isHost && isPartyConnected) {
+          console.log('🔄 Member joining - requesting immediate sync from host');
+          // Send a special sync request that the host will respond to
+          syncVideo({
+            currentTime: 0, // Will be overridden by host's current time
+            isPlaying: false, // Will be overridden by host's play state
+            playbackSpeed: 1,
+            requestSync: true, // Special flag to indicate this is a sync request
+          });
+        }
       } catch (error) {
         console.error('Error checking host status:', error);
       }
     };
-    
+
     checkIfHost();
-  }, [partyId, user?.id]);
-  
+  }, [partyId, user?.id, isPartyConnected, syncVideo]);
+
   // Debug host detection
   console.log('🎮 Host detection:', {
     nickname,
     userId: user?.id,
-    participants: participants.map(p => ({ nickname: p.nickname, isHost: p.isHost })),
-    isCurrentUserHost
+    participants: participants.map((p) => ({ nickname: p.nickname, isHost: p.isHost })),
+    isCurrentUserHost,
   });
 
   // Handle external play/pause for non-host users
   const handleExternalPlayPause = () => {
     // This should not be called for hosts, but just in case
     if (isCurrentUserHost) return;
-    
+
     // Non-host users send a request to the host to control playback
     console.log('Non-host requested play/pause');
     if (videoRef.current) {
@@ -135,7 +194,7 @@ export function VideoPlayerWithResume({
       syncVideo({
         currentTime: videoRef.current.currentTime,
         isPlaying: !isCurrentlyPlaying, // Request opposite of current state
-        playbackSpeed: videoRef.current.playbackRate
+        playbackSpeed: videoRef.current.playbackRate,
       });
     }
   };
@@ -144,7 +203,7 @@ export function VideoPlayerWithResume({
   const handleExternalSeek = (time: number) => {
     // This should not be called for hosts, but just in case
     if (isCurrentUserHost) return;
-    
+
     // Non-host users send a seek request to the host
     console.log('Non-host requested seek to:', time);
     if (videoRef.current) {
@@ -152,11 +211,11 @@ export function VideoPlayerWithResume({
       syncVideo({
         currentTime: time,
         isPlaying: !videoRef.current.paused,
-        playbackSpeed: videoRef.current.playbackRate
+        playbackSpeed: videoRef.current.playbackRate,
       });
     }
   };
-  
+
   // Fetch the user's watch history for this movie
   useEffect(() => {
     if (!isAuthenticated || !movieId) return;
@@ -165,14 +224,14 @@ export function VideoPlayerWithResume({
       try {
         const response = await fetch(`/api/watch/history`);
         if (!response.ok) return;
-        
+
         const data = await response.json();
         const movieHistory = data.watchHistory?.find((h: any) => h.movieId === movieId);
-        
+
         if (movieHistory) {
           setWatchHistoryId(movieHistory.id);
           setSavedProgress(movieHistory.progress);
-          
+
           // Calculate the time to seek to based on the saved progress
           // The actual seeking will be handled by the VideoPlayer component
           if (movieHistory.progress > 0 && movieHistory.progress < 0.99) {
@@ -212,7 +271,7 @@ export function VideoPlayerWithResume({
 
       const data = await response.json();
       setWatchHistoryId(data.watchHistory.id);
-      
+
       // If the movie was completed, refresh watch limit data
       if (completed) {
         refetchWatchLimit();
@@ -228,12 +287,12 @@ export function VideoPlayerWithResume({
 
     const currentProgress = time / duration;
 
-    // Sync with watch party if in a party (throttling handled by useWatchParty hook)
-    if (isInWatchParty && isPartyConnected && videoRef.current) {
+    // WATCH PARTY SYNC: Only hosts send sync updates during playback
+    if (isInWatchParty && isPartyConnected && isCurrentUserHost && videoRef.current) {
       syncVideo({
         currentTime: videoRef.current.currentTime,
         isPlaying: !videoRef.current.paused,
-        playbackSpeed: videoRef.current.playbackRate
+        playbackSpeed: videoRef.current.playbackRate,
       });
     }
 
@@ -253,29 +312,40 @@ export function VideoPlayerWithResume({
   // We just need to provide the movie ID through the title prop and handle the progress updates
   return (
     <WatchLimitGate>
-      <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
-        <VideoPlayer
-          ref={videoRef}
-          title={title}
-          poster={posterUrl}
-          qualities={qualities.length > 0 ? qualities : [{ quality: 'auto', url: streamingUrl, bitrate: 0 }]}
-          className="w-full h-full"
-          onTimeUpdate={handleTimeUpdate}
-          onEnded={handleVideoEnded}
-          isWatchParty={isInWatchParty}
-          isHost={isCurrentUserHost}
-          externalPlaying={partyIsPlaying}
-          onPlayPause={handleExternalPlayPause}
-          onSeek={handleExternalSeek}
-        />
+      <div className={`flex flex-col w-full relative ${className}`}>
+        {/* Video Container - Ensured visibility with explicit z-index */}
+        <div
+          className="relative w-full aspect-video bg-black rounded-lg overflow-hidden z-10"
+          id="video-container"
+        >
+          <VideoPlayer
+            ref={videoRef}
+            title={title}
+            poster={posterUrl}
+            qualities={
+              qualities.length > 0
+                ? qualities
+                : [{ quality: 'auto', url: streamingUrl, bitrate: 0 }]
+            }
+            className="w-full h-full"
+            onTimeUpdate={handleTimeUpdate}
+            onEnded={handleVideoEnded}
+            isWatchParty={isInWatchParty}
+            isHost={isCurrentUserHost}
+            externalPlaying={partyIsPlaying}
+            onPlayPause={handleExternalPlayPause}
+            onSeek={handleExternalSeek}
+          />
+        </div>
 
-        {/* Watch Party Overlay */}
+        {/* Watch Party Overlay - Now positioned BELOW the video */}
         {isInWatchParty && (
           <WatchPartyOverlay
             partyId={partyId!}
             nickname={nickname!}
             movieTitle={title}
             isHost={isCurrentUserHost}
+            userId={user?.id || ''}
             onLeaveParty={() => {
               // Navigate back to movie page without party params
               window.location.href = `/movies/${movieId}`;

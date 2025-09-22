@@ -192,13 +192,15 @@ export default async function WatchPage({ params }: WatchPageProps) {
         <section className="w-full py-4">
           <div className="max-w-6xl mx-auto px-0 sm:px-4">
             <Suspense fallback={<VideoPlayerSkeleton />}>
-              <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl border border-white/5">
+              {/* CRITICAL FIX: Ensured video player visibility with explicit z-index and styling */}
+              <div className="aspect-video bg-black rounded-lg overflow-hidden shadow-2xl border border-white/5 relative z-10">
                 <VideoPlayerWithResume
                   movieId={movie.id}
                   streamingUrl={movie.streamingUrl}
                   title={movie.title}
                   posterUrl={movie.backdrop || movie.poster}
                   qualities={movie.qualities || []}
+                  className="!block !visible" /* Force visibility */
                 />
               </div>
             </Suspense>
