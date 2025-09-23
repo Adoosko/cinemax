@@ -6,6 +6,7 @@ import { SimilarMovies } from './similar-movies';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Star, Calendar, Clock, Play, Heart, Share, Users, ArrowLeft } from 'lucide-react';
+import { AiTrailerPlayer } from './ai-trailer-player';
 
 // Import the Movie type from the cached data
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
@@ -174,6 +175,9 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                 <Play className="w-4 h-4 mr-2" />
                 Watch Trailer
               </button>
+
+              {/* AI Trailer Player */}
+              {movie.slug && <AiTrailerPlayer movieSlug={movie.slug} />}
 
               {/* Book Cinema (if streaming is available) */}
               {movie.streamingUrl && (

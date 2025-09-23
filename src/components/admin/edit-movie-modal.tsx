@@ -17,7 +17,10 @@ import {
   Check,
   AlertCircle,
   Loader,
+  Mic,
+  Settings,
 } from 'lucide-react';
+import AiTrailerGenerator from './ai-trailer-generator';
 
 interface EditMovieModalProps {
   isOpen: boolean;
@@ -75,6 +78,7 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
   const [errors, setErrors] = useState<Partial<Record<keyof MovieFormData, string>>>({});
   const [genreInput, setGenreInput] = useState('');
   const [castInput, setCastInput] = useState('');
+  const [activeTab, setActiveTab] = useState<'details' | 'trailers'>('details');
 
   // Initialize form data when movie changes
   useEffect(() => {
@@ -179,28 +183,57 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
         className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-8 border-b border-white/10">
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-netflix-red rounded-xl flex items-center justify-center">
-              <Film className="w-6 h-6 text-white" />
+        <div className="border-b border-white/10">
+          <div className="flex items-center justify-between p-8">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-netflix-red rounded-xl flex items-center justify-center">
+                <Film className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+                <p className="text-white/60 text-sm">Update movie details and generate AI trailers</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
-              <p className="text-white/60 text-sm">Update movie details</p>
-            </div>
+
+            <button
+              onClick={onClose}
+              className="p-3 hover:bg-white/10 rounded-xl transition-all duration-200 group"
+            >
+              <X className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
+            </button>
           </div>
 
-          <button
-            onClick={onClose}
-            className="p-3 hover:bg-white/10 rounded-xl transition-all duration-200 group"
-          >
-            <X className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
-          </button>
+          {/* Tab Navigation */}
+          <div className="flex px-8">
+            <button
+              onClick={() => setActiveTab('details')}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all duration-200 ${
+                activeTab === 'details'
+                  ? 'border-netflix-red text-white'
+                  : 'border-transparent text-white/60 hover:text-white'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Movie Details</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('trailers')}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 transition-all duration-200 ${
+                activeTab === 'trailers'
+                  ? 'border-netflix-red text-white'
+                  : 'border-transparent text-white/60 hover:text-white'
+              }`}
+            >
+              <Mic className="w-4 h-4" />
+              <span>AI Trailers</span>
+            </button>
+          </div>
         </div>
 
         {/* Content */}
         <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-8">
-          <form onSubmit={handleSubmit} className="space-y-8">
+          {activeTab === 'details' ? (
+            <form onSubmit={handleSubmit} className="space-y-8">
             {/* Active Status Toggle */}
             <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
               <div>
@@ -589,6 +622,22 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
               </motion.button>
             </div>
           </form>
+          ) : (
+            /* AI Trailers Tab */
+            <div className="space-y-6">
+              <AiTrailerGenerator 
+                movie={{
+                  ...movie,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  slug: movie.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+                }} 
+                onTrailerGenerated={(trailer) => {
+                  console.log('Trailer generated:', trailer);
+                }}
+              />
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

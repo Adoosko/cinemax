@@ -1,6 +1,6 @@
 'use client';
 
-import { TMDBService } from '@/lib/tmdb-service';
+import { TMDBService } from '@/lib/services/tmdb-service';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { NetflixCard } from '@/components/ui/glass-card';

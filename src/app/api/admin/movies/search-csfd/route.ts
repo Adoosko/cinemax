@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
-import { TMDBService } from '@/lib/tmdb-service';
+import { TMDBService } from '@/lib/services/tmdb-service';
 
 export async function GET(request: NextRequest) {
   try {

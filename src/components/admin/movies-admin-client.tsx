@@ -10,7 +10,7 @@ import {
   AdminMoviesProvider,
   useAdminMoviesContext,
 } from '@/components/admin/admin-movies-context';
-import { Plus, Edit, Trash2, Eye, Star, Clock, Upload, AlertCircle, Film } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Star, Clock, Upload, AlertCircle, Film, Mic, Sparkles } from 'lucide-react';
 interface MoviesAdminContentProps {
   initialMovies?: Movie[];
 }
@@ -29,6 +29,7 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
   const [selectedMovieForEdit, setSelectedMovieForEdit] = useState<Movie | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAddMovieModal, setShowAddMovieModal] = useState(false);
+  const [generatingTrailerFor, setGeneratingTrailerFor] = useState<string | null>(null);
 
   useEffect(() => {
     // Only fetch movies if we don't have initial movies
@@ -88,6 +89,42 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
       }
     } catch (error) {
       console.error('Failed to delete movie:', error);
+    }
+  };
+
+  const handleGenerateTrailer = async (movie: Movie) => {
+    if (!movie.slug) {
+      alert('Movie must have a slug before generating trailers');
+      return;
+    }
+
+    setGeneratingTrailerFor(movie.id);
+
+    try {
+      const response = await fetch('/api/admin/ai-trailers/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          movieId: movie.id,
+          voiceStyle: 'epic',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to generate trailer');
+      }
+
+      const data = await response.json();
+      alert(`AI trailer generated successfully for "${movie.title}"!`);
+      console.log('Trailer generated:', data.trailer);
+    } catch (error) {
+      console.error('Error generating trailer:', error);
+      alert(error instanceof Error ? error.message : 'Failed to generate trailer');
+    } finally {
+      setGeneratingTrailerFor(null);
     }
   };
 
@@ -323,6 +360,19 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                           title="Upload Videos"
                         >
                           <Upload className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={() => handleGenerateTrailer(movie)}
+                          disabled={generatingTrailerFor === movie.id}
+                          className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white p-2 rounded-full transition-all shadow-lg hover:scale-110 active:scale-95 disabled:scale-100"
+                          title="Generate AI Trailer"
+                        >
+                          {generatingTrailerFor === movie.id ? (
+                            <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                          ) : (
+                            <Mic className="w-4 h-4" />
+                          )}
                         </button>
 
                         <button

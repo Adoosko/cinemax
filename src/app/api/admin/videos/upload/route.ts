@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3VideoService } from '@/lib/video-service';
+import { S3VideoService } from '@/lib/services/video-service';
 
 export async function POST(request: NextRequest) {
   try {

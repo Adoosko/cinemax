@@ -201,6 +201,7 @@ model Movie {
   reviews      Review[]
   WatchHistory WatchHistory[]
   watchParties WatchParty[]
+  aiTrailers   AiTrailer[]
 
   @@map("movies")
 }
@@ -484,4 +485,36 @@ model WatchParty {
   movie        Movie    @relation(fields: [movieId], references: [id], onDelete: Cascade)
 
   @@map("watch_parties")
+}
+
+// ============================================
+// AI TRAILER SYSTEM
+// ============================================
+
+model AiTrailer {
+  id          String           @id @default(cuid())
+  movieId     String
+  script      String           // The OpenAI generated script
+  fileUrl     String           // S3 URL for the audio file
+  fileSize    Int              // File size in bytes
+  voiceStyle  String           // Voice style used (e.g., "epic", "dramatic")
+  status      AiTrailerStatus  @default(PENDING)
+  errorMessage String?         // Error message if generation failed
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  createdBy   String?          // User ID who created the trailer
+
+  // Relations
+  movie       Movie            @relation(fields: [movieId], references: [id], onDelete: Cascade)
+
+  @@map("ai_trailers")
+}
+
+enum AiTrailerStatus {
+  PENDING
+  GENERATING_SCRIPT
+  GENERATING_AUDIO
+  UPLOADING
+  COMPLETED
+  FAILED
 }
