@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     // First, find the movie by its slug
     const movie = await db.movie.findUnique({
       where: { slug },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!movie) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
     // Transform the data to include participant count
     // Note: You'll need to implement participant tracking in your database schema
     // For now, we'll use a placeholder count
-    const partiesWithCount = activeParties.map(party => ({
+    const partiesWithCount = activeParties.map((party) => ({
       id: party.id,
       host: party.host, // Use the host relationship
       participantCount: Math.floor(Math.random() * 8) + 1, // Placeholder - replace with actual count

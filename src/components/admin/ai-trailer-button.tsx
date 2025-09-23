@@ -12,11 +12,11 @@ interface AiTrailerButtonProps {
   onTrailerGenerated?: (trailer: any) => void;
 }
 
-export default function AiTrailerButton({ 
-  movie, 
-  variant = 'default', 
+export default function AiTrailerButton({
+  movie,
+  variant = 'default',
   size = 'default',
-  onTrailerGenerated 
+  onTrailerGenerated,
 }: AiTrailerButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -46,7 +46,7 @@ export default function AiTrailerButton({
       }
 
       const data = await response.json();
-      
+
       if (onTrailerGenerated) {
         onTrailerGenerated(data.trailer);
       }

@@ -43,20 +43,22 @@ export function MoviesProvider({ children, initialMovies = [] }: MoviesProviderP
           setIsLoading(false);
         }
       };
-      
+
       fetchMovies();
     }
   }, [initialMovies]);
 
   return (
-    <MoviesContext.Provider value={{ 
-      searchTerm, 
-      setSearchTerm, 
-      filterOptions, 
-      setFilterOptions,
-      movies,
-      isLoading
-    }}>
+    <MoviesContext.Provider
+      value={{
+        searchTerm,
+        setSearchTerm,
+        filterOptions,
+        setFilterOptions,
+        movies,
+        isLoading,
+      }}
+    >
       {children}
     </MoviesContext.Provider>
   );

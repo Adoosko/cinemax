@@ -191,7 +191,9 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
-                <p className="text-white/60 text-sm">Update movie details and generate AI trailers</p>
+                <p className="text-white/60 text-sm">
+                  Update movie details and generate AI trailers
+                </p>
               </div>
             </div>
 
@@ -234,404 +236,409 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
         <div className="overflow-y-auto max-h-[calc(90vh-140px)] p-8">
           {activeTab === 'details' ? (
             <form onSubmit={handleSubmit} className="space-y-8">
-            {/* Active Status Toggle */}
-            <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-              <div>
-                <h3 className="text-white font-semibold">Movie Status</h3>
-                <p className="text-white/60 text-sm">
-                  Control whether this movie is visible to users
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isActive}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, isActive: e.target.checked }))}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-netflix-red"></div>
-              </label>
-            </div>
-
-            {/* Title */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                Movie Title <span className="text-netflix-red">*</span>
-              </label>
-              <div className="relative">
-                <Film className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
-                    errors.title ? 'border-netflix-red' : 'border-white/20'
-                  } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40`}
-                  placeholder="Enter movie title"
-                />
-              </div>
-              {errors.title && (
-                <div className="flex items-center space-x-2 text-netflix-red text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errors.title}</span>
+              {/* Active Status Toggle */}
+              <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                <div>
+                  <h3 className="text-white font-semibold">Movie Status</h3>
+                  <p className="text-white/60 text-sm">
+                    Control whether this movie is visible to users
+                  </p>
                 </div>
-              )}
-            </div>
-
-            {/* Description */}
-            <div className="space-y-2">
-              <label className="block text-white font-semibold">
-                Description <span className="text-netflix-red">*</span>
-              </label>
-              <div className="relative">
-                <Info className="absolute left-4 top-4 w-5 h-5 text-white/40" />
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  rows={4}
-                  className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
-                    errors.description ? 'border-netflix-red' : 'border-white/20'
-                  } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40 resize-none`}
-                  placeholder="Enter movie description"
-                />
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isActive}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, isActive: e.target.checked }))
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-netflix-red"></div>
+                </label>
               </div>
-              {errors.description && (
-                <div className="flex items-center space-x-2 text-netflix-red text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errors.description}</span>
-                </div>
-              )}
-            </div>
 
-            {/* Grid Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Duration */}
+              {/* Title */}
               <div className="space-y-2">
                 <label className="block text-white font-semibold">
-                  Duration (minutes) <span className="text-netflix-red">*</span>
+                  Movie Title <span className="text-netflix-red">*</span>
                 </label>
                 <div className="relative">
-                  <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="number"
-                    name="duration"
-                    value={formData.duration}
-                    onChange={handleNumberChange}
-                    min="1"
-                    className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
-                      errors.duration ? 'border-netflix-red' : 'border-white/20'
-                    } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all`}
-                  />
-                </div>
-                {errors.duration && (
-                  <div className="flex items-center space-x-2 text-netflix-red text-sm">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{errors.duration}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Rating */}
-              <div className="space-y-2">
-                <label className="block text-white font-semibold">Rating (0-10)</label>
-                <div className="relative">
-                  <Star className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="number"
-                    name="rating"
-                    value={formData.rating}
-                    onChange={handleChange}
-                    min="0"
-                    max="10"
-                    step="0.1"
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all"
-                    placeholder="8.5"
-                  />
-                </div>
-              </div>
-
-              {/* Director */}
-              <div className="space-y-2">
-                <label className="block text-white font-semibold">
-                  Director <span className="text-netflix-red">*</span>
-                </label>
-                <div className="relative">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                  <Film className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                   <input
                     type="text"
-                    name="director"
-                    value={formData.director}
+                    name="title"
+                    value={formData.title}
                     onChange={handleChange}
                     className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
-                      errors.director ? 'border-netflix-red' : 'border-white/20'
+                      errors.title ? 'border-netflix-red' : 'border-white/20'
                     } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40`}
-                    placeholder="Director name"
+                    placeholder="Enter movie title"
                   />
                 </div>
-                {errors.director && (
+                {errors.title && (
                   <div className="flex items-center space-x-2 text-netflix-red text-sm">
                     <AlertCircle className="w-4 h-4" />
-                    <span>{errors.director}</span>
+                    <span>{errors.title}</span>
                   </div>
                 )}
               </div>
 
-              {/* Release Date */}
+              {/* Description */}
               <div className="space-y-2">
                 <label className="block text-white font-semibold">
-                  Release Date <span className="text-netflix-red">*</span>
+                  Description <span className="text-netflix-red">*</span>
                 </label>
                 <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="date"
-                    name="releaseDate"
-                    value={formData.releaseDate}
+                  <Info className="absolute left-4 top-4 w-5 h-5 text-white/40" />
+                  <textarea
+                    name="description"
+                    value={formData.description}
                     onChange={handleChange}
+                    rows={4}
                     className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
-                      errors.releaseDate ? 'border-netflix-red' : 'border-white/20'
-                    } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all`}
+                      errors.description ? 'border-netflix-red' : 'border-white/20'
+                    } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40 resize-none`}
+                    placeholder="Enter movie description"
                   />
                 </div>
-                {errors.releaseDate && (
+                {errors.description && (
                   <div className="flex items-center space-x-2 text-netflix-red text-sm">
                     <AlertCircle className="w-4 h-4" />
-                    <span>{errors.releaseDate}</span>
+                    <span>{errors.description}</span>
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Genre Tags */}
-            <div className="space-y-4">
-              <label className="block text-white font-semibold">
-                Genres <span className="text-netflix-red">*</span>
-              </label>
-              <div className="flex items-center space-x-3">
-                <div className="relative flex-1">
-                  <Tag className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="text"
-                    value={genreInput}
-                    onChange={(e) => setGenreInput(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
-                    placeholder="Add genre (e.g., Action, Comedy)"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
-                  />
-                </div>
-                <motion.button
-                  type="button"
-                  onClick={addGenre}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-netflix-red hover:bg-red-700 text-white py-4 px-6 rounded-xl font-semibold transition-colors flex items-center space-x-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </motion.button>
-              </div>
-
-              {errors.genre && (
-                <div className="flex items-center space-x-2 text-netflix-red text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>{errors.genre}</span>
-                </div>
-              )}
-
-              {formData.genre.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.genre.map((genre, index) => (
-                    <motion.span
-                      key={genre}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-white/10 border border-white/20 text-white py-2 px-4 rounded-lg flex items-center space-x-2 group hover:border-netflix-red/50 transition-colors"
-                    >
-                      <span>{genre}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeGenre(genre)}
-                        className="text-white/60 hover:text-netflix-red ml-2 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </motion.span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Cast Members */}
-            <div className="space-y-4">
-              <label className="block text-white font-semibold">Cast Members</label>
-              <div className="flex items-center space-x-3">
-                <div className="relative flex-1">
-                  <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="text"
-                    value={castInput}
-                    onChange={(e) => setCastInput(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
-                    placeholder="Add cast member"
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCastMember())}
-                  />
-                </div>
-                <motion.button
-                  type="button"
-                  onClick={addCastMember}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-4 px-6 rounded-xl font-semibold transition-all flex items-center space-x-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add</span>
-                </motion.button>
-              </div>
-
-              {formData.cast.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {formData.cast.map((castMember, index) => (
-                    <motion.span
-                      key={castMember}
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-white/10 border border-white/20 text-white py-2 px-4 rounded-lg flex items-center space-x-2 group hover:border-netflix-red/50 transition-colors"
-                    >
-                      <span>{castMember}</span>
-                      <button
-                        type="button"
-                        onClick={() => removeCastMember(castMember)}
-                        className="text-white/60 hover:text-netflix-red ml-2 transition-colors"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </motion.span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Media URLs */}
-            <div className="grid grid-cols-1 gap-6">
-              {/* Poster URL */}
-              <div className="space-y-2">
-                <label className="block text-white font-semibold">Poster URL</label>
-                <div className="relative">
-                  <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="text"
-                    name="posterUrl"
-                    value={formData.posterUrl}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
-                    placeholder="Enter poster image URL"
-                  />
-                </div>
-                {formData.posterUrl && (
-                  <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                    <img
-                      src={formData.posterUrl}
-                      alt="Poster preview"
-                      className="h-32 object-contain mx-auto rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
+              {/* Grid Layout */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Duration */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">
+                    Duration (minutes) <span className="text-netflix-red">*</span>
+                  </label>
+                  <div className="relative">
+                    <Clock className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="number"
+                      name="duration"
+                      value={formData.duration}
+                      onChange={handleNumberChange}
+                      min="1"
+                      className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
+                        errors.duration ? 'border-netflix-red' : 'border-white/20'
+                      } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all`}
                     />
                   </div>
-                )}
+                  {errors.duration && (
+                    <div className="flex items-center space-x-2 text-netflix-red text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.duration}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Rating */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">Rating (0-10)</label>
+                  <div className="relative">
+                    <Star className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="number"
+                      name="rating"
+                      value={formData.rating}
+                      onChange={handleChange}
+                      min="0"
+                      max="10"
+                      step="0.1"
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all"
+                      placeholder="8.5"
+                    />
+                  </div>
+                </div>
+
+                {/* Director */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">
+                    Director <span className="text-netflix-red">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="director"
+                      value={formData.director}
+                      onChange={handleChange}
+                      className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
+                        errors.director ? 'border-netflix-red' : 'border-white/20'
+                      } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40`}
+                      placeholder="Director name"
+                    />
+                  </div>
+                  {errors.director && (
+                    <div className="flex items-center space-x-2 text-netflix-red text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.director}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Release Date */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">
+                    Release Date <span className="text-netflix-red">*</span>
+                  </label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="date"
+                      name="releaseDate"
+                      value={formData.releaseDate}
+                      onChange={handleChange}
+                      className={`w-full pl-12 pr-4 py-4 bg-black/40 border ${
+                        errors.releaseDate ? 'border-netflix-red' : 'border-white/20'
+                      } text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all`}
+                    />
+                  </div>
+                  {errors.releaseDate && (
+                    <div className="flex items-center space-x-2 text-netflix-red text-sm">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{errors.releaseDate}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
-              {/* Backdrop URL */}
-              <div className="space-y-2">
-                <label className="block text-white font-semibold">Backdrop URL</label>
-                <div className="relative">
-                  <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="text"
-                    name="backdropUrl"
-                    value={formData.backdropUrl}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
-                    placeholder="Enter backdrop image URL"
-                  />
-                </div>
-                {formData.backdropUrl && (
-                  <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                    <img
-                      src={formData.backdropUrl}
-                      alt="Backdrop preview"
-                      className="h-32 w-full object-cover rounded-lg"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                      }}
+              {/* Genre Tags */}
+              <div className="space-y-4">
+                <label className="block text-white font-semibold">
+                  Genres <span className="text-netflix-red">*</span>
+                </label>
+                <div className="flex items-center space-x-3">
+                  <div className="relative flex-1">
+                    <Tag className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      value={genreInput}
+                      onChange={(e) => setGenreInput(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                      placeholder="Add genre (e.g., Action, Comedy)"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addGenre())}
                     />
+                  </div>
+                  <motion.button
+                    type="button"
+                    onClick={addGenre}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-netflix-red hover:bg-red-700 text-white py-4 px-6 rounded-xl font-semibold transition-colors flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add</span>
+                  </motion.button>
+                </div>
+
+                {errors.genre && (
+                  <div className="flex items-center space-x-2 text-netflix-red text-sm">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>{errors.genre}</span>
+                  </div>
+                )}
+
+                {formData.genre.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.genre.map((genre, index) => (
+                      <motion.span
+                        key={genre}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white/10 border border-white/20 text-white py-2 px-4 rounded-lg flex items-center space-x-2 group hover:border-netflix-red/50 transition-colors"
+                      >
+                        <span>{genre}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeGenre(genre)}
+                          className="text-white/60 hover:text-netflix-red ml-2 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </motion.span>
+                    ))}
                   </div>
                 )}
               </div>
 
-              {/* Trailer URL */}
-              <div className="space-y-2">
-                <label className="block text-white font-semibold">Trailer URL</label>
-                <div className="relative">
-                  <Video className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
-                  <input
-                    type="text"
-                    name="trailerUrl"
-                    value={formData.trailerUrl}
-                    onChange={handleChange}
-                    className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
-                    placeholder="Enter trailer video URL"
-                  />
+              {/* Cast Members */}
+              <div className="space-y-4">
+                <label className="block text-white font-semibold">Cast Members</label>
+                <div className="flex items-center space-x-3">
+                  <div className="relative flex-1">
+                    <User className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      value={castInput}
+                      onChange={(e) => setCastInput(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                      placeholder="Add cast member"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addCastMember())}
+                    />
+                  </div>
+                  <motion.button
+                    type="button"
+                    onClick={addCastMember}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 text-white py-4 px-6 rounded-xl font-semibold transition-all flex items-center space-x-2"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add</span>
+                  </motion.button>
+                </div>
+
+                {formData.cast.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.cast.map((castMember, index) => (
+                      <motion.span
+                        key={castMember}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="bg-white/10 border border-white/20 text-white py-2 px-4 rounded-lg flex items-center space-x-2 group hover:border-netflix-red/50 transition-colors"
+                      >
+                        <span>{castMember}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeCastMember(castMember)}
+                          className="text-white/60 hover:text-netflix-red ml-2 transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </motion.span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Media URLs */}
+              <div className="grid grid-cols-1 gap-6">
+                {/* Poster URL */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">Poster URL</label>
+                  <div className="relative">
+                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="posterUrl"
+                      value={formData.posterUrl}
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                      placeholder="Enter poster image URL"
+                    />
+                  </div>
+                  {formData.posterUrl && (
+                    <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
+                      <img
+                        src={formData.posterUrl}
+                        alt="Poster preview"
+                        className="h-32 object-contain mx-auto rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Backdrop URL */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">Backdrop URL</label>
+                  <div className="relative">
+                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="backdropUrl"
+                      value={formData.backdropUrl}
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                      placeholder="Enter backdrop image URL"
+                    />
+                  </div>
+                  {formData.backdropUrl && (
+                    <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
+                      <img
+                        src={formData.backdropUrl}
+                        alt="Backdrop preview"
+                        className="h-32 w-full object-cover rounded-lg"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Trailer URL */}
+                <div className="space-y-2">
+                  <label className="block text-white font-semibold">Trailer URL</label>
+                  <div className="relative">
+                    <Video className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      name="trailerUrl"
+                      value={formData.trailerUrl}
+                      onChange={handleChange}
+                      className="w-full pl-12 pr-4 py-4 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                      placeholder="Enter trailer video URL"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Form Actions */}
-            <div className="flex items-center justify-between pt-6 border-t border-white/10">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex items-center space-x-2 px-6 py-3 text-white/60 hover:text-white border border-white/20 hover:border-white/40 rounded-xl transition-all duration-200"
-              >
-                <X className="w-4 h-4" />
-                <span>Cancel</span>
-              </button>
+              {/* Form Actions */}
+              <div className="flex items-center justify-between pt-6 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex items-center space-x-2 px-6 py-3 text-white/60 hover:text-white border border-white/20 hover:border-white/40 rounded-xl transition-all duration-200"
+                >
+                  <X className="w-4 h-4" />
+                  <span>Cancel</span>
+                </button>
 
-              <motion.button
-                type="submit"
-                disabled={isSubmitting}
-                whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-                whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-                className="bg-netflix-red hover:bg-red-700 disabled:bg-white/20 disabled:text-white/40 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-3 shadow-lg hover:shadow-netflix-red/25"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    <span>Updating Movie...</span>
-                  </>
-                ) : (
-                  <>
-                    <Check className="w-5 h-5" />
-                    <span>Update Movie</span>
-                  </>
-                )}
-              </motion.button>
-            </div>
-          </form>
+                <motion.button
+                  type="submit"
+                  disabled={isSubmitting}
+                  whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
+                  whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
+                  className="bg-netflix-red hover:bg-red-700 disabled:bg-white/20 disabled:text-white/40 text-white px-8 py-3 rounded-xl font-semibold transition-all duration-200 flex items-center space-x-3 shadow-lg hover:shadow-netflix-red/25"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="w-5 h-5 animate-spin" />
+                      <span>Updating Movie...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="w-5 h-5" />
+                      <span>Update Movie</span>
+                    </>
+                  )}
+                </motion.button>
+              </div>
+            </form>
           ) : (
             /* AI Trailers Tab */
             <div className="space-y-6">
-              <AiTrailerGenerator 
+              <AiTrailerGenerator
                 movie={{
                   ...movie,
                   createdAt: new Date().toISOString(),
                   updatedAt: new Date().toISOString(),
-                  slug: movie.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
-                }} 
+                  slug: movie.title
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/(^-|-$)/g, ''),
+                }}
                 onTrailerGenerated={(trailer) => {
                   console.log('Trailer generated:', trailer);
                 }}

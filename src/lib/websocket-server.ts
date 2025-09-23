@@ -52,14 +52,15 @@ io.on('connection', async (socket) => {
     const partyId = watchPartyId as string;
     const userNickname = nickname as string;
     const participantId = socket.id; // Use socket.id directly to avoid duplicates
-    const userId = socket.handshake.query.userId as string || null; // Get user ID if available
+    const userId = (socket.handshake.query.userId as string) || null; // Get user ID if available
 
     // Rate limiting: prevent rapid reconnections (use socket ID for stability)
     const cooldownKey = `${partyId}_${socket.id}`;
     const now = Date.now();
     const lastConnection = connectionCooldowns.get(cooldownKey) || 0;
 
-    if (now - lastConnection < 2000) { // 2 second cooldown
+    if (now - lastConnection < 2000) {
+      // 2 second cooldown
       console.log(`⏳ Connection throttled for socket ${socket.id} in party ${partyId}`);
       socket.disconnect();
       return;
@@ -67,12 +68,16 @@ io.on('connection', async (socket) => {
 
     connectionCooldowns.set(cooldownKey, now);
 
-    console.log(`🎬 Watch Party connection: ${partyId}, Nickname: ${userNickname}, Socket: ${socket.id}`);
+    console.log(
+      `🎬 Watch Party connection: ${partyId}, Nickname: ${userNickname}, Socket: ${socket.id}`
+    );
 
     // Check if participant is already in the room (prevent duplicate joins)
     const existingRoom = watchPartyRooms.get(partyId);
     if (existingRoom && existingRoom.participants.has(participantId)) {
-      console.log(`⚠️ Participant ${userNickname} (${participantId}) already in party ${partyId}, skipping duplicate join`);
+      console.log(
+        `⚠️ Participant ${userNickname} (${participantId}) already in party ${partyId}, skipping duplicate join`
+      );
       socket.disconnect();
       return;
     }
@@ -99,28 +104,28 @@ io.on('connection', async (socket) => {
       // Get the watch party from the database
       const watchParty = await db.watchParty.findUnique({
         where: { id: partyId },
-        include: { host: { select: { id: true } } }
+        include: { host: { select: { id: true } } },
       });
-      
+
       if (!watchParty) {
         console.log(`⚠️ Watch party ${partyId} not found in database`);
         socket.emit('error', { message: 'Watch party not found' });
         socket.disconnect();
         return;
       }
-      
+
       // Add participant to room
       const isFirstParticipant = room.participants.size === 0;
       // Check if this user is the host (either by userId or first participant)
-      const isHost = userId ? (watchParty.hostUserId === userId) : isFirstParticipant;
-      
-      console.log(`👥 Adding participant ${userNickname} to party ${partyId}`, { 
-        isHost, 
+      const isHost = userId ? watchParty.hostUserId === userId : isFirstParticipant;
+
+      console.log(`👥 Adding participant ${userNickname} to party ${partyId}`, {
+        isHost,
         hostUserId: watchParty.hostUserId,
         userId: userId || 'anonymous',
-        isFirstParticipant
+        isFirstParticipant,
       });
-      
+
       // Add the participant
       room.participants.set(participantId, {
         id: participantId,
@@ -128,7 +133,7 @@ io.on('connection', async (socket) => {
         joinedAt: Date.now(),
         isHost: isHost, // Set based on database record
       });
-      
+
       // If this is the host, set the hostId
       if (isHost) {
         console.log(`👑 ${userNickname} is the host for party ${partyId}`);
@@ -144,7 +149,7 @@ io.on('connection', async (socket) => {
         joinedAt: Date.now(),
         isHost: isFirstParticipant,
       });
-      
+
       if (isFirstParticipant) {
         console.log(`👑 Fallback: Setting ${userNickname} as host for party ${partyId}`);
         room.hostId = participantId;
@@ -245,46 +250,49 @@ io.on('connection', async (socket) => {
 });
 
 // Clean up expired watch parties every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  const expiredParties: string[] = [];
+setInterval(
+  () => {
+    const now = Date.now();
+    const expiredParties: string[] = [];
 
-  watchPartyRooms.forEach((room, partyId) => {
-    // Check if party has exceeded 4 hours
-    const partyAge = now - room.lastSync;
-    const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
+    watchPartyRooms.forEach((room, partyId) => {
+      // Check if party has exceeded 4 hours
+      const partyAge = now - room.lastSync;
+      const fourHours = 4 * 60 * 60 * 1000; // 4 hours in milliseconds
 
-    if (partyAge > fourHours) {
-      expiredParties.push(partyId);
-      console.log(`🧹 Watch party ${partyId} expired after 4 hours`);
+      if (partyAge > fourHours) {
+        expiredParties.push(partyId);
+        console.log(`🧹 Watch party ${partyId} expired after 4 hours`);
+      }
+    });
+
+    // Clean up expired parties
+    expiredParties.forEach((partyId) => {
+      const room = watchPartyRooms.get(partyId);
+      if (room) {
+        // Notify all participants that the party has ended
+        io.to(partyId).emit('party-ended', {
+          reason: 'expired',
+          message: 'This watch party has expired after 4 hours.',
+        });
+
+        // Remove all participants
+        room.participants.clear();
+        watchPartyRooms.delete(partyId);
+      }
+    });
+
+    if (expiredParties.length > 0) {
+      console.log(`🧹 Cleaned up ${expiredParties.length} expired watch parties`);
     }
-  });
-
-  // Clean up expired parties
-  expiredParties.forEach((partyId) => {
-    const room = watchPartyRooms.get(partyId);
-    if (room) {
-      // Notify all participants that the party has ended
-      io.to(partyId).emit('party-ended', {
-        reason: 'expired',
-        message: 'This watch party has expired after 4 hours.',
-      });
-
-      // Remove all participants
-      room.participants.clear();
-      watchPartyRooms.delete(partyId);
-    }
-  });
-
-  if (expiredParties.length > 0) {
-    console.log(`🧹 Cleaned up ${expiredParties.length} expired watch parties`);
-  }
-}, 5 * 60 * 1000); // Check every 5 minutes
+  },
+  5 * 60 * 1000
+); // Check every 5 minutes
 
 // Clean up old connection cooldowns every minute
 setInterval(() => {
   const now = Date.now();
-  const cutoff = now - (5 * 60 * 1000); // 5 minutes ago
+  const cutoff = now - 5 * 60 * 1000; // 5 minutes ago
 
   for (const [key, timestamp] of connectionCooldowns.entries()) {
     if (timestamp < cutoff) {

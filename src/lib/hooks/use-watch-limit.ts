@@ -18,17 +18,17 @@ export function useWatchLimit() {
 
   const fetchWatchLimit = async () => {
     if (!isAuthenticated) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/watch/remaining');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch watch limit');
       }
-      
+
       const data = await response.json();
       setWatchLimit(data);
     } catch (err) {

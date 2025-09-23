@@ -39,18 +39,21 @@ export function MovieGrid() {
     if (!movies || movies.length === 0) {
       return [];
     }
-    
+
     return movies
       .filter((movie) => {
         // Search term filter
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
           const titleMatch = movie.title.toLowerCase().includes(searchLower);
-          const genreMatch = typeof movie.genre === 'string' 
-            ? movie.genre.toLowerCase().includes(searchLower)
-            : Array.isArray(movie.genre) && movie.genre.some(g => g.toLowerCase().includes(searchLower));
-          const descMatch = movie.description && movie.description.toLowerCase().includes(searchLower);
-          
+          const genreMatch =
+            typeof movie.genre === 'string'
+              ? movie.genre.toLowerCase().includes(searchLower)
+              : Array.isArray(movie.genre) &&
+                movie.genre.some((g) => g.toLowerCase().includes(searchLower));
+          const descMatch =
+            movie.description && movie.description.toLowerCase().includes(searchLower);
+
           if (!titleMatch && !genreMatch && !descMatch) {
             return false;
           }
@@ -64,7 +67,7 @@ export function MovieGrid() {
               return false;
             }
           } else if (Array.isArray(movie.genre)) {
-            if (!movie.genre.some(g => g.toLowerCase().includes(genreFilter))) {
+            if (!movie.genre.some((g) => g.toLowerCase().includes(genreFilter))) {
               return false;
             }
           } else {
@@ -82,10 +85,9 @@ export function MovieGrid() {
 
         // Rating filter
         if (filterOptions.rating && movie.rating) {
-          const movieRating = typeof movie.rating === 'string' 
-            ? parseFloat(movie.rating) 
-            : movie.rating;
-            
+          const movieRating =
+            typeof movie.rating === 'string' ? parseFloat(movie.rating) : movie.rating;
+
           if (movieRating < filterOptions.rating) {
             return false;
           }
@@ -98,8 +100,8 @@ export function MovieGrid() {
         if (filterOptions.sortBy === 'title') {
           return a.title.localeCompare(b.title);
         } else if (filterOptions.sortBy === 'rating') {
-          const ratingA = typeof a.rating === 'string' ? parseFloat(a.rating) : (a.rating || 0);
-          const ratingB = typeof b.rating === 'string' ? parseFloat(b.rating) : (b.rating || 0);
+          const ratingA = typeof a.rating === 'string' ? parseFloat(a.rating) : a.rating || 0;
+          const ratingB = typeof b.rating === 'string' ? parseFloat(b.rating) : b.rating || 0;
           return ratingB - ratingA;
         } else if (filterOptions.sortBy === 'releaseDate' && a.releaseDate && b.releaseDate) {
           return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
@@ -168,28 +170,30 @@ export function MovieGrid() {
                     </div>
 
                     {/* Showtimes Preview - Only show if movie has showtimes */}
-                    {movie.showtimes && Array.isArray(movie.showtimes) && movie.showtimes.length > 0 && (
-                      <div className="mb-2">
-                        <p className="text-xs text-white/80 mb-2">Today's Showtimes</p>
-                        <div className="flex flex-wrap gap-1">
-                          {movie.showtimes.slice(0, 3).map((time: string) => (
-                            <span
-                              key={time}
-                              className="text-xs bg-netflix-red/90 text-white px-2 py-1 rounded"
-                            >
-                              {time}
-                            </span>
-                          ))}
-                          {movie.showtimes.length > 3 && (
-                            <Link href={`/movies/${movie.slug}/book`}>
-                              <span className="text-xs text-netflix-red bg-white/90 hover:bg-white px-2 py-1 rounded cursor-pointer">
-                                +{movie.showtimes.length - 3} more
+                    {movie.showtimes &&
+                      Array.isArray(movie.showtimes) &&
+                      movie.showtimes.length > 0 && (
+                        <div className="mb-2">
+                          <p className="text-xs text-white/80 mb-2">Today's Showtimes</p>
+                          <div className="flex flex-wrap gap-1">
+                            {movie.showtimes.slice(0, 3).map((time: string) => (
+                              <span
+                                key={time}
+                                className="text-xs bg-netflix-red/90 text-white px-2 py-1 rounded"
+                              >
+                                {time}
                               </span>
-                            </Link>
-                          )}
+                            ))}
+                            {movie.showtimes.length > 3 && (
+                              <Link href={`/movies/${movie.slug}/book`}>
+                                <span className="text-xs text-netflix-red bg-white/90 hover:bg-white px-2 py-1 rounded cursor-pointer">
+                                  +{movie.showtimes.length - 3} more
+                                </span>
+                              </Link>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
                     {/* Action button */}
                     <Link href={`/movies/${movie.slug}`} className="block w-full">

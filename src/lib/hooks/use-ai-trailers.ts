@@ -20,13 +20,13 @@ export function useAiTrailers(movieSlug: string) {
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`/api/movies/${movieSlug}/ai-trailers`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch AI trailers');
       }
-      
+
       const data = await response.json();
       if (data.success && data.aiTrailers) {
         setAiTrailers(data.aiTrailers);

@@ -4,17 +4,14 @@ import { generatePresignedAudioUrl } from '@/lib/services/s3-audio';
 
 const prisma = new PrismaClient();
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const { slug } = await params;
 
     // Find the movie by slug
     const movie = await prisma.movie.findUnique({
       where: { slug },
-      select: { id: true }
+      select: { id: true },
     });
 
     if (!movie) {
@@ -25,7 +22,7 @@ export async function GET(
     const aiTrailers = await prisma.aiTrailer.findMany({
       where: {
         movieId: movie.id,
-        status: 'COMPLETED'
+        status: 'COMPLETED',
       },
       select: {
         id: true,
@@ -33,11 +30,11 @@ export async function GET(
         fileUrl: true,
         fileSize: true,
         voiceStyle: true,
-        createdAt: true
+        createdAt: true,
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
     // Generate presigned URLs for each trailer
@@ -47,11 +44,11 @@ export async function GET(
           // Extract S3 key from fileUrl (same pattern as video system)
           // Expected format: https://domain/audio/movie-slug/voice-style/timestamp.mp3
           let s3Key = '';
-          
+
           if (trailer.fileUrl.includes('/audio/')) {
             // Extract everything after the domain
             const urlParts = trailer.fileUrl.split('/');
-            const audioIndex = urlParts.findIndex(part => part === 'audio');
+            const audioIndex = urlParts.findIndex((part) => part === 'audio');
             if (audioIndex !== -1) {
               s3Key = urlParts.slice(audioIndex).join('/');
             }
@@ -75,15 +72,12 @@ export async function GET(
       })
     );
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      aiTrailers: trailersWithPresignedUrls 
+      aiTrailers: trailersWithPresignedUrls,
     });
   } catch (error) {
     console.error('Error fetching AI trailers:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch AI trailers' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch AI trailers' }, { status: 500 });
   }
 }

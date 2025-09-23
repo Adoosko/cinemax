@@ -15,7 +15,7 @@ export function ButtonDemo() {
   return (
     <div className="p-8 space-y-8 bg-black/95 min-h-screen">
       <h1 className="text-2xl font-bold text-white mb-6">CinemaX Button Component</h1>
-      
+
       {/* Button Variants */}
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Button Variants</h2>
@@ -36,11 +36,21 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Button Sizes</h2>
         <div className="flex flex-wrap items-center gap-4">
-          <Button variant="primary" size="sm">Small</Button>
-          <Button variant="primary" size="default">Default</Button>
-          <Button variant="primary" size="md">Medium</Button>
-          <Button variant="primary" size="lg">Large</Button>
-          <Button variant="primary" size="xl">Extra Large</Button>
+          <Button variant="primary" size="sm">
+            Small
+          </Button>
+          <Button variant="primary" size="default">
+            Default
+          </Button>
+          <Button variant="primary" size="md">
+            Medium
+          </Button>
+          <Button variant="primary" size="lg">
+            Large
+          </Button>
+          <Button variant="primary" size="xl">
+            Extra Large
+          </Button>
         </div>
       </div>
 
@@ -48,10 +58,18 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Icon Buttons</h2>
         <div className="flex flex-wrap items-center gap-4">
-          <Button variant="primary" size="icon"><Film /></Button>
-          <Button variant="outline" size="icon"><Star /></Button>
-          <Button variant="glass" size="icon"><Play /></Button>
-          <Button variant="default" size="icon-sm"><Plus /></Button>
+          <Button variant="primary" size="icon">
+            <Film />
+          </Button>
+          <Button variant="outline" size="icon">
+            <Star />
+          </Button>
+          <Button variant="glass" size="icon">
+            <Play />
+          </Button>
+          <Button variant="default" size="icon-sm">
+            <Plus />
+          </Button>
         </div>
       </div>
 
@@ -59,9 +77,15 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Buttons with Icons</h2>
         <div className="flex flex-wrap gap-4">
-          <Button variant="primary"><Play className="mr-1" /> Play Now</Button>
-          <Button variant="outline"><Plus className="mr-1" /> Add to List</Button>
-          <Button variant="secondary"><Film className="mr-1" /> View Details</Button>
+          <Button variant="primary">
+            <Play className="mr-1" /> Play Now
+          </Button>
+          <Button variant="outline">
+            <Plus className="mr-1" /> Add to List
+          </Button>
+          <Button variant="secondary">
+            <Film className="mr-1" /> View Details
+          </Button>
         </div>
       </div>
 
@@ -69,15 +93,17 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Loading State</h2>
         <div className="flex flex-wrap gap-4">
-          <Button 
-            variant="primary" 
-            isLoading={loading} 
-            loadingText="Loading..." 
+          <Button
+            variant="primary"
+            isLoading={loading}
+            loadingText="Loading..."
             onClick={handleLoadingClick}
           >
             Click to Load
           </Button>
-          <Button variant="outline" isLoading={true}>Processing...</Button>
+          <Button variant="outline" isLoading={true}>
+            Processing...
+          </Button>
         </div>
       </div>
 
@@ -85,9 +111,15 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Animated Buttons</h2>
         <div className="flex flex-wrap gap-4">
-          <Button variant="primary" withAnimation>Animated Button</Button>
-          <Button variant="premium" withAnimation>Premium Animated</Button>
-          <Button variant="outline" withAnimation><Check className="mr-1" /> With Animation</Button>
+          <Button variant="primary" withAnimation>
+            Animated Button
+          </Button>
+          <Button variant="premium" withAnimation>
+            Premium Animated
+          </Button>
+          <Button variant="outline" withAnimation>
+            <Check className="mr-1" /> With Animation
+          </Button>
         </div>
       </div>
 
@@ -95,8 +127,12 @@ export function ButtonDemo() {
       <div className="space-y-4">
         <h2 className="text-xl text-white/80 font-medium">Disabled State</h2>
         <div className="flex flex-wrap gap-4">
-          <Button variant="primary" disabled>Disabled Button</Button>
-          <Button variant="outline" disabled>Disabled Outline</Button>
+          <Button variant="primary" disabled>
+            Disabled Button
+          </Button>
+          <Button variant="outline" disabled>
+            Disabled Outline
+          </Button>
         </div>
       </div>
     </div>

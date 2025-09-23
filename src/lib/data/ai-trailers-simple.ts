@@ -4,7 +4,13 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export type AiTrailerStatus = 'PENDING' | 'GENERATING_SCRIPT' | 'GENERATING_AUDIO' | 'UPLOADING' | 'COMPLETED' | 'FAILED';
+export type AiTrailerStatus =
+  | 'PENDING'
+  | 'GENERATING_SCRIPT'
+  | 'GENERATING_AUDIO'
+  | 'UPLOADING'
+  | 'COMPLETED'
+  | 'FAILED';
 
 export interface AiTrailerData {
   id: string;
@@ -62,12 +68,17 @@ export async function createAiTrailer(data: CreateAiTrailerData): Promise<AiTrai
     return trailer as any; // Type assertion to avoid complex type mapping
   } catch (error) {
     console.error('Error creating AI trailer:', error);
-    throw new Error(`Failed to create AI trailer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to create AI trailer: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
 // Update an existing AI trailer
-export async function updateAiTrailer(id: string, data: Partial<CreateAiTrailerData>): Promise<AiTrailerData> {
+export async function updateAiTrailer(
+  id: string,
+  data: Partial<CreateAiTrailerData>
+): Promise<AiTrailerData> {
   try {
     const trailer = await prisma.aiTrailer.update({
       where: { id },
@@ -89,7 +100,9 @@ export async function updateAiTrailer(id: string, data: Partial<CreateAiTrailerD
     return trailer as any;
   } catch (error) {
     console.error('Error updating AI trailer:', error);
-    throw new Error(`Failed to update AI trailer: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to update AI trailer: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 

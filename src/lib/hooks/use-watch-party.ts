@@ -16,16 +16,18 @@ export function useWatchParty({
   nickname,
   userId,
   isHost = false,
-  onVideoSync
+  onVideoSync,
 }: UseWatchPartyOptions) {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [participants, setParticipants] = useState<Array<{
-    id: string;
-    nickname: string;
-    joinedAt: number;
-    isHost: boolean;
-  }>>([]);
+  const [participants, setParticipants] = useState<
+    Array<{
+      id: string;
+      nickname: string;
+      joinedAt: number;
+      isHost: boolean;
+    }>
+  >([]);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
@@ -43,7 +45,7 @@ export function useWatchParty({
       query: {
         watchPartyId: partyId,
         nickname: nickname,
-        userId: userId || undefined // Pass userId to identify host
+        userId: userId || undefined, // Pass userId to identify host
       },
       // Add connection stability options
       reconnection: true,
@@ -77,52 +79,55 @@ export function useWatchParty({
     // Watch party events
     newSocket.on('watch-party-joined', (data) => {
       console.log('🎬 Joined watch party:', data);
-      
+
       // Prevent duplicate participants by using Map with unique IDs
       const uniqueParticipants = Array.from(
         new Map(data.participants.map((p: any) => [p.id, p]))
-      ).map(([_, participant]) => participant as {
-        id: string;
-        nickname: string;
-        joinedAt: number;
-        isHost: boolean;
-      });
-      
+      ).map(
+        ([_, participant]) =>
+          participant as {
+            id: string;
+            nickname: string;
+            joinedAt: number;
+            isHost: boolean;
+          }
+      );
+
       setParticipants(uniqueParticipants);
       setCurrentTime(data.currentTime || 0);
       setIsPlaying(data.isPlaying || false);
       setPlaybackSpeed(data.playbackSpeed || 1);
-      
+
       // Apply video sync immediately upon joining
       if (!isHost && onVideoSync && data.currentTime !== undefined) {
         console.log('🎬 Initial sync on join:', {
           currentTime: data.currentTime,
           isPlaying: data.isPlaying || false,
-          playbackSpeed: data.playbackSpeed || 1
+          playbackSpeed: data.playbackSpeed || 1,
         });
-        
+
         onVideoSync({
           currentTime: data.currentTime,
           isPlaying: data.isPlaying || false,
-          playbackSpeed: data.playbackSpeed || 1
+          playbackSpeed: data.playbackSpeed || 1,
         });
       }
     });
 
     newSocket.on('participant-joined', (data) => {
       console.log('👥 Participant joined:', data.participant.nickname);
-      
+
       // Prevent duplicate participants by checking if ID already exists
-      setParticipants(prev => {
+      setParticipants((prev) => {
         // Check if this participant ID already exists
-        const exists = prev.some(p => p.id === data.participant.id);
+        const exists = prev.some((p) => p.id === data.participant.id);
         if (exists) {
           console.log('⚠️ Prevented duplicate participant:', data.participant.nickname);
           return prev; // Don't add duplicate
         }
         return [...prev, data.participant];
       });
-      
+
       // If host, send current playback state to the new participant
       if (isHost) {
         console.log('👑 Host sending current state to new participant');
@@ -130,7 +135,7 @@ export function useWatchParty({
           syncVideo({
             currentTime: currentTime,
             isPlaying: isPlaying,
-            playbackSpeed: playbackSpeed
+            playbackSpeed: playbackSpeed,
           });
         }, 1000); // Small delay to ensure the new participant is ready
       }
@@ -138,9 +143,9 @@ export function useWatchParty({
 
     newSocket.on('participant-left', (data) => {
       console.log('👋 Participant left:', data.nickname);
-      setParticipants(prev => prev.filter(p => p.id !== data.participantId));
+      setParticipants((prev) => prev.filter((p) => p.id !== data.participantId));
     });
-    
+
     // Handle sync requests from members
     newSocket.on('request-sync', (data) => {
       // Only hosts should respond to sync requests
@@ -150,7 +155,7 @@ export function useWatchParty({
           syncVideo({
             currentTime: currentTime,
             isPlaying: isPlaying,
-            playbackSpeed: playbackSpeed
+            playbackSpeed: playbackSpeed,
           });
         }, 500); // Small delay to ensure the requester is ready
       }
@@ -196,79 +201,88 @@ export function useWatchParty({
    * This function is the core of the watch party synchronization system.
    * Only hosts can send sync updates to maintain a single source of truth.
    */
-  const syncVideo = useCallback((data: {
-    currentTime: number;
-    isPlaying: boolean;
-    playbackSpeed?: number;
-    requestSync?: boolean; // Added to support sync requests from members
-  }) => {
-    if (!socket || !isConnected) {
-      console.log('🎬 Sync skipped: no socket or not connected');
-      return;
-    }
+  const syncVideo = useCallback(
+    (data: {
+      currentTime: number;
+      isPlaying: boolean;
+      playbackSpeed?: number;
+      requestSync?: boolean; // Added to support sync requests from members
+    }) => {
+      if (!socket || !isConnected) {
+        console.log('🎬 Sync skipped: no socket or not connected');
+        return;
+      }
 
-    // Special case: Allow sync requests from members
-    if (data.requestSync && !isHost) {
-      console.log('📢 Member requesting sync from host');
-      socket.emit('request-sync');
-      return;
-    }
-    
-    // WATCH PARTY CONTROL LOCK: Only hosts can send regular sync updates
-    if (!isHost) {
-      console.log('🔒 Non-host blocked from sending sync updates - host-only mode');
-      return;
-    }
+      // Special case: Allow sync requests from members
+      if (data.requestSync && !isHost) {
+        console.log('📢 Member requesting sync from host');
+        socket.emit('request-sync');
+        return;
+      }
 
-    // For critical events (play/pause), bypass throttling
-    const now = Date.now();
-    const isPlayStateChange = data.isPlaying !== isPlaying;
-    const isSignificantSeek = Math.abs(data.currentTime - currentTime) > 3;
-    
-    // Throttle regular updates but allow critical events
-    if (!isPlayStateChange && !isSignificantSeek && now - lastSyncRef.current < 500) {
-      console.log('🎬 Sync throttled: too soon since last sync');
-      return; // Throttle regular updates
-    }
+      // WATCH PARTY CONTROL LOCK: Only hosts can send regular sync updates
+      if (!isHost) {
+        console.log('🔒 Non-host blocked from sending sync updates - host-only mode');
+        return;
+      }
 
-    console.log('👑 Host sending video sync:', {
-      currentTime: data.currentTime.toFixed(2),
-      isPlaying: data.isPlaying,
-      playbackSpeed: data.playbackSpeed,
-      isPlayStateChange,
-      isSignificantSeek
-    });
-    
-    lastSyncRef.current = now;
-    isSyncingRef.current = true;
+      // For critical events (play/pause), bypass throttling
+      const now = Date.now();
+      const isPlayStateChange = data.isPlaying !== isPlaying;
+      const isSignificantSeek = Math.abs(data.currentTime - currentTime) > 3;
 
-    // Update local state to match what we're sending
-    setCurrentTime(data.currentTime);
-    setIsPlaying(data.isPlaying);
-    if (data.playbackSpeed) setPlaybackSpeed(data.playbackSpeed);
+      // Throttle regular updates but allow critical events
+      if (!isPlayStateChange && !isSignificantSeek && now - lastSyncRef.current < 500) {
+        console.log('🎬 Sync throttled: too soon since last sync');
+        return; // Throttle regular updates
+      }
 
-    // Send to all members
-    socket.emit('sync-video', data);
+      console.log('👑 Host sending video sync:', {
+        currentTime: data.currentTime.toFixed(2),
+        isPlaying: data.isPlaying,
+        playbackSpeed: data.playbackSpeed,
+        isPlayStateChange,
+        isSignificantSeek,
+      });
 
-    // Reset sync flag after a brief delay
-    setTimeout(() => {
-      isSyncingRef.current = false;
-    }, 500);
-  }, [socket, isConnected, isHost]);
+      lastSyncRef.current = now;
+      isSyncingRef.current = true;
+
+      // Update local state to match what we're sending
+      setCurrentTime(data.currentTime);
+      setIsPlaying(data.isPlaying);
+      if (data.playbackSpeed) setPlaybackSpeed(data.playbackSpeed);
+
+      // Send to all members
+      socket.emit('sync-video', data);
+
+      // Reset sync flag after a brief delay
+      setTimeout(() => {
+        isSyncingRef.current = false;
+      }, 500);
+    },
+    [socket, isConnected, isHost]
+  );
 
   // Send chat messages
-  const sendMessage = useCallback((message: string) => {
-    if (!socket || !isConnected) return;
+  const sendMessage = useCallback(
+    (message: string) => {
+      if (!socket || !isConnected) return;
 
-    socket.emit('send-message', { message });
-  }, [socket, isConnected]);
+      socket.emit('send-message', { message });
+    },
+    [socket, isConnected]
+  );
 
   // Send emoji reactions
-  const sendReaction = useCallback((emoji: string) => {
-    if (!socket || !isConnected) return;
+  const sendReaction = useCallback(
+    (emoji: string) => {
+      if (!socket || !isConnected) return;
 
-    socket.emit('send-reaction', { emoji });
-  }, [socket, isConnected]);
+      socket.emit('send-reaction', { emoji });
+    },
+    [socket, isConnected]
+  );
 
   return {
     socket,
@@ -279,6 +293,6 @@ export function useWatchParty({
     playbackSpeed,
     syncVideo,
     sendMessage,
-    sendReaction
+    sendReaction,
   };
 }

@@ -48,7 +48,7 @@ export function JoinPartyButton({ movieId, slug, className = '' }: JoinPartyButt
     };
 
     checkActiveParties();
-    
+
     // Check every 30 seconds for active parties
     const interval = setInterval(checkActiveParties, 30000);
     return () => clearInterval(interval);
@@ -56,7 +56,7 @@ export function JoinPartyButton({ movieId, slug, className = '' }: JoinPartyButt
 
   const joinParty = () => {
     if (!activeParty) return;
-    
+
     // Navigate to the movie watch page with party parameters
     const url = `/movies/${movieId}/watch?party=${activeParty.id}`;
     router.push(url);
@@ -73,13 +73,13 @@ export function JoinPartyButton({ movieId, slug, className = '' }: JoinPartyButt
     const now = new Date();
     const created = new Date(createdAt);
     const diffInMinutes = Math.floor((now.getTime() - created.getTime()) / (1000 * 60));
-    
+
     if (diffInMinutes < 1) return 'just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    
+
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
-    
+
     const diffInDays = Math.floor(diffInHours / 24);
     return `${diffInDays}d ago`;
   };
@@ -102,7 +102,7 @@ export function JoinPartyButton({ movieId, slug, className = '' }: JoinPartyButt
         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse mr-2" />
         Live Watch Party
       </Badge>
-      
+
       <div className="bg-netflix-dark-gray/80 backdrop-blur-sm border border-netflix-light-gray/50 rounded-lg p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -121,7 +121,7 @@ export function JoinPartyButton({ movieId, slug, className = '' }: JoinPartyButt
             </div>
           </div>
         </div>
-        
+
         <Button
           onClick={joinParty}
           className="w-full bg-netflix-red hover:bg-netflix-dark-red text-white font-semibold"

@@ -51,9 +51,10 @@ export async function uploadAudioToS3(
     await s3Client.send(command);
 
     // Construct the public URL
-    const baseUrl = process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_URL || 
-                   `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com`;
-    
+    const baseUrl =
+      process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_URL ||
+      `https://${process.env.NEXT_PUBLIC_AWS_S3_BUCKET}.s3.${process.env.NEXT_PUBLIC_AWS_S3_REGION}.amazonaws.com`;
+
     const fileUrl = `${baseUrl}/${key}`;
     const fileSize = audioBuffer.byteLength;
 
@@ -64,7 +65,9 @@ export async function uploadAudioToS3(
     };
   } catch (error) {
     console.error('Error uploading audio to S3:', error);
-    throw new Error(`Failed to upload audio to S3: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to upload audio to S3: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -86,7 +89,9 @@ export async function generatePresignedAudioUrl(
     return signedUrl;
   } catch (error) {
     console.error('Error generating presigned URL:', error);
-    throw new Error(`Failed to generate presigned URL: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate presigned URL: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -115,7 +120,7 @@ export function parseAudioKey(key: string): {
 } | null {
   // Expected format: audio/{movie-slug}/{voice-style}/{timestamp}.mp3
   const match = key.match(/^audio\/([^\/]+)\/([^\/]+)\/(\d+)\.mp3$/);
-  
+
   if (!match) {
     return null;
   }
@@ -129,9 +134,11 @@ export function parseAudioKey(key: string): {
 
 export async function testS3Connection(): Promise<boolean> {
   try {
-    if (!process.env.NEXT_PUBLIC_AWS_S3_BUCKET || 
-        !process.env.AWS_ACCESS_KEY_ID || 
-        !process.env.AWS_SECRET_ACCESS_KEY) {
+    if (
+      !process.env.NEXT_PUBLIC_AWS_S3_BUCKET ||
+      !process.env.AWS_ACCESS_KEY_ID ||
+      !process.env.AWS_SECRET_ACCESS_KEY
+    ) {
       return false;
     }
 

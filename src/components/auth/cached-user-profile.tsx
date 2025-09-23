@@ -14,18 +14,21 @@ interface CachedUserProfileProps {
 export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfileProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  
+
   // Cache user data in localStorage for faster initial render
   useEffect(() => {
     if (user && !isLoading) {
       // Store minimal user data (no sensitive info)
-      localStorage.setItem('cachedUserProfile', JSON.stringify({
-        name: user.name,
-        email: user.email,
-        image: user.image,
-        role: user.role,
-        lastUpdated: new Date().toISOString(),
-      }));
+      localStorage.setItem(
+        'cachedUserProfile',
+        JSON.stringify({
+          name: user.name,
+          email: user.email,
+          image: user.image,
+          role: user.role,
+          lastUpdated: new Date().toISOString(),
+        })
+      );
     }
   }, [user, isLoading]);
 
@@ -51,7 +54,10 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
 
   if (!isAuthenticated) {
     return (
-      <Link href="/auth/signin" className={`bg-netflix-red hover:bg-netflix-red-dark text-white px-4 py-2 rounded-md transition-colors ${className || ''}`}>
+      <Link
+        href="/auth/signin"
+        className={`bg-netflix-red hover:bg-netflix-red-dark text-white px-4 py-2 rounded-md transition-colors ${className || ''}`}
+      >
         Sign In
       </Link>
     );
@@ -74,10 +80,10 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
         <div className="flex items-center space-x-2">
           <div className="w-10 h-10 bg-gradient-to-br from-netflix-red to-red-700 rounded-xl flex items-center justify-center shadow-lg">
             {user?.image ? (
-              <img 
-                src={user.image} 
-                alt={userName} 
-                className="w-full h-full object-cover rounded-xl" 
+              <img
+                src={user.image}
+                alt={userName}
+                className="w-full h-full object-cover rounded-xl"
               />
             ) : (
               <User className="w-5 h-5 text-white" />
@@ -111,7 +117,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
             <p className="text-white font-medium">{user?.name || user?.email}</p>
             <p className="text-white/60 text-xs">{user?.email}</p>
           </div>
-          
+
           <div className="p-2">
             <Link
               href="/profile"
@@ -121,7 +127,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
               <User className="w-5 h-5" />
               <span>Profile</span>
             </Link>
-            
+
             <Link
               href="/settings"
               className="flex items-center space-x-3 p-3 text-white/80 hover:bg-white/10 rounded-lg transition-colors"
@@ -130,7 +136,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
               <Settings className="w-5 h-5" />
               <span>Settings</span>
             </Link>
-            
+
             {user?.role === 'admin' && (
               <Link
                 href="/admin"
@@ -161,7 +167,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
               </Link>
             )}
           </div>
-          
+
           <div className="border-t border-white/10 p-2">
             <button
               onClick={handleSignOut}

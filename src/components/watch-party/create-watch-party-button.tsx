@@ -53,7 +53,9 @@ export function CreateWatchPartyButton({
   const [watchPartyData, setWatchPartyData] = useState<WatchPartyResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { subscription, loading: subscriptionLoading } = useSubscription();
-  const [existingParty, setExistingParty] = useState<WatchPartyResponse['existingParty'] | null>(null);
+  const [existingParty, setExistingParty] = useState<WatchPartyResponse['existingParty'] | null>(
+    null
+  );
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -89,7 +91,7 @@ export function CreateWatchPartyButton({
           if (data.partyId && data.inviteLink) {
             setExistingParty({
               id: data.partyId,
-              inviteLink: data.inviteLink
+              inviteLink: data.inviteLink,
             });
             setShowDialog(true);
           }
@@ -227,9 +229,14 @@ export function CreateWatchPartyButton({
                         {watchPartyData.watchParty.movie.title}
                       </h3>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant="secondary" className="bg-netflix-red/20 text-netflix-red border-netflix-red/30">
+                        <Badge
+                          variant="secondary"
+                          className="bg-netflix-red/20 text-netflix-red border-netflix-red/30"
+                        >
                           <Users className="w-3 h-3 mr-1" />
-                          Host: {watchPartyData.watchParty.host.firstName || watchPartyData.watchParty.host.name}
+                          Host:{' '}
+                          {watchPartyData.watchParty.host.firstName ||
+                            watchPartyData.watchParty.host.name}
                         </Badge>
                       </div>
                       <div className="flex items-center gap-2 mt-2 text-sm text-netflix-text-gray">
@@ -278,13 +285,18 @@ export function CreateWatchPartyButton({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-netflix-red rounded-full"></div>
-                  <span className="text-netflix-text-gray">Up to {watchPartyData.watchParty.maxGuests} guests</span>
+                  <span className="text-netflix-text-gray">
+                    Up to {watchPartyData.watchParty.maxGuests} guests
+                  </span>
                 </div>
               </div>
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button onClick={() => router.push(watchPartyData.inviteLink)} className="flex-1 bg-netflix-red hover:bg-netflix-dark-red text-netflix-white">
+                <Button
+                  onClick={() => router.push(watchPartyData.inviteLink)}
+                  className="flex-1 bg-netflix-red hover:bg-netflix-dark-red text-netflix-white"
+                >
                   Join Party
                 </Button>
                 <Button
@@ -301,8 +313,12 @@ export function CreateWatchPartyButton({
           {existingParty && (
             <div className="space-y-4">
               <div className="text-center">
-                <h3 className="text-lg font-semibold text-netflix-white mb-2">You Already Have an Active Watch Party!</h3>
-                <p className="text-netflix-text-gray text-sm">You can join your existing party or create a new one after ending the current one.</p>
+                <h3 className="text-lg font-semibold text-netflix-white mb-2">
+                  You Already Have an Active Watch Party!
+                </h3>
+                <p className="text-netflix-text-gray text-sm">
+                  You can join your existing party or create a new one after ending the current one.
+                </p>
               </div>
 
               {/* Invite Link */}

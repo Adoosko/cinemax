@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     console.log('Watch remaining API - Session:', {
       hasSession: !!session,
       user: session?.user,
-      userId: session?.user?.id
+      userId: session?.user?.id,
     });
 
     if (!session?.user) {
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     console.log('Watch remaining API - Subscription check:', {
       userId,
       hasSubscription: !!subscription,
-      subscriptionStatus: subscription?.status
+      subscriptionStatus: subscription?.status,
     });
 
     // If the user has an active subscription, they have unlimited watches
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
 
     console.log('Watch remaining API - Date range:', {
       startOfMonth: startOfMonth.toISOString(),
-      endOfMonth: endOfMonth.toISOString()
+      endOfMonth: endOfMonth.toISOString(),
     });
 
     // Count completed movies for the current month
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     console.log('Watch remaining API - Watch count:', {
       userId,
       watchedCount,
-      limit: FREE_USER_MONTHLY_LIMIT
+      limit: FREE_USER_MONTHLY_LIMIT,
     });
 
     // Calculate remaining watches
@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
       watchedCount,
       remaining,
       limit: FREE_USER_MONTHLY_LIMIT,
-      canWatchMore: remaining > 0
+      canWatchMore: remaining > 0,
     });
 
     return NextResponse.json({

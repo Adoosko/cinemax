@@ -33,12 +33,8 @@ export async function GET() {
         NEXT_PUBLIC_AWS_S3_REGION: !!process.env.NEXT_PUBLIC_AWS_S3_REGION,
       },
     });
-
   } catch (error) {
     console.error('Error fetching AI trailer stats:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch AI trailer statistics' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch AI trailer statistics' }, { status: 500 });
   }
 }

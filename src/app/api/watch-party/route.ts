@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Premium subscription required',
-          message: 'You need an active premium subscription to create watch parties'
+          message: 'You need an active premium subscription to create watch parties',
         },
         { status: 403 }
       );
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid input',
-          details: validationResult.error.issues
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -55,14 +55,11 @@ export async function POST(req: NextRequest) {
     // Verify movie exists and is active
     const movie = await db.movie.findUnique({
       where: { id: movieId },
-      select: { id: true, isActive: true, title: true }
+      select: { id: true, isActive: true, title: true },
     });
 
     if (!movie || !movie.isActive) {
-      return NextResponse.json(
-        { error: 'Movie not found or unavailable' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Movie not found or unavailable' }, { status: 404 });
     }
 
     // Check if user already has an active watch party
@@ -70,16 +67,13 @@ export async function POST(req: NextRequest) {
       where: {
         hostUserId: userId,
         isActive: true,
-        OR: [
-          { expiresAt: null },
-          { expiresAt: { gt: new Date() } }
-        ]
+        OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
       },
       include: {
         movie: {
-          select: { slug: true }
-        }
-      }
+          select: { slug: true },
+        },
+      },
     });
 
     if (existingParty) {
@@ -90,9 +84,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           error: 'Active watch party exists',
-          message: 'You already have an active watch party. Please end it before creating a new one.',
+          message:
+            'You already have an active watch party. Please end it before creating a new one.',
           partyId: existingParty.id,
-          inviteLink: inviteLink
+          inviteLink: inviteLink,
         },
         { status: 409 }
       );
@@ -109,12 +104,12 @@ export async function POST(req: NextRequest) {
       },
       include: {
         host: {
-          select: { id: true, name: true, firstName: true, lastName: true }
+          select: { id: true, name: true, firstName: true, lastName: true },
         },
         movie: {
-          select: { id: true, title: true, posterUrl: true, slug: true }
-        }
-      }
+          select: { id: true, title: true, posterUrl: true, slug: true },
+        },
+      },
     });
 
     // Generate invite link using the request origin for full public URL
@@ -131,15 +126,11 @@ export async function POST(req: NextRequest) {
         expiresAt: watchParty.expiresAt,
         maxGuests: watchParty.maxGuests,
       },
-      inviteLink
+      inviteLink,
     });
-
   } catch (error) {
     console.error('Error creating watch party:', error);
-    return NextResponse.json(
-      { error: 'Failed to create watch party' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to create watch party' }, { status: 500 });
   }
 }
 
@@ -161,23 +152,17 @@ export async function DELETE(req: NextRequest) {
     const partyId = url.searchParams.get('partyId');
 
     if (!partyId) {
-      return NextResponse.json(
-        { error: 'Party ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Party ID is required' }, { status: 400 });
     }
 
     // Find and verify the watch party belongs to the user
     const watchParty = await db.watchParty.findUnique({
       where: { id: partyId },
-      select: { hostUserId: true, isActive: true }
+      select: { hostUserId: true, isActive: true },
     });
 
     if (!watchParty) {
-      return NextResponse.json(
-        { error: 'Watch party not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Watch party not found' }, { status: 404 });
     }
 
     if (watchParty.hostUserId !== userId) {
@@ -188,35 +173,28 @@ export async function DELETE(req: NextRequest) {
     }
 
     if (!watchParty.isActive) {
-      return NextResponse.json(
-        { error: 'Watch party is already inactive' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Watch party is already inactive' }, { status: 400 });
     }
 
     // Deactivate the watch party
     await db.watchParty.update({
       where: { id: partyId },
-      data: { isActive: false }
+      data: { isActive: false },
     });
 
     // Notify all participants via WebSocket
     const io = (await import('@/lib/websocket-server')).io;
     io.to(partyId).emit('party-ended', {
       reason: 'deleted',
-      message: 'This watch party has been ended by the host.'
+      message: 'This watch party has been ended by the host.',
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Watch party deleted successfully'
+      message: 'Watch party deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting watch party:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete watch party' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete watch party' }, { status: 500 });
   }
 }

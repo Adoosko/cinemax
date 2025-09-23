@@ -114,7 +114,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
       dramatic: 'Dramatic',
       mysterious: 'Mysterious',
       heroic: 'Heroic',
-      classic: 'Classic'
+      classic: 'Classic',
     };
     return styles[style] || style;
   };
@@ -125,7 +125,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
       dramatic: 'bg-purple-500',
       mysterious: 'bg-indigo-500',
       heroic: 'bg-blue-500',
-      classic: 'bg-amber-500'
+      classic: 'bg-amber-500',
     };
     return colors[style] || 'bg-gray-500';
   };
@@ -182,7 +182,9 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
                   </div>
                   <div>
                     <h2 className="text-xl font-bold text-white">AI Generated Trailers</h2>
-                    <p className="text-white/60 text-sm">{aiTrailers.length} voice-over{aiTrailers.length !== 1 ? 's' : ''} available</p>
+                    <p className="text-white/60 text-sm">
+                      {aiTrailers.length} voice-over{aiTrailers.length !== 1 ? 's' : ''} available
+                    </p>
                   </div>
                 </div>
                 <button
@@ -220,7 +222,9 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
                 <div className="mb-6 p-4 bg-white/5 rounded-xl border border-white/10">
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getVoiceStyleColor(selectedTrailer.voiceStyle)}`}>
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-medium text-white ${getVoiceStyleColor(selectedTrailer.voiceStyle)}`}
+                      >
                         {getVoiceStyleLabel(selectedTrailer.voiceStyle)}
                       </span>
                       <span className="text-white/60 text-sm flex items-center">
@@ -244,11 +248,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
               {/* Audio Player */}
               {selectedTrailer && (
                 <div className="space-y-4">
-                  <audio
-                    ref={audioRef}
-                    src={selectedTrailer.fileUrl}
-                    preload="metadata"
-                  />
+                  <audio ref={audioRef} src={selectedTrailer.fileUrl} preload="metadata" />
 
                   {/* Controls */}
                   <div className="flex items-center space-x-4">
@@ -273,7 +273,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
                         onChange={handleSeek}
                         className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer slider"
                       />
-                      
+
                       {/* Time Display */}
                       <div className="flex justify-between text-xs text-white/60">
                         <span>{formatTime(currentTime)}</span>
@@ -285,11 +285,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
                       onClick={toggleMute}
                       className="text-white/60 hover:text-white transition-colors"
                     >
-                      {isMuted ? (
-                        <VolumeX className="w-5 h-5" />
-                      ) : (
-                        <Volume2 className="w-5 h-5" />
-                      )}
+                      {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
                     </button>
                   </div>
                 </div>
@@ -310,7 +306,7 @@ export function AiTrailerPlayer({ movieSlug, className = '' }: AiTrailerPlayerPr
           cursor: pointer;
           border: 2px solid #fff;
         }
-        
+
         .slider::-moz-range-thumb {
           width: 16px;
           height: 16px;

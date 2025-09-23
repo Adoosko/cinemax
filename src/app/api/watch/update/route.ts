@@ -16,10 +16,7 @@ export async function POST(req: NextRequest) {
     const { movieId, progress, completed, watchHistoryId } = await req.json();
 
     if (!movieId || progress === undefined) {
-      return NextResponse.json(
-        { error: 'Movie ID and progress are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Movie ID and progress are required' }, { status: 400 });
     }
 
     // Check if the user has an active subscription
@@ -52,10 +49,7 @@ export async function POST(req: NextRequest) {
 
       // Free users can only complete 2 movies per month
       if (watchedCount >= 2) {
-        return NextResponse.json(
-          { error: 'Monthly watch limit reached' },
-          { status: 403 }
-        );
+        return NextResponse.json({ error: 'Monthly watch limit reached' }, { status: 403 });
       }
     }
 
@@ -98,9 +92,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ watchHistory });
   } catch (error) {
     console.error('Error updating watch history:', error);
-    return NextResponse.json(
-      { error: 'Failed to update watch history' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update watch history' }, { status: 500 });
   }
 }

@@ -3,7 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -57,7 +63,7 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Load voice styles
       const stylesResponse = await fetch('/api/admin/ai-trailers/voice-styles');
       if (stylesResponse.ok) {
@@ -93,7 +99,7 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
     try {
       // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setGenerationProgress(prev => {
+        setGenerationProgress((prev) => {
           if (prev < 90) return prev + 10;
           return prev;
         });
@@ -128,7 +134,6 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
       if (onTrailerGenerated) {
         onTrailerGenerated(data.trailer);
       }
-
     } catch (error) {
       console.error('Error generating trailer:', error);
       setError(error instanceof Error ? error.message : 'Failed to generate trailer');
@@ -200,7 +205,7 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   }
 
   const hasExistingTrailer = existingTrailers.some(
-    trailer => trailer.voiceStyle === selectedVoiceStyle && trailer.status === 'COMPLETED'
+    (trailer) => trailer.voiceStyle === selectedVoiceStyle && trailer.status === 'COMPLETED'
   );
 
   return (
@@ -241,7 +246,8 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
           {hasExistingTrailer && (
             <Alert>
               <AlertDescription>
-                A trailer with this voice style already exists. Use "Regenerate" to create a new one.
+                A trailer with this voice style already exists. Use "Regenerate" to create a new
+                one.
               </AlertDescription>
             </Alert>
           )}
@@ -288,9 +294,7 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
         <Card>
           <CardHeader>
             <CardTitle>Existing Trailers</CardTitle>
-            <CardDescription>
-              Previously generated trailers for this movie
-            </CardDescription>
+            <CardDescription>Previously generated trailers for this movie</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -304,27 +308,20 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
                       <span className="font-medium capitalize">{trailer.voiceStyle}</span>
                       {getStatusBadge(trailer.status)}
                     </div>
-                    
+
                     {trailer.status === 'COMPLETED' && (
                       <div className="text-sm text-muted-foreground">
-                        Size: {formatFileSize(trailer.fileSize)} • 
-                        Created: {new Date(trailer.createdAt).toLocaleDateString()}
+                        Size: {formatFileSize(trailer.fileSize)} • Created:{' '}
+                        {new Date(trailer.createdAt).toLocaleDateString()}
                       </div>
                     )}
 
                     {trailer.status === 'FAILED' && trailer.errorMessage && (
-                      <div className="text-sm text-red-600">
-                        Error: {trailer.errorMessage}
-                      </div>
+                      <div className="text-sm text-red-600">Error: {trailer.errorMessage}</div>
                     )}
 
                     {trailer.script && (
-                      <Textarea
-                        value={trailer.script}
-                        readOnly
-                        className="text-sm"
-                        rows={3}
-                      />
+                      <Textarea value={trailer.script} readOnly className="text-sm" rows={3} />
                     )}
                   </div>
 
@@ -355,11 +352,7 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
                         </Button>
                       </>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteTrailer(trailer.id)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => deleteTrailer(trailer.id)}>
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

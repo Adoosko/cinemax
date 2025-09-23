@@ -10,15 +10,21 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30',
-        primary: 'bg-netflix-red text-white shadow-md hover:bg-netflix-dark-red focus-visible:ring-netflix-red/50',
-        destructive: 'bg-destructive text-white shadow-md hover:bg-destructive/90 focus-visible:ring-destructive/50',
-        outline: 'border border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white/30',
+        default:
+          'bg-white/10 text-white border border-white/20 hover:bg-white/20 hover:border-white/30',
+        primary:
+          'bg-netflix-red text-white shadow-md hover:bg-netflix-dark-red focus-visible:ring-netflix-red/50',
+        destructive:
+          'bg-destructive text-white shadow-md hover:bg-destructive/90 focus-visible:ring-destructive/50',
+        outline:
+          'border border-white/20 bg-transparent text-white hover:bg-white/10 hover:border-white/30',
         secondary: 'bg-netflix-medium-gray text-white shadow-xs hover:bg-netflix-light-gray',
         ghost: 'text-white hover:bg-white/10 hover:text-white',
         link: 'text-netflix-red underline-offset-4 hover:underline hover:text-netflix-dark-red',
-        glass: 'bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 hover:border-white/20',
-        premium: 'bg-gradient-to-r from-netflix-red to-netflix-dark-red text-white shadow-md hover:shadow-glow',
+        glass:
+          'bg-white/5 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 hover:border-white/20',
+        premium:
+          'bg-gradient-to-r from-netflix-red to-netflix-dark-red text-white shadow-md hover:shadow-glow',
       },
       size: {
         default: 'h-10 px-4 py-2 rounded-lg',
@@ -38,7 +44,7 @@ const buttonVariants = cva(
 );
 
 // Define the props for the regular button
-type RegularButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & 
+type RegularButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isLoading?: boolean;
@@ -47,7 +53,10 @@ type RegularButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> &
   };
 
 // Define the props for the motion button
-type MotionButtonProps = Omit<HTMLMotionProps<"button">, keyof VariantProps<typeof buttonVariants>> & 
+type MotionButtonProps = Omit<
+  HTMLMotionProps<'button'>,
+  keyof VariantProps<typeof buttonVariants>
+> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean;
     isLoading?: boolean;
@@ -70,21 +79,23 @@ function Button({
 }: ButtonProps) {
   const Comp = asChild ? Slot : 'button';
   const buttonClasses = cn(buttonVariants({ variant, size, className }));
-  
+
   // If loading, show loading state
   const content = isLoading ? (
     <>
       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
       {loadingText || props.children}
     </>
-  ) : props.children;
-  
+  ) : (
+    props.children
+  );
+
   // If animation is enabled, wrap with motion component
   if (withAnimation) {
     // We need to cast props to any to avoid TypeScript errors with event handlers
     // This is because React's event handlers and Framer Motion's event handlers have different signatures
     const buttonProps = props as any;
-    
+
     return (
       <motion.button
         whileHover={{ scale: 1.03 }}
@@ -99,7 +110,7 @@ function Button({
       </motion.button>
     );
   }
-  
+
   // Otherwise, render normal button
   return (
     <Comp
@@ -119,13 +130,13 @@ export { Button, buttonVariants };
 export const buttonAnimationVariants = {
   hover: {
     scale: 1.03,
-    transition: { duration: 0.2 }
+    transition: { duration: 0.2 },
   },
   tap: {
     scale: 0.97,
-    transition: { duration: 0.1 }
+    transition: { duration: 0.1 },
   },
   initial: {
-    scale: 1
-  }
+    scale: 1,
+  },
 };

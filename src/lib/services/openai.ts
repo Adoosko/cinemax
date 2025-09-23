@@ -22,7 +22,8 @@ export async function generateTrailerScript(movieData: MovieTrailerData): Promis
     throw new Error('OpenAI API key is not configured');
   }
 
-  const { title, genre, releaseYear, tagline, description, mainCast, director, awards, rating } = movieData;
+  const { title, genre, releaseYear, tagline, description, mainCast, director, awards, rating } =
+    movieData;
 
   // Create the prompt for OpenAI
   const prompt = `Write an engaging movie trailer script for voice-over, max 120 words. Use a cinematic narrator tone, include dramatic pauses as [PAUSE]. Start with a hook, mention main cast/director if interesting, end with a strong call to action ("Streaming soon on CinemaX!"). Do not include spoilers.
@@ -48,19 +49,20 @@ Extract and return only the actual script text for voice synthesis.`;
       messages: [
         {
           role: 'system',
-          content: 'You are a professional movie trailer script writer. Create engaging, cinematic voice-over scripts that build excitement without revealing spoilers. Keep scripts under 120 words and include dramatic pauses marked as [PAUSE].'
+          content:
+            'You are a professional movie trailer script writer. Create engaging, cinematic voice-over scripts that build excitement without revealing spoilers. Keep scripts under 120 words and include dramatic pauses marked as [PAUSE].',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
       max_tokens: 300,
       temperature: 0.8,
     });
 
     const script = completion.choices[0]?.message?.content?.trim();
-    
+
     if (!script) {
       throw new Error('Failed to generate trailer script');
     }
@@ -68,7 +70,9 @@ Extract and return only the actual script text for voice synthesis.`;
     return script;
   } catch (error) {
     console.error('Error generating trailer script:', error);
-    throw new Error(`Failed to generate trailer script: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to generate trailer script: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 

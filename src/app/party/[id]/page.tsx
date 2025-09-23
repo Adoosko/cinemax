@@ -81,7 +81,9 @@ export default function WatchPartyPage() {
     setIsJoining(true);
     try {
       // Navigate to the actual watch page with the movie and party context
-      router.push(`/movies/${watchParty!.movie.id}/watch?party=${partyId}&nickname=${encodeURIComponent(nickname.trim())}`);
+      router.push(
+        `/movies/${watchParty!.movie.id}/watch?party=${partyId}&nickname=${encodeURIComponent(nickname.trim())}`
+      );
     } catch (err) {
       setError('Failed to join watch party');
       setIsJoining(false);
@@ -195,10 +197,14 @@ export default function WatchPartyPage() {
 
               <div className="flex items-center gap-4 mb-6 text-white/70">
                 {watchParty.movie.rating && (
-                  <span className="px-2 py-1 bg-white/10 rounded text-sm">{watchParty.movie.rating}</span>
+                  <span className="px-2 py-1 bg-white/10 rounded text-sm">
+                    {watchParty.movie.rating}
+                  </span>
                 )}
                 {watchParty.movie.duration && (
-                  <span>{Math.floor(watchParty.movie.duration / 60)}h {watchParty.movie.duration % 60}m</span>
+                  <span>
+                    {Math.floor(watchParty.movie.duration / 60)}h {watchParty.movie.duration % 60}m
+                  </span>
                 )}
                 {watchParty.movie.genre && watchParty.movie.genre.length > 0 && (
                   <span>{watchParty.movie.genre.slice(0, 2).join(', ')}</span>
@@ -241,7 +247,10 @@ export default function WatchPartyPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center text-white/70 mb-4">
-                    <p>Join up to {watchParty.maxGuests} people for a synchronized viewing experience.</p>
+                    <p>
+                      Join up to {watchParty.maxGuests} people for a synchronized viewing
+                      experience.
+                    </p>
                     <p className="text-sm mt-2">No account required - just pick a nickname!</p>
                   </div>
 
@@ -301,7 +310,9 @@ export default function WatchPartyPage() {
               <Users className="w-6 h-6 text-netflix-red" />
             </div>
             <h3 className="text-white font-semibold mb-2">Group Watching</h3>
-            <p className="text-white/70 text-sm">Watch together with friends and family from anywhere</p>
+            <p className="text-white/70 text-sm">
+              Watch together with friends and family from anywhere
+            </p>
           </motion.div>
 
           <motion.div

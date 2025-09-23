@@ -44,7 +44,10 @@ export function useSubscription() {
           first = response[0] || null;
           console.log('[useSubscription] Found subscription in response array:', first);
         } else {
-          console.log('[useSubscription] Could not find subscription in response. Response structure:', response);
+          console.log(
+            '[useSubscription] Could not find subscription in response. Response structure:',
+            response
+          );
         }
 
         console.log('[useSubscription] Final subscription object:', first);

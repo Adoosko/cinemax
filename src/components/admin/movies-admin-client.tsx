@@ -10,7 +10,19 @@ import {
   AdminMoviesProvider,
   useAdminMoviesContext,
 } from '@/components/admin/admin-movies-context';
-import { Plus, Edit, Trash2, Eye, Star, Clock, Upload, AlertCircle, Film, Mic, Sparkles } from 'lucide-react';
+import {
+  Plus,
+  Edit,
+  Trash2,
+  Eye,
+  Star,
+  Clock,
+  Upload,
+  AlertCircle,
+  Film,
+  Mic,
+  Sparkles,
+} from 'lucide-react';
 interface MoviesAdminContentProps {
   initialMovies?: Movie[];
 }

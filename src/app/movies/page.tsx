@@ -14,16 +14,18 @@ export const experimental_ppr = true;
 
 export default async function MoviesPage() {
   const cachedData = await CachedPublicMoviesData();
-  
+
   // Debug logging
   console.log('CachedPublicMoviesData result:', {
     movieCount: cachedData.movies?.length || 0,
     hasMovies: Boolean(cachedData.movies?.length),
-    firstMovie: cachedData.movies?.[0] ? {
-      id: cachedData.movies[0].id,
-      title: cachedData.movies[0].title,
-      slug: cachedData.movies[0].slug,
-    } : 'No movies found'
+    firstMovie: cachedData.movies?.[0]
+      ? {
+          id: cachedData.movies[0].id,
+          title: cachedData.movies[0].title,
+          slug: cachedData.movies[0].slug,
+        }
+      : 'No movies found',
   });
   return (
     <MoviesProvider initialMovies={cachedData.movies}>
@@ -35,7 +37,7 @@ export default async function MoviesPage() {
           <Suspense fallback={null}>
             <ContinueWatchingTray />
           </Suspense>
-          
+
           <h1 className="text-4xl font-bold text-white mb-6">Discover Movies</h1>
           <Suspense fallback={<RecommendationsSkeleton />}>
             <UserRecommendations />

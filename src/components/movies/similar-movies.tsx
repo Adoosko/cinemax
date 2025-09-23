@@ -22,49 +22,53 @@ interface SimilarMoviesProps {
   title?: string;
 }
 
-export function SimilarMovies({ currentMovie, allMovies = [], title = "You Might Also Like" }: SimilarMoviesProps) {
+export function SimilarMovies({
+  currentMovie,
+  allMovies = [],
+  title = 'You Might Also Like',
+}: SimilarMoviesProps) {
   // Create recommendations by finding movies with similar genre
   const similarMovies = useMemo(() => {
     if (!allMovies || allMovies.length === 0) {
       // Fallback to mock data if no movies are provided
       return getMockSimilarMovies(currentMovie);
     }
-    
+
     // Filter out the current movie
-    const otherMovies = allMovies.filter(movie => movie.id !== currentMovie.id);
-    
+    const otherMovies = allMovies.filter((movie) => movie.id !== currentMovie.id);
+
     // Find movies with similar genre
     let genreToMatch: string | string[] = currentMovie.genre;
     if (typeof genreToMatch === 'string') {
       genreToMatch = genreToMatch.toLowerCase();
     }
-    
+
     // Find movies with similar genre
-    const matchingMovies = otherMovies.filter(movie => {
+    const matchingMovies = otherMovies.filter((movie) => {
       if (typeof movie.genre === 'string' && typeof genreToMatch === 'string') {
         return movie.genre.toLowerCase().includes(genreToMatch);
       } else if (Array.isArray(movie.genre) && typeof genreToMatch === 'string') {
-        return movie.genre.some(g => g.toLowerCase().includes(genreToMatch));
+        return movie.genre.some((g) => g.toLowerCase().includes(genreToMatch));
       } else if (typeof movie.genre === 'string' && Array.isArray(genreToMatch)) {
-        return genreToMatch.some(g => movie.genre.toLowerCase().includes(g.toLowerCase()));
+        return genreToMatch.some((g) => movie.genre.toLowerCase().includes(g.toLowerCase()));
       } else if (Array.isArray(movie.genre) && Array.isArray(genreToMatch)) {
-        return movie.genre.some(g => 
-          genreToMatch.some(matchG => g.toLowerCase().includes(matchG.toLowerCase()))
+        return movie.genre.some((g) =>
+          genreToMatch.some((matchG) => g.toLowerCase().includes(matchG.toLowerCase()))
         );
       }
       return false;
     });
-    
+
     // If we don't have enough matching movies, add some random ones
     if (matchingMovies.length < 5) {
       const randomMovies = otherMovies
-        .filter(m => !matchingMovies.some(mm => mm.id === m.id))
+        .filter((m) => !matchingMovies.some((mm) => mm.id === m.id))
         .sort(() => 0.5 - Math.random())
         .slice(0, 5 - matchingMovies.length);
-      
+
       return [...matchingMovies, ...randomMovies].slice(0, 5);
     }
-    
+
     return matchingMovies.slice(0, 5);
   }, [currentMovie, allMovies]);
 
@@ -106,7 +110,7 @@ export function SimilarMovies({ currentMovie, allMovies = [], title = "You Might
 
                     <div className="absolute bottom-0 left-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
                       <h3 className="text-white font-bold mb-1">{movie.title}</h3>
-                      
+
                       <div className="flex items-center space-x-3 text-xs text-white/90 mb-3">
                         <span>{movie.releaseDate}</span>
                         <span>{movie.duration}</span>
@@ -138,31 +142,34 @@ function getMockSimilarMovies(currentMovie: Movie) {
       id: 'rec1',
       title: 'Similar Movie 1',
       slug: 'similar-movie-1',
-      posterUrl: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop',
+      posterUrl:
+        'https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=600&fit=crop',
       genre: currentMovie.genre,
       rating: 8.2,
       releaseDate: '2023',
-      duration: '2h 15m'
+      duration: '2h 15m',
     },
     {
       id: 'rec2',
       title: 'Similar Movie 2',
       slug: 'similar-movie-2',
-      posterUrl: 'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop',
+      posterUrl:
+        'https://images.unsplash.com/photo-1485846234645-a62644f84728?w=400&h=600&fit=crop',
       genre: currentMovie.genre,
       rating: 7.8,
       releaseDate: '2022',
-      duration: '1h 55m'
+      duration: '1h 55m',
     },
     {
       id: 'rec3',
       title: 'Similar Movie 3',
       slug: 'similar-movie-3',
-      posterUrl: 'https://images.unsplash.com/photo-1512070679279-8988d32161be?w=400&h=600&fit=crop',
+      posterUrl:
+        'https://images.unsplash.com/photo-1512070679279-8988d32161be?w=400&h=600&fit=crop',
       genre: currentMovie.genre,
       rating: 8.5,
       releaseDate: '2024',
-      duration: '2h 5m'
+      duration: '2h 5m',
     },
     {
       id: 'rec4',
@@ -172,17 +179,18 @@ function getMockSimilarMovies(currentMovie: Movie) {
       genre: currentMovie.genre,
       rating: 7.6,
       releaseDate: '2021',
-      duration: '1h 45m'
+      duration: '1h 45m',
     },
     {
       id: 'rec5',
       title: 'Similar Movie 5',
       slug: 'similar-movie-5',
-      posterUrl: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&h=600&fit=crop',
+      posterUrl:
+        'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&h=600&fit=crop',
       genre: currentMovie.genre,
       rating: 8.0,
       releaseDate: '2023',
-      duration: '2h 10m'
+      duration: '2h 10m',
     },
   ] as Movie[];
 }

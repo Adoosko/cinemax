@@ -1,146 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Video Test</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #000;
-            color: #fff;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        h1 {
-            color: #e50914;
-        }
-        .video-container {
-            width: 100%;
-            aspect-ratio: 16/9;
-            background-color: #111;
-            margin-bottom: 20px;
-        }
-        video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-        }
-        .controls {
-            margin-bottom: 20px;
-        }
-        input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: #333;
-            border: none;
-            color: #fff;
-        }
-        button {
-            background-color: #e50914;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            margin-right: 10px;
-        }
-        .quality-buttons {
-            margin-top: 10px;
-        }
-        .debug {
-            background-color: #111;
-            padding: 10px;
-            margin-top: 20px;
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 12px;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #000;
+        color: #fff;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+      h1 {
+        color: #e50914;
+      }
+      .video-container {
+        width: 100%;
+        aspect-ratio: 16/9;
+        background-color: #111;
+        margin-bottom: 20px;
+      }
+      video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
+      .controls {
+        margin-bottom: 20px;
+      }
+      input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 10px;
+        background-color: #333;
+        border: none;
+        color: #fff;
+      }
+      button {
+        background-color: #e50914;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        cursor: pointer;
+        margin-right: 10px;
+      }
+      .quality-buttons {
+        margin-top: 10px;
+      }
+      .debug {
+        background-color: #111;
+        padding: 10px;
+        margin-top: 20px;
+        white-space: pre-wrap;
+        font-family: monospace;
+        font-size: 12px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>CinemaX Video Test</h1>
-        
-        <div class="video-container">
-            <video id="videoPlayer" controls crossorigin="anonymous"></video>
+      <h1>CinemaX Video Test</h1>
+
+      <div class="video-container">
+        <video id="videoPlayer" controls crossorigin="anonymous"></video>
+      </div>
+
+      <div class="controls">
+        <input
+          type="text"
+          id="videoUrl"
+          placeholder="Enter video URL"
+          value="https://cinemx.s3.eu-north-1.amazonaws.com/videos/the-beekeeper/4k.mp4"
+        />
+        <button onclick="loadVideo()">Load Video</button>
+        <button onclick="toggleCors()">Toggle CORS</button>
+
+        <div class="quality-buttons">
+          <button onclick="setQuality('4k')">4K</button>
+          <button onclick="setQuality('1080p')">1080p</button>
+          <button onclick="setQuality('720p')">720p</button>
+          <button onclick="setQuality('480p')">480p</button>
         </div>
-        
-        <div class="controls">
-            <input type="text" id="videoUrl" placeholder="Enter video URL" value="https://cinemx.s3.eu-north-1.amazonaws.com/videos/the-beekeeper/4k.mp4">
-            <button onclick="loadVideo()">Load Video</button>
-            <button onclick="toggleCors()">Toggle CORS</button>
-            
-            <div class="quality-buttons">
-                <button onclick="setQuality('4k')">4K</button>
-                <button onclick="setQuality('1080p')">1080p</button>
-                <button onclick="setQuality('720p')">720p</button>
-                <button onclick="setQuality('480p')">480p</button>
-            </div>
-        </div>
-        
-        <div class="debug" id="debug"></div>
+      </div>
+
+      <div class="debug" id="debug"></div>
     </div>
 
     <script>
-        const videoPlayer = document.getElementById('videoPlayer');
-        const videoUrlInput = document.getElementById('videoUrl');
-        const debugElement = document.getElementById('debug');
-        let useCors = true;
-        
-        function loadVideo() {
-            const url = videoUrlInput.value.trim();
-            if (!url) return;
-            
-            videoPlayer.src = url;
-            videoPlayer.load();
-            
-            logDebug(`Loading video from: ${url}`);
-            logDebug(`CORS mode: ${useCors ? 'enabled' : 'disabled'}`);
-            
-            videoPlayer.onerror = function() {
-                logDebug(`Error loading video: ${videoPlayer.error ? videoPlayer.error.message : 'Unknown error'}`);
-                logDebug(`Error code: ${videoPlayer.error ? videoPlayer.error.code : 'Unknown'}`);
-            };
-            
-            videoPlayer.onloadedmetadata = function() {
-                logDebug(`Video metadata loaded. Duration: ${videoPlayer.duration}s`);
-                logDebug(`Video dimensions: ${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`);
-            };
-            
-            videoPlayer.onloadeddata = function() {
-                logDebug(`Video data loaded. Ready to play.`);
-            };
-        }
-        
-        function toggleCors() {
-            useCors = !useCors;
-            videoPlayer.crossOrigin = useCors ? 'anonymous' : null;
-            logDebug(`CORS mode set to: ${useCors ? 'enabled' : 'disabled'}`);
-            loadVideo();
-        }
-        
-        function setQuality(quality) {
-            const currentUrl = videoUrlInput.value;
-            const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
-            const newUrl = `${baseUrl}${quality}.mp4`;
-            videoUrlInput.value = newUrl;
-            loadVideo();
-        }
-        
-        function logDebug(message) {
-            const timestamp = new Date().toLocaleTimeString();
-            debugElement.innerHTML += `[${timestamp}] ${message}\n`;
-            debugElement.scrollTop = debugElement.scrollHeight;
-        }
-        
-        // Initialize
-        logDebug('Video test page loaded');
+      const videoPlayer = document.getElementById('videoPlayer');
+      const videoUrlInput = document.getElementById('videoUrl');
+      const debugElement = document.getElementById('debug');
+      let useCors = true;
+
+      function loadVideo() {
+        const url = videoUrlInput.value.trim();
+        if (!url) return;
+
+        videoPlayer.src = url;
+        videoPlayer.load();
+
+        logDebug(`Loading video from: ${url}`);
+        logDebug(`CORS mode: ${useCors ? 'enabled' : 'disabled'}`);
+
+        videoPlayer.onerror = function () {
+          logDebug(
+            `Error loading video: ${videoPlayer.error ? videoPlayer.error.message : 'Unknown error'}`
+          );
+          logDebug(`Error code: ${videoPlayer.error ? videoPlayer.error.code : 'Unknown'}`);
+        };
+
+        videoPlayer.onloadedmetadata = function () {
+          logDebug(`Video metadata loaded. Duration: ${videoPlayer.duration}s`);
+          logDebug(`Video dimensions: ${videoPlayer.videoWidth}x${videoPlayer.videoHeight}`);
+        };
+
+        videoPlayer.onloadeddata = function () {
+          logDebug(`Video data loaded. Ready to play.`);
+        };
+      }
+
+      function toggleCors() {
+        useCors = !useCors;
+        videoPlayer.crossOrigin = useCors ? 'anonymous' : null;
+        logDebug(`CORS mode set to: ${useCors ? 'enabled' : 'disabled'}`);
         loadVideo();
+      }
+
+      function setQuality(quality) {
+        const currentUrl = videoUrlInput.value;
+        const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/') + 1);
+        const newUrl = `${baseUrl}${quality}.mp4`;
+        videoUrlInput.value = newUrl;
+        loadVideo();
+      }
+
+      function logDebug(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        debugElement.innerHTML += `[${timestamp}] ${message}\n`;
+        debugElement.scrollTop = debugElement.scrollHeight;
+      }
+
+      // Initialize
+      logDebug('Video test page loaded');
+      loadVideo();
     </script>
-</body>
+  </body>
 </html>

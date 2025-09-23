@@ -43,10 +43,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ watchHistory });
   } catch (error) {
     console.error('Error fetching watch history:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch watch history' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch watch history' }, { status: 500 });
   }
 }
 
@@ -62,16 +59,13 @@ export async function DELETE(req: NextRequest) {
     }
 
     const userId = session.user.id;
-    
+
     // Get the watch history ID from the request
     const { searchParams } = new URL(req.url);
     const watchHistoryId = searchParams.get('id');
-    
+
     if (!watchHistoryId) {
-      return NextResponse.json(
-        { error: 'Watch history ID is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Watch history ID is required' }, { status: 400 });
     }
 
     // Delete the watch history entry
@@ -85,9 +79,6 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting watch history:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete watch history' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to delete watch history' }, { status: 500 });
   }
 }

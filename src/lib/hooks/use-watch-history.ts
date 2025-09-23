@@ -30,17 +30,17 @@ export function useWatchHistory() {
 
   const fetchWatchHistory = async () => {
     if (!isAuthenticated) return;
-    
+
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await fetch('/api/watch/history');
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch watch history');
       }
-      
+
       const data = await response.json();
       setWatchHistory(data.watchHistory || []);
     } catch (err) {
@@ -56,16 +56,14 @@ export function useWatchHistory() {
       const response = await fetch(`/api/watch/history?id=${watchHistoryId}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to remove from watch history');
       }
-      
+
       // Update local state to remove the deleted item
-      setWatchHistory((prev) => 
-        prev.filter((item) => item.id !== watchHistoryId)
-      );
-      
+      setWatchHistory((prev) => prev.filter((item) => item.id !== watchHistoryId));
+
       return true;
     } catch (err) {
       console.error('Error removing from watch history:', err);

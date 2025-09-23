@@ -62,36 +62,30 @@ The synchronization protocol ensures all members stay in sync with the host:
 
 ## Socket Events
 
-| Event | Direction | Description |
-|-------|-----------|-------------|
-| `watch-party-joined` | Server → Client | Sent when a client joins a party |
+| Event                | Direction       | Description                       |
+| -------------------- | --------------- | --------------------------------- |
+| `watch-party-joined` | Server → Client | Sent when a client joins a party  |
 | `participant-joined` | Server → Client | Sent when a new participant joins |
-| `participant-left` | Server → Client | Sent when a participant leaves |
-| `video-sync` | Bidirectional | Synchronizes video playback state |
-| `send-message` | Client → Server | Sends a chat message |
-| `new-message` | Server → Client | Broadcasts a new chat message |
-| `send-reaction` | Client → Server | Sends an emoji reaction |
-| `new-reaction` | Server → Client | Broadcasts a new reaction |
+| `participant-left`   | Server → Client | Sent when a participant leaves    |
+| `video-sync`         | Bidirectional   | Synchronizes video playback state |
+| `send-message`       | Client → Server | Sends a chat message              |
+| `new-message`        | Server → Client | Broadcasts a new chat message     |
+| `send-reaction`      | Client → Server | Sends an emoji reaction           |
+| `new-reaction`       | Server → Client | Broadcasts a new reaction         |
 
 ## Component Usage
 
 ### useWatchParty Hook
 
 ```tsx
-const {
-  isConnected,
-  participants,
-  syncVideo,
-  sendMessage,
-  sendReaction
-} = useWatchParty({
-  partyId: "party-id",
-  nickname: "User",
-  userId: "user-id",
+const { isConnected, participants, syncVideo, sendMessage, sendReaction } = useWatchParty({
+  partyId: 'party-id',
+  nickname: 'User',
+  userId: 'user-id',
   isHost: true,
   onVideoSync: (data) => {
     // Handle sync data
-  }
+  },
 });
 ```
 
@@ -112,11 +106,7 @@ const {
 ### JoinPartyButton Component
 
 ```tsx
-<JoinPartyButton
-  movieId="movie-id"
-  slug="movie-slug"
-  className="mt-4"
-/>
+<JoinPartyButton movieId="movie-id" slug="movie-slug" className="mt-4" />
 ```
 
 ## Known Limitations

@@ -43,7 +43,22 @@ interface VideoPlayerProps {
 }
 
 export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
-  ({ title, poster, qualities = [], onTimeUpdate, onEnded, className = '', isWatchParty, isHost, externalPlaying, onPlayPause, onSeek }, ref) => {
+  (
+    {
+      title,
+      poster,
+      qualities = [],
+      onTimeUpdate,
+      onEnded,
+      className = '',
+      isWatchParty,
+      isHost,
+      externalPlaying,
+      onPlayPause,
+      onSeek,
+    },
+    ref
+  ) => {
     console.log('VideoPlayer initialized:', { title, qualitiesCount: qualities.length });
 
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -534,7 +549,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     // Control functions
     const togglePlay = async () => {
       console.log('Toggle play called, isWatchParty:', isWatchParty, 'isHost:', isHost);
-      
+
       // WATCH PARTY CONTROL LOCK: Only hosts can control video playback
       // Non-host members are completely locked out of video controls
       if (isWatchParty && !isHost) {
@@ -555,7 +570,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         } else {
           console.log('Playing video, current src:', video.src);
           setIsLoading(true);
-          
+
           // First, make sure video has a valid source
           if (!video.src) {
             console.error('Video has no source');
@@ -563,7 +578,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             setIsLoading(false);
             return;
           }
-          
+
           // Force play with user interaction
           try {
             // First attempt - normal play
@@ -571,7 +586,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             console.log('Video playback started successfully');
           } catch (err) {
             console.error('First playback attempt failed:', err);
-            
+
             try {
               // Second attempt - try with user interaction simulation
               const userEvent = new MouseEvent('click', {
@@ -584,7 +599,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               console.log('Video playback started after user event simulation');
             } catch (err2) {
               console.error('Second playback attempt failed:', err2);
-              
+
               // Third attempt - try with muted (autoplay policy workaround)
               video.muted = true;
               try {
@@ -1095,13 +1110,13 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               pointerEvents: isWatchParty ? 'auto' : 'none', // Allow direct interaction in watch party mode
               userSelect: 'none',
               WebkitUserSelect: 'none',
-              transform: 'translateZ(0)', /* Hardware acceleration */
+              transform: 'translateZ(0)' /* Hardware acceleration */,
               WebkitTransform: 'translateZ(0)',
               backfaceVisibility: 'hidden',
               WebkitBackfaceVisibility: 'hidden',
-              display: 'block', /* Force visibility */
-              visibility: 'visible', /* Force visibility */
-              zIndex: 20, /* Ensure video is above other elements */
+              display: 'block' /* Force visibility */,
+              visibility: 'visible' /* Force visibility */,
+              zIndex: 20 /* Ensure video is above other elements */,
             }}
             onClick={(e) => {
               e.preventDefault();
@@ -1244,7 +1259,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   <div
                     ref={progressRef}
                     className={`relative w-full h-3 md:h-2 bg-white/20 rounded-full group touch-manipulation transition-all duration-200 ${
-                      isWatchParty && !isHost 
+                      isWatchParty && !isHost
                         ? 'cursor-not-allowed opacity-60' // Locked for non-host members
                         : 'cursor-pointer hover:h-4 md:hover:h-3'
                     }`}
@@ -1299,7 +1314,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                             )}
                           </motion.button>
                         </TooltipTrigger>
-                        <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                        <TooltipContent
+                          side="top"
+                          className="bg-black/90 text-white border-white/20"
+                        >
                           <p>{isPlaying ? 'Pause' : 'Play'} (Space)</p>
                         </TooltipContent>
                       </Tooltip>
@@ -1321,7 +1339,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                               />
                             </motion.button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                          <TooltipContent
+                            side="top"
+                            className="bg-black/90 text-white border-white/20"
+                          >
                             <p>-10s</p>
                           </TooltipContent>
                         </Tooltip>
@@ -1339,7 +1360,10 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                               />
                             </motion.button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="bg-black/90 text-white border-white/20">
+                          <TooltipContent
+                            side="top"
+                            className="bg-black/90 text-white border-white/20"
+                          >
                             <p>+10s</p>
                           </TooltipContent>
                         </Tooltip>
@@ -1528,7 +1552,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
               >
                 <h3 className="text-white font-bold text-2xl mb-2">Welcome Back!</h3>
                 <p className="text-white/80 mb-6">
-                  You left off at {(() => {
+                  You left off at{' '}
+                  {(() => {
                     const videoId = getVideoId();
                     if (videoId) {
                       try {
@@ -1540,7 +1565,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                       }
                     }
                     return '0:00';
-                  })()}. Do you want to resume or start over?
+                  })()}
+                  . Do you want to resume or start over?
                 </p>
                 <div className="flex justify-center space-x-4">
                   <motion.button

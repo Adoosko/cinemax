@@ -33,7 +33,7 @@ export class VideoService {
     // Support all movies - we'll check in the database if they're available
     return true;
   }
-  
+
   // Get direct S3 URL or CloudFront URL if available
   static getVideoUrl(videoSlug: string, quality: string = '1080p', fileName?: string): string {
     const baseUrl =
@@ -72,7 +72,7 @@ export class VideoService {
       this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`;
     return `${baseUrl}/thumbnails/${videoSlug}/thumb_${timeOffset}.jpg`;
   }
-  
+
   // Get poster URL for a movie
   static getPosterUrl(videoSlug: string): string {
     const baseUrl =
@@ -304,7 +304,7 @@ export class VideoService {
         // Generate presigned URLs for secure access
         const url4K = await this.getPresignedVideoUrl(videoSlug, '4k', 7200); // 2 hour expiry
         const url720p = await this.getPresignedVideoUrl(videoSlug, '720p', 7200); // 2 hour expiry
-        
+
         return [
           {
             quality: '4K',

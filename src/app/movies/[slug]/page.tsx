@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieDetailClient } from '@/components/movies/movie-detail-client';
-import { CachedMovieData, fetchCachedMovieBySlug, fetchCachedPublicMovies } from '@/components/movies/cached-movie-data';
+import {
+  CachedMovieData,
+  fetchCachedMovieBySlug,
+  fetchCachedPublicMovies,
+} from '@/components/movies/cached-movie-data';
 
 // Import the Movie types from both sources
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
@@ -63,10 +67,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function MovieDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const { movie } = await CachedMovieData({ slug: resolvedParams.slug });
-  
+
   // Fetch all movies for similar movies recommendations
   const allMovies = await fetchCachedPublicMovies();
-  
+
   if (!movie) {
     notFound();
   }
@@ -75,13 +79,13 @@ export default async function MovieDetailsPage({ params }: { params: Promise<{ s
   const transformedMovie = {
     ...movie,
     // Transform showtimes from string[] to the expected Record format if it exists
-    showtimes: transformShowtimes(movie.showtimes)
+    showtimes: transformShowtimes(movie.showtimes),
   } as DetailMovie;
 
   // Transform all movies for similar movies recommendations
-  const transformedAllMovies = allMovies.map(m => ({
+  const transformedAllMovies = allMovies.map((m) => ({
     ...m,
-    showtimes: transformShowtimes(m.showtimes)
+    showtimes: transformShowtimes(m.showtimes),
   })) as DetailMovie[];
 
   return (
@@ -92,24 +96,29 @@ export default async function MovieDetailsPage({ params }: { params: Promise<{ s
 }
 
 // Helper function to transform showtimes from string[] to the expected Record format
-function transformShowtimes(showtimes?: string[]): Record<string, Array<{
-  id: string;
-  time: string;
-  startTime: string;
-  endTime: string;
-  theater: string;
-  cinema: string;
-  price: number;
-  available: number;
-}>> | undefined {
+function transformShowtimes(showtimes?: string[]):
+  | Record<
+      string,
+      Array<{
+        id: string;
+        time: string;
+        startTime: string;
+        endTime: string;
+        theater: string;
+        cinema: string;
+        price: number;
+        available: number;
+      }>
+    >
+  | undefined {
   if (!showtimes || !Array.isArray(showtimes) || showtimes.length === 0) {
     return {};
   }
-  
+
   // Create a default structure for showtimes
   // Using the current date as the key
   const currentDate = new Date().toISOString().split('T')[0];
-  
+
   // Create a simple transformation of string[] to the expected format
   return {
     [currentDate]: showtimes.map((time, index) => ({
@@ -120,8 +129,8 @@ function transformShowtimes(showtimes?: string[]): Record<string, Array<{
       theater: 'Main Theater',
       cinema: 'CinemaX',
       price: 12.99,
-      available: 50
-    }))
+      available: 50,
+    })),
   };
 }
 
@@ -130,17 +139,17 @@ function calculateEndTime(startTime: string, durationMinutes: number): string {
   try {
     // Simple time calculation (this is a basic implementation)
     const [hours, minutes] = startTime.split(':').map(Number);
-    
+
     let endHours = hours + Math.floor(durationMinutes / 60);
     let endMinutes = minutes + (durationMinutes % 60);
-    
+
     if (endMinutes >= 60) {
       endHours += 1;
       endMinutes -= 60;
     }
-    
+
     endHours = endHours % 24; // Handle day overflow
-    
+
     return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
   } catch (e) {
     // If there's any error in parsing, return a placeholder
