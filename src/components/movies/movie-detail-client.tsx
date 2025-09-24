@@ -10,6 +10,7 @@ import { Card } from '@/components/ui/card';
 import { AiTrailerPlayer } from './ai-trailer-player';
 import { SimilarMovies } from './similar-movies';
 import { CreateWatchPartyButton } from '@/components/watch-party/create-watch-party-button';
+import { MovieComments } from './movie-comments';
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 
 export type Movie = CachedMovie;
@@ -200,6 +201,10 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
             </div>
           </Card>
         </div>
+      </div>
+      {/* Comments Section */}
+      <div className="max-w-4xl mx-auto px-6 py-12">
+        <MovieComments movieSlug={movie.slug || ''} />
       </div>
       {/* Recommended Movies */}
       <div className="bg-netflix-black pt-4 px-2">

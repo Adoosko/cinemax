@@ -44,6 +44,7 @@ model User {
   reviews      Review[]
   WatchHistory WatchHistory[]
   watchParties WatchParty[] @relation("HostWatchParties")
+  comments     MovieComment[]
 
   @@map("user")
 }
@@ -517,4 +518,24 @@ enum AiTrailerStatus {
   UPLOADING
   COMPLETED
   FAILED
+}
+
+// ============================================
+// MOVIE COMMENTS SYSTEM
+// ============================================
+
+model MovieComment {
+  id         String   @id @default(cuid())
+  movieSlug  String
+  userId     String
+  userName   String
+  userAvatar String?
+  content    String
+  isSpoiler  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("movie_comments")
 }
