@@ -227,9 +227,7 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
             if (comment.id === parentId) {
               return {
                 ...comment,
-                replies: (comment.replies || []).filter(
-                  (reply) => reply.id !== optimisticReply.id
-                ),
+                replies: (comment.replies || []).filter((reply) => reply.id !== optimisticReply.id),
               };
             }
             return comment;
@@ -248,9 +246,7 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
           if (comment.id === parentId) {
             return {
               ...comment,
-              replies: (comment.replies || []).filter(
-                (reply) => reply.id !== optimisticReply.id
-              ),
+              replies: (comment.replies || []).filter((reply) => reply.id !== optimisticReply.id),
             };
           }
           return comment;
@@ -306,7 +302,7 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
     <div className="space-y-6">
       {/* Comment Form */}
       {isAuthenticated ? (
-        <Card className="bg-netflix-black/50 p-6">
+        <Card className="bg-netflix-black/50 p-6 border-0">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex items-start space-x-3">
               <Avatar className="w-10 h-10">
@@ -389,7 +385,7 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
         ) : (
           <div className="space-y-4">
             {comments.map((comment) => (
-              <Card key={comment.id} className="bg-netflix-black/50 p-4">
+              <Card key={comment.id} className="bg-transparent p-4 border-0">
                 <div className="flex items-start space-x-3">
                   <Avatar className="w-8 h-8">
                     {comment.userAvatar ? (
@@ -455,7 +451,9 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
                     <div className="flex items-center space-x-2 mt-2">
                       {isAuthenticated && (
                         <button
-                          onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                          onClick={() =>
+                            setReplyingTo(replyingTo === comment.id ? null : comment.id)
+                          }
                           className="text-netflix-text-gray hover:text-white text-xs underline"
                         >
                           Reply
@@ -489,7 +487,9 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
                                     <Checkbox
                                       id={`reply-spoiler-${comment.id}`}
                                       checked={replySpoiler}
-                                      onCheckedChange={(checked) => setReplySpoiler(checked as boolean)}
+                                      onCheckedChange={(checked) =>
+                                        setReplySpoiler(checked as boolean)
+                                      }
                                       className="data-[state=checked]:bg-netflix-red data-[state=checked]:border-netflix-red scale-75"
                                     />
                                     <label
@@ -548,9 +548,13 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center space-x-2 mb-1">
-                                  <span className="font-semibold text-white text-xs">{reply.userName}</span>
+                                  <span className="font-semibold text-white text-xs">
+                                    {reply.userName}
+                                  </span>
                                   {reply.isSpoiler && (
-                                    <span className="text-netflix-red text-xs italic">[spoiler]</span>
+                                    <span className="text-netflix-red text-xs italic">
+                                      [spoiler]
+                                    </span>
                                   )}
                                   <span className="text-netflix-text-gray text-xs">
                                     {formatRelativeTime(reply.createdAt)}
@@ -591,7 +595,9 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
                                     )}
                                   </div>
                                 ) : (
-                                  <p className="text-white text-xs leading-relaxed">{reply.content}</p>
+                                  <p className="text-white text-xs leading-relaxed">
+                                    {reply.content}
+                                  </p>
                                 )}
                               </div>
                             </div>
@@ -602,7 +608,8 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
                   </div>
                 </div>
               </Card>
-            ))}</div>
+            ))}
+          </div>
         )}
       </div>
     </div>
