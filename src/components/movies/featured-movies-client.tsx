@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Star, Clock, Play, Info } from 'lucide-react';
+import { Button } from '../ui/button';
 
 interface Movie {
   id: string;
@@ -69,7 +70,7 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
         <div className="max-w-2xl">
           <h1
             key={`title-${currentHeroIndex}`}
-            className="text-4xl lg:text-6xl font-bold text-white mb-4"
+            className="text-2xl md:text-4xl lg:text-5xl font-bold text-white mb-4"
           >
             {currentMovie.title}
           </h1>
@@ -86,23 +87,22 @@ export function FeaturedMoviesClient({ heroMovies }: FeaturedMoviesClientProps) 
             </div>
           </div>
 
-          <p className="text-white/90 text-lg leading-relaxed mb-8 max-w-xl">
+          <p className="text-white/90 text-xs md:text-sm lg:text-base leading-relaxed mb-8 max-w-xl">
             {currentMovie.description}
           </p>
 
           <div className="flex space-x-4">
-            <Link href={`/movies/${currentMovie.slug}/book`}>
-              <button className="bg-white hover:bg-white/90 text-black px-8 py-3 rounded font-semibold transition-colors flex items-center space-x-2">
-                <Play className="w-5 h-5 fill-current" />
-                <span>Book Tickets</span>
-              </button>
+            <Link href={`/movies/${currentMovie.slug}/watch`}>
+              <Button variant={'premium'} size={'sm'}>
+                Watch now
+              </Button>
             </Link>
 
             <Link href={`/movies/${currentMovie.slug}`}>
-              <button className="bg-white/20 hover:bg-white/30 text-white border border-white/30 px-8 py-3 rounded font-semibold transition-all flex items-center space-x-2">
+              <Button size={'sm'}>
                 <Info className="w-5 h-5" />
                 <span>More Info</span>
-              </button>
+              </Button>
             </Link>
           </div>
         </div>

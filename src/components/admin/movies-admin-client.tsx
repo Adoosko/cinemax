@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { getMovies, addMovie, updateMovie, deleteMovie, type Movie } from '@/lib/data/movies';
 import { VideoUpload } from '@/components/admin/video-upload';
-import { EditMovieModal } from '@/components/admin/edit-movie-modal';
+
 import { AdminMovieFilters } from '@/components/admin/admin-movie-filters';
 import {
   AdminMoviesProvider,
@@ -23,6 +23,7 @@ import {
   Mic,
   Sparkles,
 } from 'lucide-react';
+import EditMovieModal from './edit-movie-modal';
 interface MoviesAdminContentProps {
   initialMovies?: Movie[];
 }

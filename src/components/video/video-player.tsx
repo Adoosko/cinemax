@@ -20,6 +20,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Image from 'next/image';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 
 interface VideoQuality {
   quality: string;
@@ -1550,8 +1551,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                 exit={{ scale: 0.9, opacity: 0 }}
                 className="text-center p-8 bg-black/50 border border-white/20 rounded-2xl shadow-2xl max-w-sm mx-4"
               >
-                <h3 className="text-white font-bold text-2xl mb-2">Welcome Back!</h3>
-                <p className="text-white/80 mb-6">
+                <h3 className="text-white font-bold text-xl mb-2">Welcome Back!</h3>
+                <p className="text-white/80 mb-6 text-xs">
                   You left off at{' '}
                   {(() => {
                     const videoId = getVideoId();
@@ -1569,22 +1570,12 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
                   . Do you want to resume or start over?
                 </p>
                 <div className="flex justify-center space-x-4">
-                  <motion.button
-                    onClick={handleResume}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-netflix-red hover:bg-red-700 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg"
-                  >
+                  <Button onClick={handleResume} size="sm" variant={'premium'}>
                     Resume
-                  </motion.button>
-                  <motion.button
-                    onClick={handleStartOver}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="bg-white/20 hover:bg-white/30 text-white px-8 py-3 rounded-xl font-semibold transition-all shadow-lg"
-                  >
+                  </Button>
+                  <Button onClick={handleStartOver} variant={'glass'} size="sm">
                     Start Over
-                  </motion.button>
+                  </Button>
                 </div>
               </motion.div>
             </motion.div>

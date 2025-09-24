@@ -14,7 +14,7 @@ interface VideoPlayerWithResumeProps {
   streamingUrl: string;
   title: string;
   posterUrl?: string;
-  className?: string; // Added className prop
+  className?: string;
   qualities?: Array<{
     quality: string;
     url: string;
@@ -38,38 +38,29 @@ export function VideoPlayerWithResume({
   const searchParams = useSearchParams();
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  // Watch party parameters
   const partyId = searchParams.get('party');
   const manualNickname = searchParams.get('nickname');
 
-  // Generate nickname for authenticated users
   const generateNickname = (user: any) => {
     if (user?.firstName && user?.lastName) {
       return `${user.firstName} ${user.lastName}`;
     } else if (user?.name) {
       return user.name;
     } else if (user?.email) {
-      return user.email.split('@')[0]; // Use part before @ in email
+      return user.email.split('@')[0];
     }
     return 'Anonymous';
   };
 
-  // Use manual nickname if provided, otherwise generate from user account
   const nickname = manualNickname || (isAuthenticated && user ? generateNickname(user) : null);
   const isInWatchParty = !!(partyId && nickname);
 
-  // Enhanced video sync callback for immediate response to host controls
   const onVideoSync = useCallback(
     (data: { currentTime: number; isPlaying: boolean; playbackSpeed?: number }) => {
       if (!videoRef.current) return;
 
-      console.log('🔄 Applying sync from host:', data);
-
-      // CRITICAL FIX: Force sync time regardless of difference to ensure perfect sync
-      console.log(`🎯 Seeking to host position: ${data.currentTime.toFixed(2)}s`);
       videoRef.current.currentTime = data.currentTime;
 
-      // CRITICAL FIX: Always sync play state immediately with multiple attempts
       const syncPlayState = () => {
         if (data.isPlaying && videoRef.current?.paused) {
           console.log('▶️ Host is playing - starting playback');
@@ -78,10 +69,9 @@ export function VideoPlayerWithResume({
           if (playPromise !== undefined) {
             playPromise.catch((error) => {
               console.error('Failed to play on sync:', error);
-              // Try again with user interaction simulation
+
               setTimeout(() => {
                 if (videoRef.current) {
-                  // Force user interaction to bypass autoplay restrictions
                   videoRef.current.muted = true;
                   videoRef.current
                     .play()
@@ -100,13 +90,10 @@ export function VideoPlayerWithResume({
         }
       };
 
-      // Execute sync immediately
       syncPlayState();
 
-      // And also after a short delay to ensure it takes effect
       setTimeout(syncPlayState, 100);
 
-      // Sync playback speed if provided
       if (data.playbackSpeed && videoRef.current.playbackRate !== data.playbackSpeed) {
         console.log(`🏃 Setting playback speed to ${data.playbackSpeed}x`);
         videoRef.current.playbackRate = data.playbackSpeed;
@@ -127,11 +114,10 @@ export function VideoPlayerWithResume({
   } = useWatchParty({
     partyId: partyId || undefined,
     nickname: nickname || undefined,
-    userId: user?.id, // Pass user ID to identify host
+    userId: user?.id,
     onVideoSync,
   });
 
-  // Determine if current user is the host
   const [isCurrentUserHost, setIsCurrentUserHost] = useState<boolean>(false);
 
   // Fetch watch party details to determine if current user is the host
@@ -146,23 +132,14 @@ export function VideoPlayerWithResume({
         const data = await response.json();
         const isHost = data.watchParty.host.id === user.id;
 
-        console.log('🎮 Host check:', {
-          userId: user.id,
-          hostId: data.watchParty.host.id,
-          isHost,
-        });
-
         setIsCurrentUserHost(isHost);
 
-        // CRITICAL FIX: If not host, request immediate sync from host
         if (!isHost && isPartyConnected) {
-          console.log('🔄 Member joining - requesting immediate sync from host');
-          // Send a special sync request that the host will respond to
           syncVideo({
-            currentTime: 0, // Will be overridden by host's current time
-            isPlaying: false, // Will be overridden by host's play state
+            currentTime: 0,
+            isPlaying: false,
             playbackSpeed: 1,
-            requestSync: true, // Special flag to indicate this is a sync request
+            requestSync: true,
           });
         }
       } catch (error) {
@@ -183,14 +160,11 @@ export function VideoPlayerWithResume({
 
   // Handle external play/pause for non-host users
   const handleExternalPlayPause = () => {
-    // This should not be called for hosts, but just in case
     if (isCurrentUserHost) return;
 
-    // Non-host users send a request to the host to control playback
-    console.log('Non-host requested play/pause');
     if (videoRef.current) {
       const isCurrentlyPlaying = !videoRef.current.paused;
-      // Send request to toggle playback state
+
       syncVideo({
         currentTime: videoRef.current.currentTime,
         isPlaying: !isCurrentlyPlaying, // Request opposite of current state
@@ -201,13 +175,9 @@ export function VideoPlayerWithResume({
 
   // Handle external seek for non-host users
   const handleExternalSeek = (time: number) => {
-    // This should not be called for hosts, but just in case
     if (isCurrentUserHost) return;
 
-    // Non-host users send a seek request to the host
-    console.log('Non-host requested seek to:', time);
     if (videoRef.current) {
-      // Send request to seek to specific time
       syncVideo({
         currentTime: time,
         isPlaying: !videoRef.current.paused,

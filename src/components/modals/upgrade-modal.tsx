@@ -6,18 +6,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogClose,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Film, Sparkles, Users, Ticket, X } from 'lucide-react';
+import { CheckCircle, Film, Sparkles, Ticket } from 'lucide-react';
 import { authClient } from '@/lib/auth-client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ScrollArea } from '../ui/scroll-area';
 
 const PLANS = [
   {
     name: 'Free',
-    description: 'Enjoy all 4K movies. Limit: 2 movies/month.',
+    description: 'Watch 2 movies/month with ads.',
     price: '€0',
     planKey: 'free',
     limit: '2 movies / month',
@@ -72,130 +71,122 @@ export function UpgradeModal({
     <div>
       {open && (
         <Dialog open={open} onOpenChange={onOpenChange}>
-          <DialogContent className="z-[100] max-h-[95vh] sm:max-h-[90vh] w-[95vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] xl:max-w-[1100px] rounded-2xl bg-black/90 border border-white/10 shadow-2xl p-0 overflow-hidden backdrop-blur-md">
-            <DialogHeader>
+          <DialogContent className="z-[100] max-h-[95vh] sm:max-h-[90vh] w-[95vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] xl:max-w-[1000px] rounded-2xl bg-black/95 border border-white/10 shadow-2xl p-0 overflow-hidden backdrop-blur-xl">
+            <DialogHeader className="pb-4">
               <DialogTitle asChild>
-                <div className="flex flex-col items-center mt-4 sm:mt-6">
-                  <div className="bg-netflix-red rounded-full p-3 sm:p-4 shadow-xl flex items-center justify-center mb-3 sm:mb-4">
-                    <Film className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
-                  </div>
-                  <div className="flex flex-wrap justify-center items-center gap-1 sm:gap-2 text-xl sm:text-2xl md:text-3xl font-bold text-white mt-1 sm:mt-2">
-                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-netflix-red" />
-                    <span>Pick Your CINEMX+ Plan</span>
-                    <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-netflix-red" />
+                <div className="flex flex-col items-center pt-6 pb-2">
+                  <div className="flex items-center gap-2 mt-4">
+                    <Sparkles className="w-4 h-4 text-netflix-red" />
+                    <h2 className="text-lg font-bold text-white">Choose Your CINEMX+ Plan</h2>
+                    <Sparkles className="w-4 h-4 text-netflix-red" />
                   </div>
                 </div>
               </DialogTitle>
               <DialogDescription asChild>
-                <div className="text-white/70 mt-2 sm:mt-3 text-center max-w-xl mx-auto text-sm sm:text-base font-normal px-4">
-                  All plans include <b>4K streaming</b>, instant playback, and our full movie
-                  catalog.
-                  <br className="hidden sm:block" />
-                  <span className="sm:hidden"> </span>
-                  Only difference? How many movies you can watch!
+                <div className="text-white/60 text-center max-w-lg mx-auto text-sm px-6">
+                  Remove ads and watch unlimited movies with premium quality streaming
                 </div>
               </DialogDescription>
             </DialogHeader>
-            <ScrollArea className="w-full pb-2 h-auto max-h-[calc(100vh-230px)] sm:max-h-[calc(90vh-200px)]">
-              <div className="flex flex-col sm:grid sm:grid-cols-2 lg:flex lg:flex-row gap-4 sm:gap-6 lg:gap-8 justify-center items-stretch px-2 sm:px-4 py-4 mb-4">
+
+            <ScrollArea className="w-full px-6 pb-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
                 {PLANS.map((plan) => (
                   <motion.div
                     key={plan.planKey}
-                    initial={{ opacity: 0, y: 40 }}
+                    initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: plan.highlight ? 0.23 : 0.13 }}
+                    transition={{ delay: plan.highlight ? 0.2 : 0.1 }}
                     className={`
-                    flex flex-col items-center rounded-2xl w-full sm:min-w-0 lg:w-[calc(33%-1rem)] xl:w-[300px] px-4 sm:px-5 py-6 sm:py-7 bg-white/5
-                    ${plan.highlight ? 'shadow-2xl ring-2 ring-netflix-red border border-netflix-red' : 'border border-white/10'}
-                    relative transition-all h-full
-                  `}
-                    style={{ minWidth: 0 }}
+                    relative rounded-xl border p-6 bg-black/50 backdrop-blur-sm
+                    ${
+                      plan.highlight
+                        ? 'border-netflix-red ring-1 ring-netflix-red/50 shadow-lg shadow-netflix-red/20'
+                        : 'border-white/10'
+                    }
+                    ${plan.disabled ? 'opacity-60' : 'hover:border-white/20 transition-colors'}
+                    `}
                   >
                     {plan.highlight && (
-                      <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-netflix-red text-white px-4 py-1 rounded-full text-xs font-black shadow">
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-netflix-red text-white px-3 py-1 rounded-full text-xs font-semibold shadow-md">
                         Best Value
                       </div>
                     )}
-                    <div className="font-bold text-xl text-white mb-1 mt-2">{plan.name}</div>
-                    <div className="text-netflix-red font-black text-3xl mb-2">{plan.price}</div>
-                    <div className="text-white/70 pb-2 text-center min-h-[44px]">
-                      {plan.description}
+
+                    <div className="text-center mb-4">
+                      <h3 className="text-white font-semibold text-sm mb-2">{plan.name}</h3>
+                      <div className="text-netflix-red font-bold text-2xl mb-1">{plan.price}</div>
+                      <p className="text-white/60 text-xs leading-relaxed">{plan.description}</p>
                     </div>
-                    <ul className="mb-4 space-y-2 mt-2 text-white/90 text-sm text-left w-full">
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>Full 4K Quality</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>All movies unlocked</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>True instant streaming</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <div className="flex flex-wrap items-center gap-1">
-                          <span>Watch-party invites</span>
-                          <Users className="w-4 h-4 text-white/70" />
-                          <span className="text-xs text-white/70">
-                            Up to 5 guests (no signup needed)
-                          </span>
-                        </div>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
-                        <span>{plan.limit}</span>
-                      </li>
-                    </ul>
-                    {/* CTA button */}
-                    <div className="mt-auto w-full">
-                      {plan.disabled ? (
-                        <div className="rounded bg-white/10 text-white/60 px-4 py-2 font-semibold text-center">
-                          Current plan
-                        </div>
+
+                    <ul className="space-y-2 mb-6 text-white/80 text-xs">
+                      {plan.planKey === 'free' ? (
+                        <>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            <span>4K Ultra HD streaming</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            <span>2 movies per month</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <span className="w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center text-black text-[10px] font-bold flex-shrink-0">!</span>
+                            <span>Ads may appear</span>
+                          </li>
+                        </>
                       ) : (
-                        <Button
-                          className={`
-                          w-full text-lg font-bold rounded-lg transition py-3
-                          ${
-                            plan.highlight
-                              ? 'bg-netflix-red hover:bg-red-700'
-                              : 'bg-white/20 hover:bg-netflix-red hover:text-white'
-                          }
-                        `}
-                          onClick={() => plan.slug && handleUpgrade(plan.slug)}
-                          type="button"
-                          disabled={!!loadingSlug}
-                        >
-                          {loadingSlug === plan.slug ? (
-                            <>
-                              <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
-                              Redirecting...
-                            </>
-                          ) : (
-                            plan.cta
-                          )}
-                        </Button>
+                        <>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            <span>4K Ultra HD streaming</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            <span>Unlimited movies</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="w-3 h-3 text-green-400 flex-shrink-0" />
+                            <span>No ads</span>
+                          </li>
+                        </>
                       )}
-                    </div>
+                    </ul>
+
+                    {plan.disabled ? (
+                      <div className="w-full bg-white/20 text-white/60 py-2 px-4 rounded-lg text-sm font-medium text-center">
+                        Current Plan
+                      </div>
+                    ) : (
+                      <Button
+                        variant="premium"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => plan.slug && handleUpgrade(plan.slug)}
+                        disabled={!!loadingSlug}
+                      >
+                        {loadingSlug === plan.slug ? (
+                          <>
+                            <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></span>
+                            Processing...
+                          </>
+                        ) : (
+                          plan.cta
+                        )}
+                      </Button>
+                    )}
                   </motion.div>
                 ))}
               </div>
-            </ScrollArea>
 
-            <div className="text-white/80 text-sm sm:text-base text-center mt-3 mb-2 px-4">
-              <Ticket className="inline-block w-4 h-4 sm:w-5 sm:h-5 mr-1 text-green-500" />
-              <span className="font-semibold text-green-300">Cancel anytime.</span>
-              <span className="hidden sm:inline">
-                No hidden fees. Downgrade in 2 clicks if you change your mind.
-              </span>
-              <span className="inline sm:hidden">No hidden fees.</span>
-            </div>
-            <div className="text-white/40 text-xs pb-2 text-center px-4">
-              Built for real movie fans and shared moments — not for "gotchas."
-            </div>
+              <div className="mt-6 text-center">
+                <div className="flex items-center justify-center gap-2 text-white/60 text-xs mb-2">
+                  <Ticket className="w-3 h-3 text-green-400" />
+                  <span className="font-medium text-green-300">Cancel anytime</span>
+                </div>
+                <p className="text-white/40 text-xs">No hidden fees • Built for movie lovers</p>
+              </div>
+            </ScrollArea>
           </DialogContent>
         </Dialog>
       )}

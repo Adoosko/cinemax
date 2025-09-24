@@ -58,12 +58,14 @@ export async function GET(req: NextRequest) {
       endOfMonth: endOfMonth.toISOString(),
     });
 
-    // Count completed movies for the current month
+    // Count movies watched over 85% for the current month
     const watchedCount = await db.watchHistory.count({
       where: {
         userId,
-        completed: true,
-        completedAt: {
+        progress: {
+          gte: 0.85, // 85% watched threshold
+        },
+        startedAt: {
           gte: startOfMonth,
           lte: endOfMonth,
         },

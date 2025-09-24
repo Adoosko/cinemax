@@ -19,6 +19,8 @@ import {
   Loader,
   Mic,
   Settings,
+  Search,
+  Download,
 } from 'lucide-react';
 import AiTrailerGenerator from './ai-trailer-generator';
 
@@ -26,7 +28,7 @@ interface EditMovieModalProps {
   isOpen: boolean;
   onClose: () => void;
   onUpdateMovie: (movieData: MovieFormData) => Promise<void>;
-  movie: {
+  movie?: {
     id: string;
     title: string;
     description: string;
@@ -41,6 +43,7 @@ interface EditMovieModalProps {
     releaseDate: string;
     isActive: boolean;
   };
+  isNew?: boolean;
 }
 
 export interface MovieFormData {
@@ -58,7 +61,26 @@ export interface MovieFormData {
   isActive: boolean;
 }
 
-export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMovieModalProps) {
+export interface TMDBMovie {
+  tmdbId: number;
+  title: string;
+  description: string;
+  posterUrl: string | null;
+  releaseDate: string;
+  genre: string[];
+  rating: number;
+  director?: string;
+  cast?: string[];
+  duration?: number;
+}
+function EditMovieModal({
+  isOpen,
+  onClose,
+  onUpdateMovie,
+  movie,
+  isNew = false,
+}: EditMovieModalProps) {
+  // Form state
   const [formData, setFormData] = useState<MovieFormData>({
     title: '',
     description: '',
@@ -74,31 +96,110 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
     isActive: true,
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Partial<Record<keyof MovieFormData, string>>>({});
-  const [genreInput, setGenreInput] = useState('');
+  // TMDB Search State
+  const [tmdbSearchQuery, setTmdbSearchQuery] = useState('');
+  const [tmdbSearchResults, setTmdbSearchResults] = useState<TMDBMovie[]>([]);
+  const [tmdbSearching, setTmdbSearching] = useState(false);
+  const [showTmdbResults, setShowTmdbResults] = useState(false);
+
+  // Other state
   const [castInput, setCastInput] = useState('');
   const [activeTab, setActiveTab] = useState<'details' | 'trailers'>('details');
+  const [genreInput, setGenreInput] = useState('');
+  const [errors, setErrors] = useState<Partial<Record<keyof MovieFormData, string>>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form data when movie changes
-  useEffect(() => {
-    if (movie) {
-      setFormData({
-        title: movie.title,
-        description: movie.description,
-        duration: movie.duration,
-        genre: movie.genre,
-        rating: movie.rating || '',
-        director: movie.director,
-        cast: movie.cast,
-        posterUrl: movie.posterUrl || '',
-        backdropUrl: movie.backdropUrl || '',
-        trailerUrl: movie.trailerUrl || '',
-        releaseDate: movie.releaseDate,
-        isActive: movie.isActive,
-      });
+  // TMDB Search Functions
+  const searchTMDB = async (query: string) => {
+    if (!query.trim()) return;
+
+    setTmdbSearching(true);
+    try {
+      const response = await fetch(`/api/admin/movies/search?query=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Failed to search TMDB');
+
+      const data = await response.json();
+      setTmdbSearchResults(data.movies || []);
+      setShowTmdbResults(true);
+    } catch (error) {
+      console.error('TMDB search error:', error);
+      setTmdbSearchResults([]);
+    } finally {
+      setTmdbSearching(false);
     }
-  }, [movie]);
+  };
+
+  // TMDB Search Effects
+  useEffect(() => {
+    if (!tmdbSearchQuery.trim()) {
+      setTmdbSearchResults([]);
+      setShowTmdbResults(false);
+      return;
+    }
+
+    // Debounce search to avoid too many API calls
+    const debounceTimer = setTimeout(() => {
+      searchTMDB(tmdbSearchQuery);
+    }, 500); // Wait 500ms after user stops typing
+
+    return () => clearTimeout(debounceTimer);
+  }, [tmdbSearchQuery]);
+
+  const populateFromTMDB = (tmdbMovie: TMDBMovie) => {
+    setFormData({
+      ...formData,
+      title: tmdbMovie.title,
+      description: tmdbMovie.description,
+      releaseDate: tmdbMovie.releaseDate,
+      genre: tmdbMovie.genre,
+      rating: tmdbMovie.rating.toString(),
+      director: tmdbMovie.director || '',
+      cast: tmdbMovie.cast || [],
+      posterUrl: tmdbMovie.posterUrl || '',
+      duration: tmdbMovie.duration || 0,
+    });
+    setShowTmdbResults(false);
+    setTmdbSearchQuery('');
+  };
+
+  // Initialize form data when movie changes or modal opens
+  useEffect(() => {
+    if (isOpen) {
+      if (movie && !isNew) {
+        // Editing existing movie
+        setFormData({
+          title: movie.title,
+          description: movie.description,
+          duration: movie.duration,
+          genre: movie.genre,
+          rating: movie.rating || '',
+          director: movie.director,
+          cast: movie.cast,
+          posterUrl: movie.posterUrl || '',
+          backdropUrl: movie.backdropUrl || '',
+          trailerUrl: movie.trailerUrl || '',
+          releaseDate: movie.releaseDate,
+          isActive: movie.isActive,
+        });
+      } else {
+        // Adding new movie - use defaults
+        setFormData({
+          title: '',
+          description: '',
+          duration: 120,
+          genre: [],
+          rating: '',
+          director: '',
+          cast: [],
+          posterUrl: '',
+          backdropUrl: '',
+          trailerUrl: '',
+          releaseDate: new Date().toISOString().split('T')[0], // Today's date
+          isActive: true,
+        });
+      }
+    }
+  }, [movie, isNew, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -190,9 +291,13 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
                 <Film className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Edit Movie</h1>
+                <h1 className="text-2xl font-bold text-white">
+                  {isNew ? 'Add New Movie' : 'Edit Movie'}
+                </h1>
                 <p className="text-white/60 text-sm">
-                  Update movie details and generate AI trailers
+                  {isNew
+                    ? 'Import from TMDB or manually add movie details'
+                    : 'Update movie details and generate AI trailers'}
                 </p>
               </div>
             </div>
@@ -255,6 +360,80 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
                   />
                   <div className="w-11 h-6 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-netflix-red"></div>
                 </label>
+              </div>
+
+              {/* TMDB Search Section */}
+              <div className="bg-white/5 rounded-xl border border-white/10 p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="w-8 h-8 bg-netflix-red rounded-lg flex items-center justify-center">
+                    <Film className="w-4 h-4 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-white font-semibold">Import from TMDB</h3>
+                    <p className="text-white/60 text-sm">
+                      Search and import movie data from The Movie Database
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* Search Input */}
+                  <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <input
+                      type="text"
+                      placeholder="Search for a movie..."
+                      value={tmdbSearchQuery}
+                      onChange={(e) => setTmdbSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-12 py-3 bg-black/40 border border-white/20 text-white rounded-xl focus:border-netflix-red focus:outline-none transition-all placeholder-white/40"
+                    />
+                    {tmdbSearching && (
+                      <Loader className="absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 animate-spin text-netflix-red" />
+                    )}
+                  </div>
+
+                  {/* Search Results */}
+                  {showTmdbResults && tmdbSearchResults.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="max-h-64 overflow-y-auto space-y-2"
+                    >
+                      {tmdbSearchResults.map((movie) => (
+                        <motion.div
+                          key={movie.tmdbId}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          className="flex items-center space-x-4 p-3 bg-black/20 rounded-lg hover:bg-black/30 transition-colors cursor-pointer"
+                          onClick={() => populateFromTMDB(movie)}
+                        >
+                          {movie.posterUrl && (
+                            <img
+                              src={movie.posterUrl}
+                              alt={movie.title}
+                              className="w-12 h-18 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <h4 className="text-white font-medium">{movie.title}</h4>
+                            <p className="text-white/60 text-sm">{movie.releaseDate}</p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                              <span className="text-white/60 text-xs">{movie.rating}/10</span>
+                            </div>
+                          </div>
+                          <Download className="w-5 h-5 text-netflix-red" />
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+
+                  {showTmdbResults && tmdbSearchResults.length === 0 && !tmdbSearching && (
+                    <div className="text-center py-8 text-white/60">
+                      No movies found. Try a different search term.
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Title */}
@@ -444,7 +623,7 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
                   </div>
                 )}
 
-                {formData.genre.length > 0 && (
+                {formData.genre && formData.genre.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {formData.genre.map((genre, index) => (
                       <motion.span
@@ -495,7 +674,7 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
                   </motion.button>
                 </div>
 
-                {formData.cast.length > 0 && (
+                {formData.cast && formData.cast.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {formData.cast.map((castMember, index) => (
                       <motion.span
@@ -615,12 +794,12 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
                   {isSubmitting ? (
                     <>
                       <Loader className="w-5 h-5 animate-spin" />
-                      <span>Updating Movie...</span>
+                      <span>{isNew ? 'Adding Movie...' : 'Updating Movie...'}</span>
                     </>
                   ) : (
                     <>
                       <Check className="w-5 h-5" />
-                      <span>Update Movie</span>
+                      <span>{isNew ? 'Add Movie' : 'Update Movie'}</span>
                     </>
                   )}
                 </motion.button>
@@ -629,20 +808,22 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
           ) : (
             /* AI Trailers Tab */
             <div className="space-y-6">
-              <AiTrailerGenerator
-                movie={{
-                  ...movie,
-                  createdAt: new Date().toISOString(),
-                  updatedAt: new Date().toISOString(),
-                  slug: movie.title
-                    .toLowerCase()
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/(^-|-$)/g, ''),
-                }}
-                onTrailerGenerated={(trailer) => {
-                  console.log('Trailer generated:', trailer);
-                }}
-              />
+              {movie && (
+                <AiTrailerGenerator
+                  movie={{
+                    ...movie,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    slug: movie.title
+                      .toLowerCase()
+                      .replace(/[^a-z0-9]+/g, '-')
+                      .replace(/(^-|-$)/g, ''),
+                  }}
+                  onTrailerGenerated={(trailer) => {
+                    console.log('Trailer generated:', trailer);
+                  }}
+                />
+              )}
             </div>
           )}
         </div>
@@ -650,3 +831,4 @@ export function EditMovieModal({ isOpen, onClose, onUpdateMovie, movie }: EditMo
     </div>
   );
 }
+export default EditMovieModal;

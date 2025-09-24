@@ -115,7 +115,7 @@ export default async function WatchPage({ params }: WatchPageProps) {
   // Redirect to login if not authenticated
   if (!session) {
     // Redirect to sign in page with callback URL to return after login
-    redirect(`/auth/signin?callbackUrl=/movies/${slug}/watch`);
+    redirect(`/signin?callbackUrl=/movies/${slug}/watch`);
   }
 
   // Use cached data for movie video
@@ -177,12 +177,6 @@ export default async function WatchPage({ params }: WatchPageProps) {
                 title="Share movie"
               >
                 <Share className="w-5 h-5" />
-              </button>
-              <button
-                className="text-white/80 hover:text-white transition-colors p-2 hover:bg-white/10 rounded-full"
-                title="Download for offline viewing"
-              >
-                <Download className="w-5 h-5" />
               </button>
             </div>
           </div>

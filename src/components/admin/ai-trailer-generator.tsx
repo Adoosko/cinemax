@@ -2,19 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardContent, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   Select,
-  SelectContent,
-  SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectContent,
+  SelectItem,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, Play, Download, Trash2, RefreshCw } from 'lucide-react';
+import { Loader2, Mic, Play, Download, Trash2, RefreshCw, Video } from 'lucide-react';
 import { Movie } from '@/lib/data/movies';
 import { AiTrailerStatus } from '@/lib/data/ai-trailers-simple';
 
@@ -55,7 +55,6 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load voice styles and existing trailers
   useEffect(() => {
     loadInitialData();
   }, [movie.id]);
@@ -63,22 +62,17 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   const loadInitialData = async () => {
     try {
       setIsLoading(true);
-
-      // Load voice styles
       const stylesResponse = await fetch('/api/admin/ai-trailers/voice-styles');
       if (stylesResponse.ok) {
         const stylesData = await stylesResponse.json();
         setVoiceStyles(stylesData.voiceStyles || []);
       }
-
-      // Load existing trailers for this movie
       const trailersResponse = await fetch(`/api/admin/ai-trailers/generate?movieId=${movie.id}`);
       if (trailersResponse.ok) {
         const trailersData = await trailersResponse.json();
         setExistingTrailers(trailersData.trailers || []);
       }
     } catch (error) {
-      console.error('Error loading initial data:', error);
       setError('Failed to load trailer data');
     } finally {
       setIsLoading(false);
@@ -86,57 +80,32 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   };
 
   const generateTrailer = async (overwrite = false) => {
-    if (!selectedVoiceStyle) {
-      setError('Please select a voice style');
-      return;
-    }
-
+    if (!selectedVoiceStyle) return setError('Please select a voice style');
     setIsGenerating(true);
     setError('');
     setGenerationProgress(0);
     setGenerationStatus('Starting generation...');
-
     try {
-      // Simulate progress updates
       const progressInterval = setInterval(() => {
-        setGenerationProgress((prev) => {
-          if (prev < 90) return prev + 10;
-          return prev;
-        });
+        setGenerationProgress((prev) => (prev < 90 ? prev + 10 : prev));
       }, 1000);
-
       const response = await fetch('/api/admin/ai-trailers/generate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          movieId: movie.id,
-          voiceStyle: selectedVoiceStyle,
-          overwrite,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ movieId: movie.id, voiceStyle: selectedVoiceStyle, overwrite }),
       });
-
       clearInterval(progressInterval);
-
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Failed to generate trailer');
       }
-
       const data = await response.json();
       setGenerationProgress(100);
       setGenerationStatus('Trailer generated successfully!');
-
-      // Refresh trailers list
       await loadInitialData();
-
-      if (onTrailerGenerated) {
-        onTrailerGenerated(data.trailer);
-      }
-    } catch (error) {
-      console.error('Error generating trailer:', error);
-      setError(error instanceof Error ? error.message : 'Failed to generate trailer');
+      onTrailerGenerated?.(data.trailer);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to generate trailer');
       setGenerationProgress(0);
       setGenerationStatus('');
     } finally {
@@ -145,23 +114,12 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
   };
 
   const deleteTrailer = async (trailerId: string) => {
-    if (!confirm('Are you sure you want to delete this trailer?')) {
-      return;
-    }
-
+    if (!confirm('Are you sure you want to delete this trailer?')) return;
     try {
-      const response = await fetch(`/api/admin/ai-trailers/${trailerId}`, {
-        method: 'DELETE',
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete trailer');
-      }
-
-      // Refresh trailers list
+      const response = await fetch(`/api/admin/ai-trailers/${trailerId}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete trailer');
       await loadInitialData();
-    } catch (error) {
-      console.error('Error deleting trailer:', error);
+    } catch {
       setError('Failed to delete trailer');
     }
   };
@@ -175,98 +133,94 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
       COMPLETED: { color: 'bg-green-500', text: 'Completed' },
       FAILED: { color: 'bg-red-500', text: 'Failed' },
     };
-
-    const config = statusConfig[status] || statusConfig.PENDING;
+    const config = (statusConfig as any)[status] || statusConfig.PENDING;
     return <Badge className={config.color}>{config.text}</Badge>;
   };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const k = 1024,
+      sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const hasExistingTrailer = existingTrailers.some(
+    (trailer) => trailer.voiceStyle === selectedVoiceStyle && trailer.status === 'COMPLETED'
+  );
+
   if (isLoading) {
     return (
-      <Card>
+      <Card className="bg-black/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/10 p-8">
         <CardHeader>
-          <CardTitle>AI Trailer Generator</CardTitle>
-          <CardDescription>Loading...</CardDescription>
+          <CardTitle>
+            <div className="flex items-center gap-3">
+              <Mic className="w-7 h-7 text-netflix-red" />
+              AI Trailer Generator
+            </div>
+          </CardTitle>
+          <CardDescription className="text-white/60">Loading...</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-center p-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+          <div className="flex justify-center items-center h-24">
+            <Loader2 className="h-8 w-8 text-netflix-red animate-spin" />
           </div>
         </CardContent>
       </Card>
     );
   }
 
-  const hasExistingTrailer = existingTrailers.some(
-    (trailer) => trailer.voiceStyle === selectedVoiceStyle && trailer.status === 'COMPLETED'
-  );
-
   return (
-    <div className="space-y-6">
-      <Card>
+    <div className="space-y-8">
+      <Card className="bg-black/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/10 p-8">
         <CardHeader>
-          <CardTitle>AI Trailer Generator</CardTitle>
-          <CardDescription>
-            Generate AI-powered voice-over trailers for {movie.title}
+          <CardTitle>
+            <div className="flex items-center gap-3">
+              <Mic className="w-7 h-7 text-netflix-red" />
+              AI Trailer Generator
+            </div>
+          </CardTitle>
+          <CardDescription className="text-white/60">
+            Create custom voice-over trailers for <span className="font-bold">{movie.title}</span>
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
-
           <div className="space-y-2">
-            <label className="text-sm font-medium">Voice Style</label>
+            <label className="block text-white font-semibold">Voice Style</label>
             <Select value={selectedVoiceStyle} onValueChange={setSelectedVoiceStyle}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a voice style" />
+              <SelectTrigger className="bg-black/60 border border-white/20 text-white">
+                <SelectValue placeholder="Choose voice style" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-black/80 border border-white/20 rounded-lg">
                 {voiceStyles.map((style) => (
-                  <SelectItem key={style.key} value={style.key}>
-                    <div>
-                      <div className="font-medium">{style.name}</div>
-                      <div className="text-sm text-muted-foreground">{style.description}</div>
-                    </div>
+                  <SelectItem key={style.key} value={style.key} className="text-white">
+                    <span className="font-medium">{style.name}</span>
+                    <span className="text-sm text-white/50 ml-2">{style.description}</span>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
-
-          {hasExistingTrailer && (
-            <Alert>
-              <AlertDescription>
-                A trailer with this voice style already exists. Use "Regenerate" to create a new
-                one.
-              </AlertDescription>
-            </Alert>
-          )}
-
           {isGenerating && (
             <div className="space-y-2">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center gap-2 text-white/70">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">{generationStatus}</span>
+                <span>{generationStatus}</span>
               </div>
-              <Progress value={generationProgress} className="w-full" />
+              <Progress value={generationProgress} className="w-full bg-white/10" />
             </div>
           )}
-
-          <div className="flex space-x-2">
+          <div className="flex gap-2">
             <Button
               onClick={() => generateTrailer(false)}
               disabled={isGenerating || !selectedVoiceStyle}
-              className="flex-1"
+              className="bg-netflix-red text-white flex-1"
+              size="lg"
             >
               {isGenerating ? (
                 <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -275,12 +229,13 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
               )}
               Generate Trailer
             </Button>
-
             {hasExistingTrailer && (
               <Button
                 onClick={() => generateTrailer(true)}
                 disabled={isGenerating}
                 variant="outline"
+                size="lg"
+                className="flex-1 border-netflix-red text-white"
               >
                 <RefreshCw className="h-4 w-4 mr-2" />
                 Regenerate
@@ -289,52 +244,61 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
           </div>
         </CardContent>
       </Card>
-
       {existingTrailers.length > 0 && (
-        <Card>
+        <Card className="bg-black/80 backdrop-blur-lg rounded-2xl shadow-2xl border border-white/10 p-8">
           <CardHeader>
-            <CardTitle>Existing Trailers</CardTitle>
-            <CardDescription>Previously generated trailers for this movie</CardDescription>
+            <CardTitle>
+              <div className="flex items-center gap-3">
+                <Video className="w-6 h-6 text-netflix-red" />
+                Existing Trailers
+              </div>
+            </CardTitle>
+            <CardDescription className="text-white/60">
+              Previously generated trailers for this movie
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {existingTrailers.map((trailer) => (
                 <div
                   key={trailer.id}
-                  className="flex items-center justify-between p-4 border rounded-lg"
+                  className="flex items-center justify-between p-4 bg-white/10 border border-white/20 rounded-lg"
                 >
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="font-medium capitalize">{trailer.voiceStyle}</span>
-                      {getStatusBadge(trailer.status)}
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        className={`capitalize mr-2 ${getStatusBadge(trailer.status).props.className}`}
+                      >
+                        {getStatusBadge(trailer.status)?.props.children}
+                      </Badge>
+                      <span className="font-medium">{trailer.voiceStyle}</span>
+                      {trailer.status === 'FAILED' && (
+                        <span className="text-red-500 text-xs ml-2">
+                          Error: {trailer.errorMessage}
+                        </span>
+                      )}
                     </div>
-
+                    <Textarea
+                      value={trailer.script}
+                      readOnly
+                      className="text-sm bg-white/5 text-white p-2 my-2 rounded"
+                      rows={3}
+                    />
                     {trailer.status === 'COMPLETED' && (
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-white/60">
                         Size: {formatFileSize(trailer.fileSize)} • Created:{' '}
                         {new Date(trailer.createdAt).toLocaleDateString()}
                       </div>
                     )}
-
-                    {trailer.status === 'FAILED' && trailer.errorMessage && (
-                      <div className="text-sm text-red-600">Error: {trailer.errorMessage}</div>
-                    )}
-
-                    {trailer.script && (
-                      <Textarea value={trailer.script} readOnly className="text-sm" rows={3} />
-                    )}
                   </div>
-
-                  <div className="flex items-center space-x-2 ml-4">
+                  <div className="flex gap-1 ml-4">
                     {trailer.status === 'COMPLETED' && trailer.fileUrl && (
                       <>
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => {
-                            const audio = new Audio(trailer.fileUrl);
-                            audio.play();
-                          }}
+                          onClick={() => new Audio(trailer.fileUrl).play()}
+                          className="border border-netflix-red/50 text-white"
                         >
                           <Play className="h-4 w-4" />
                         </Button>
@@ -347,12 +311,18 @@ export default function AiTrailerGenerator({ movie, onTrailerGenerated }: AiTrai
                             link.download = `${movie.slug}-${trailer.voiceStyle}-trailer.mp3`;
                             link.click();
                           }}
+                          className="border border-netflix-red/50 text-white"
                         >
                           <Download className="h-4 w-4" />
                         </Button>
                       </>
                     )}
-                    <Button size="sm" variant="outline" onClick={() => deleteTrailer(trailer.id)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => deleteTrailer(trailer.id)}
+                      className="border border-destructive/50 text-white"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { S3VideoService } from '@/lib/services/video-service';
+import { S3VideoService, titleToSlug } from '@/lib/services/video-service';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,9 +13,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // If movieTitle is provided, convert it to a slug, otherwise use videoId
-    // We've already checked that either videoId or movieTitle exists, so videoSlug will be a string
-    const videoSlug = movieTitle ? S3VideoService.titleToSlug(movieTitle) : (videoId as string);
+    // If movieTitle is provided, convert it to a slug, otherwise create a slug from videoId
+    // videoId might contain UUIDs or other characters that aren't URL-safe
+    const videoSlug = movieTitle
+      ? titleToSlug(movieTitle)
+      : titleToSlug(videoId as string);
 
     // Generate presigned URL for upload
     const uploadUrl = await S3VideoService.getUploadPresignedUrl(

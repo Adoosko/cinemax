@@ -59,6 +59,22 @@ export async function synthesizeVoice(
 
   const voice_id = options.voice_id || voiceConfig.voice_id;
 
+  // Validate voice settings
+  const stability = options.stability ?? 0.5;
+  const similarity_boost = options.similarity_boost ?? 0.8;
+  const style = options.style ?? 0.0;
+
+  // ElevenLabs API constraints
+  if (![0.0, 0.5, 1.0].includes(stability)) {
+    throw new Error('Stability must be one of: 0.0, 0.5, 1.0');
+  }
+  if (similarity_boost < 0.0 || similarity_boost > 1.0) {
+    throw new Error('Similarity boost must be between 0.0 and 1.0');
+  }
+  if (style < 0.0 || style > 1.0) {
+    throw new Error('Style must be between 0.0 and 1.0');
+  }
+
   // Clean the text for better synthesis
   const cleanedText = text
     .replace(/\[PAUSE\]/g, '... ') // Replace [PAUSE] with natural pauses
@@ -67,11 +83,11 @@ export async function synthesizeVoice(
 
   const requestBody = {
     text: cleanedText,
-    model_id: 'eleven_multilingual_v2',
+    model_id: 'eleven_v3',
     voice_settings: {
-      stability: options.stability ?? 0.75,
-      similarity_boost: options.similarity_boost ?? 0.75,
-      style: options.style ?? 0.5,
+      stability,
+      similarity_boost,
+      style,
       use_speaker_boost: options.use_speaker_boost ?? true,
     },
   };

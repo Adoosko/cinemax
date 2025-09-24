@@ -31,7 +31,7 @@ export function MagicLinkForm() {
       const result = await signIn.magicLink({
         email,
         ...(isSignUp && name && { name }),
-        callbackURL: '/',
+        callbackURL: '/movies',
       });
 
       if (result.error) {

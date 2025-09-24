@@ -1,5 +1,3 @@
-'use client';
-
 import {
   S3Client,
   GetObjectCommand,
@@ -8,10 +6,26 @@ import {
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
+// Convert movie title to URL-friendly slug (standalone function)
+export function titleToSlug(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special characters except spaces and hyphens
+    .replace(/\s+/g, '-') // Replace spaces with hyphens
+    .replace(/-+/g, '-') // Replace multiple hyphens with single hyphen
+    .replace(/^-|-$/g, ''); // Remove leading/trailing hyphens
+}
+
 export class VideoService {
-  protected static readonly S3_BUCKET = process.env.NEXT_PUBLIC_S3_BUCKET || 'cinemx';
-  protected static readonly S3_REGION = process.env.NEXT_PUBLIC_S3_REGION || 'eu-north-1';
-  protected static readonly CLOUDFRONT_URL = process.env.NEXT_PUBLIC_CLOUDFRONT_URL;
+  protected static readonly S3_BUCKET = process.env.NEXT_PUBLIC_AWS_S3_BUCKET || 'cinemx';
+  protected static readonly S3_REGION = process.env.NEXT_PUBLIC_AWS_S3_REGION || 'eu-north-1';
+  protected static readonly CLOUDFRONT_URL = process.env.NEXT_PUBLIC_AWS_CLOUDFRONT_URL;
+
+  // Convert movie title to URL-friendly slug
+  static titleToSlug(title: string): string {
+    return titleToSlug(title); // Use the standalone function
+  }
 
   // Initialize S3 client (only on server-side)
   private static getS3Client() {
@@ -295,11 +309,58 @@ export class VideoService {
       { file: '480.mp4', quality: '480P', bitrate: 2500 },
     ];
 
-    // In development mode, simulate file discovery
+    // In development mode, first try to check for real uploaded videos
     if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
-      console.log(`[DEV] Simulating video quality discovery for ${videoSlug}`);
+      console.log(`[DEV] Checking for real uploaded videos for ${videoSlug}`);
 
-      // For demo purposes, let's say we have 720p and 4K
+      // First try to find real uploaded videos
+      const availableQualities = [];
+
+      // Check each possible file pattern
+      for (const filePattern of possibleFiles) {
+        try {
+          // Check if this file exists in S3
+          const command = new GetObjectCommand({
+            Bucket: this.S3_BUCKET,
+            Key: `videos/${videoSlug}/${filePattern.file}`,
+          });
+
+          try {
+            const s3Client = this.getS3Client();
+            if (!s3Client) {
+              throw new Error('S3 client not available (client-side environment)');
+            }
+            await s3Client.send(command);
+            // File exists, generate a presigned URL
+            const url = await this.getPresignedVideoUrl(videoSlug, filePattern.quality, 7200); // 2 hours
+
+            // Add to available qualities
+            availableQualities.push({
+              quality: filePattern.quality,
+              url,
+              bitrate: filePattern.bitrate,
+            });
+
+            console.log(`Found uploaded video: ${filePattern.quality} (${filePattern.file})`);
+          } catch (error) {
+            // File doesn't exist, skip silently
+          }
+        } catch (error) {
+          console.error(`Error checking for file ${filePattern.file}:`, error);
+        }
+      }
+
+      // If we found real uploaded videos, return them
+      if (availableQualities.length > 0) {
+        console.log(`[DEV] Found ${availableQualities.length} real uploaded videos for ${videoSlug}`);
+        availableQualities.sort((a, b) => b.bitrate - a.bitrate);
+        return availableQualities;
+      }
+
+      // If no real videos found, fall back to simulation
+      console.log(`[DEV] No real videos found, simulating for ${videoSlug}`);
+
+      // For demo purposes, simulate having 720p and 4K
       try {
         // Generate presigned URLs for secure access
         const url4K = await this.getPresignedVideoUrl(videoSlug, '4k', 7200); // 2 hour expiry

@@ -15,18 +15,6 @@ export const experimental_ppr = true;
 export default async function MoviesPage() {
   const cachedData = await CachedPublicMoviesData();
 
-  // Debug logging
-  console.log('CachedPublicMoviesData result:', {
-    movieCount: cachedData.movies?.length || 0,
-    hasMovies: Boolean(cachedData.movies?.length),
-    firstMovie: cachedData.movies?.[0]
-      ? {
-          id: cachedData.movies[0].id,
-          title: cachedData.movies[0].title,
-          slug: cachedData.movies[0].slug,
-        }
-      : 'No movies found',
-  });
   return (
     <MoviesProvider initialMovies={cachedData.movies}>
       <NetflixBg variant="solid" className="min-h-screen">

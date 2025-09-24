@@ -8,28 +8,15 @@ import Link from 'next/link';
 import { CachedUserProfile } from '@/components/auth/cached-user-profile';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { signOut } from '@/lib/auth-client';
-import {
-  Menu,
-  X,
-  Film,
-  Calendar,
-  Search,
-  Ticket,
-  Shield,
-  User,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { Film, Calendar, Search, X, Ticket, Shield, User, Settings, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
-import { UpgradeButton } from '../polar/upgrade-button';
+
 import { useSubscription } from '@/lib/hooks/use-subscription';
 import { Badge } from '../ui/badge';
 import { UpgradeModal } from '../modals/upgrade-modal';
 
 export function Navbar() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
@@ -53,18 +40,13 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close mobile menu on route change
+  // Close search on route change
   const pathname = usePathname();
   useEffect(() => {
-    setIsMenuOpen(false);
     setIsSearchOpen(false);
   }, [pathname]);
 
-  const navLinks = [
-    { name: 'Movies', href: '/movies', icon: Film },
-    { name: 'Showtimes', href: '/showtimes', icon: Calendar },
-    { name: 'My Bookings', href: '/bookings', icon: Ticket },
-  ];
+  const navLinks = [{ name: 'Movies', href: '/movies', icon: Film }];
 
   return (
     <>
@@ -73,7 +55,7 @@ export function Navbar() {
         <div className="w-full px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
             {/* Logo */}
-            <Link href="/" className="flex items-center group" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/" className="flex items-center group">
               <div className="flex items-center">
                 <Image src="/logo.png" alt="Logo" width={50} height={50} />
                 <Image className="pt-1" src="/text-logo.png" alt="Logo" width={100} height={80} />
@@ -96,19 +78,12 @@ export function Navbar() {
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-2 sm:space-x-4">
-              {/* Search Toggle */}
-              <Button
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
-                className="hidden sm:flex p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl"
-              >
-                <Search className="w-5 h-5" />
-              </Button>
-
               {!subscription && isAuthenticated ? (
                 <div>
                   <Button
                     onClick={() => setIsUpgradeModalOpen(true)}
-                    className="hidden sm:flex p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl"
+                    variant={'premium'}
+                    size={'sm'}
                   >
                     Upgrade
                   </Button>
@@ -116,30 +91,22 @@ export function Navbar() {
                 </div>
               ) : (
                 isAuthenticated && (
-                  <Badge className="text-white">
+                  <Badge variant={'premium'}>
                     {subscription?.recurringInterval === 'year' ? 'Cinemx+' : 'Cinemx+'}
                   </Badge>
                 )
               )}
+              <Button
+                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                variant={'glass'}
+                size={'icon'}
+              >
+                <Search className="w-5 h-5" />
+              </Button>
 
-              {/* Desktop User Menu */}
-              <div className="hidden lg:block relative">
-                <CachedUserProfile />
-              </div>
+              <CachedUserProfile />
 
-              {/* Mobile User Button */}
-              <div className="lg:hidden">
-                <CachedUserProfile />
-              </div>
-
-              {/* Mobile Menu Button with Sheet */}
-              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button className="lg:hidden p-3 text-white/80 hover:text-white hover:bg-white/10 rounded-xl relative">
-                    <Menu className="w-6 h-6" />
-                  </Button>
-                </SheetTrigger>
-              </Sheet>
+              {/* Mobile Menu Button - REMOVED */}
             </div>
           </div>
         </div>
@@ -150,14 +117,11 @@ export function Navbar() {
             <div className="px-4 sm:px-6 lg:px-8 py-4">
               <div className="relative max-w-2xl mx-auto">
                 <div className="flex items-center">
-                  <SearchBar
-                    placeholder="Search movies, showtimes, theaters..."
-                    autoFocus
-                    className="flex-1"
-                  />
+                  <SearchBar placeholder="Search movies..." autoFocus className="flex-1" />
                   <Button
                     onClick={() => setIsSearchOpen(false)}
-                    className="ml-3 p-2 text-white/40 hover:text-white transition-colors"
+                    variant={'glass'}
+                    size={'icon'}
                     aria-label="Close search"
                   >
                     <X className="w-5 h-5" />
@@ -169,81 +133,7 @@ export function Navbar() {
         )}
       </nav>
 
-      {/* Mobile Menu using Sheet Component */}
-      <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-        <SheetContent
-          side="right"
-          className="bg-black/95 backdrop-blur-xl border-l border-white/10 p-0 w-80 max-w-[85vw] lg:hidden"
-        >
-          <div className="pt-14 pb-6">
-            {/* User Section - Mobile */}
-            {isAuthenticated && (
-              <div className="px-6 pb-6 border-b border-white/10">
-                <div className="flex items-center space-x-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-netflix-red to-red-700 rounded-xl flex items-center justify-center">
-                    <User className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-white font-semibold">
-                      {user?.name || user?.email?.split('@')[0] || 'User'}
-                    </div>
-                    <div className="text-sm text-white/60">{user?.email}</div>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <div className="w-2 h-2 bg-netflix-red rounded-full" />
-                      <span className="text-xs text-netflix-red font-medium">
-                        {(user as any)?.role === 'admin' ? 'Admin Account' : 'Member'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation Links */}
-            <div className="px-6 py-6 space-y-2">
-              {navLinks.map((link, index) => (
-                <div key={link.name}>
-                  <SheetClose asChild>
-                    <Link
-                      href={link.href}
-                      className="flex items-center space-x-4 text-white hover:text-netflix-red hover:bg-white/10 transition-all duration-200 py-4 px-4 -mx-4 rounded-xl group"
-                    >
-                      <link.icon className="w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
-                      <span className="text-lg font-medium">{link.name}</span>
-                    </Link>
-                  </SheetClose>
-                </div>
-              ))}
-
-              {/* Search - Mobile */}
-              <div>
-                <SheetClose asChild>
-                  <Button
-                    onClick={() => setIsSearchOpen(true)}
-                    className="flex items-center space-x-4 text-white hover:text-netflix-red hover:bg-white/10 transition-all duration-200 py-4 px-4 -mx-4 w-full rounded-xl group text-left"
-                  >
-                    <Search className="w-6 h-6 group-hover:scale-110 transition-transform duration-200" />
-                    <span className="text-lg font-medium">Search</span>
-                  </Button>
-                </SheetClose>
-              </div>
-            </div>
-
-            {/* Sign In - Mobile (if not authenticated) */}
-            {!isAuthenticated && (
-              <div className="px-6 pt-6 border-t border-white/10">
-                <SheetClose asChild>
-                  <Link href="/auth/signin">
-                    <Button className="w-full bg-netflix-red hover:bg-red-700 text-white py-4 text-lg font-semibold transition-all duration-200 rounded-xl shadow-lg">
-                      Sign In to CinemaX
-                    </Button>
-                  </Link>
-                </SheetClose>
-              </div>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* Mobile Menu using Sheet Component - REMOVED */}
 
       {/* Spacer */}
       <div className="h-16 sm:h-20" />

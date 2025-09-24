@@ -313,7 +313,10 @@ export function VideoUpload({ movieId, movieTitle, onUploadComplete, onClose }: 
                               .toLowerCase()
                               .replace(/[^a-z0-9]+/g, '-')
                               .replace(/^-|-$/g, '')
-                          : movieId)}
+                          : (movieId || 'unknown-movie')
+                              .toLowerCase()
+                              .replace(/[^a-z0-9]+/g, '-')
+                              .replace(/^-|-$/g, ''))}
                       /{'{quality}'}.mp4
                     </div>
                   </div>

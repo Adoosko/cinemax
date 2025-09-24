@@ -11,12 +11,95 @@ interface WatchLimitGateProps {
 }
 
 export function WatchLimitGate({ children }: WatchLimitGateProps) {
-  // TEMPORARILY DISABLE WATCH LIMIT FOR TESTING
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { watchLimit, isLoading, error, canWatchMore } = useWatchLimit();
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-netflix-red mx-auto mb-4" />
+          <p className="text-white/60">Loading watch limit...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[200px]">
+        <div className="text-center max-w-md">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h3 className="text-white text-lg font-semibold mb-2">Unable to Load Watch Limit</h3>
+          <p className="text-white/60 mb-4">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-netflix-red hover:bg-red-700 text-white"
+          >
+            Try Again
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // If user cannot watch more, show upgrade gate
+  if (!canWatchMore) {
+    return (
+      <>
+        {/* Watch Limit Reached Screen */}
+        <div className="flex items-center justify-center min-h-[80vh] px-4 py-8">
+          <div className="text-center w-full max-w-sm sm:max-w-md">
+            <div className="w-12 h-12 sm:w-15 sm:h-15 bg-netflix-red/20 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Lock className="w-6 h-6 sm:w-7 sm:h-7 text-netflix-red" />
+            </div>
+
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Watch Limit Reached</h1>
+
+            <div className="bg-white/5 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 border border-white/10">
+              {watchLimit && (
+                <div className="text-center">
+                  <p className="text-white/60 text-xs sm:text-sm mb-2">You've watched</p>
+                  <p className="text-xl sm:text-2xl font-bold text-white mb-1">
+                    {watchLimit.watchedCount} / {watchLimit.limit}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <p className="text-white/60 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed px-2">
+              You've reached your monthly watch limit. Upgrade to premium for unlimited movies and remove ads.
+            </p>
+
+            <div className="space-y-3 sm:space-y-4">
+              <Button onClick={() => setShowUpgradeModal(true)} variant="premium" size="sm" className="w-full text-base py-3">
+                Upgrade to Premium
+              </Button>
+
+              <p className="text-white/40 text-xs sm:text-sm">Premium starts at $3/month • Cancel anytime</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Upgrade Modal */}
+        <UpgradeModal open={showUpgradeModal} onOpenChange={setShowUpgradeModal} />
+
+        {/* Debug overlay - shows current status */}
+        <div className="fixed top-4 right-4 bg-red-600/80 text-white p-2 rounded text-xs z-50">
+          🚫 Limit Reached: {watchLimit ? `${watchLimit.remaining} left` : 'N/A'}
+        </div>
+      </>
+    );
+  }
+
+  // User can watch more - show content
   return (
     <>
       {/* Debug overlay - shows current status */}
       <div className="fixed top-4 right-4 bg-green-600/80 text-white p-2 rounded text-xs z-50">
-        🎬 Watch Limit DISABLED for testing
+        ✅ Can Watch: {watchLimit ? `${watchLimit.remaining} left` : 'N/A'}
       </div>
       {children}
     </>

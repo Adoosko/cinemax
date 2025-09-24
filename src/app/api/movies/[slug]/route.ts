@@ -6,6 +6,7 @@ import {
   formatReleaseYear,
   formatGenre,
 } from '@/lib/utils/movie-utils';
+import { VideoService } from '@/lib/services/video-service';
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
             theater: {
               include: {
                 cinema: true,
+              },
+            },
+            bookings: {
+              select: {
+                bookingSeats: true,
               },
             },
           },
@@ -67,6 +73,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
+    // Check if videos exist for this movie
+    let streamingUrl = null;
+    try {
+      const availableQualities = await VideoService.discoverVideoQualities(movie.slug);
+      if (availableQualities && availableQualities.length > 0) {
+        // Use the highest quality video as the streaming URL
+        const bestQuality = availableQualities[0];
+        streamingUrl = bestQuality.url;
+      }
+    } catch (error) {
+      console.log(`No videos found for movie ${movie.slug}, using fallback logic`);
+      // Fallback for specific movies (like The Beekeeper)
+      if (movie.slug === 'the-beekeeper') {
+        streamingUrl = `${process.env.BUNNY_CDN_URL || 'https://cinemax.b-cdn.net'}/beekeeper-2024/playlist.m3u8`;
+      }
+    }
+
     // Transform the movie data
     const transformedMovie = {
       id: movie.id,
@@ -89,11 +112,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         movie.backdropUrl ||
         'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
       trailerUrl: movie.trailerUrl || null,
-      // Set streaming URL for The Beekeeper
-      streamingUrl:
-        movie.slug === 'the-beekeeper'
-          ? `${process.env.BUNNY_CDN_URL || 'https://cinemax.b-cdn.net'}/beekeeper-2024/playlist.m3u8`
-          : null,
+      streamingUrl,
 
       // Showtimes grouped by date
       showtimes: movie.showtimes.reduce((acc: any, showtime) => {
