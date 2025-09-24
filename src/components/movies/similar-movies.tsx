@@ -99,11 +99,11 @@ export function SimilarMovies({
     if (Array.isArray(currentMovie.genre)) {
       genreToMatch = currentMovie.genre;
     } else if (typeof currentMovie.genre === 'string' && currentMovie.genre) {
-      genreToMatch = currentMovie.genre.split(', ').filter(g => g && g.trim());
+      genreToMatch = currentMovie.genre.split(', ').filter((g) => g && g.trim());
     }
 
     // Convert to lowercase for matching
-    genreToMatch = genreToMatch.map(g => g.toLowerCase().trim());
+    genreToMatch = genreToMatch.map((g) => g.toLowerCase().trim());
 
     // Find movies with similar genre
     const matchingMovies = otherMovies.filter((movie) => {
@@ -113,16 +113,16 @@ export function SimilarMovies({
       if (Array.isArray(movie.genre)) {
         movieGenres = movie.genre;
       } else if (typeof movie.genre === 'string' && movie.genre) {
-        movieGenres = movie.genre.split(', ').filter(g => g && g.trim());
+        movieGenres = movie.genre.split(', ').filter((g) => g && g.trim());
       }
 
       // Convert to lowercase for matching
-      movieGenres = movieGenres.map(g => g.toLowerCase().trim());
+      movieGenres = movieGenres.map((g) => g.toLowerCase().trim());
 
       // Check if any genre matches
-      return genreToMatch.some(matchGenre =>
-        movieGenres.some(movieGenre =>
-          movieGenre.includes(matchGenre) || matchGenre.includes(movieGenre)
+      return genreToMatch.some((matchGenre) =>
+        movieGenres.some(
+          (movieGenre) => movieGenre.includes(matchGenre) || matchGenre.includes(movieGenre)
         )
       );
     });
