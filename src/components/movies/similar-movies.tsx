@@ -95,25 +95,36 @@ export function SimilarMovies({
     const otherMovies = allMovies.filter((movie) => movie.id !== currentMovie.id);
 
     // Find movies with similar genre
-    let genreToMatch: string | string[] = currentMovie.genre;
-    if (typeof genreToMatch === 'string') {
-      genreToMatch = genreToMatch.toLowerCase();
+    let genreToMatch: string[] = [];
+    if (Array.isArray(currentMovie.genre)) {
+      genreToMatch = currentMovie.genre;
+    } else if (typeof currentMovie.genre === 'string' && currentMovie.genre) {
+      genreToMatch = currentMovie.genre.split(', ').filter(g => g && g.trim());
     }
+
+    // Convert to lowercase for matching
+    genreToMatch = genreToMatch.map(g => g.toLowerCase().trim());
 
     // Find movies with similar genre
     const matchingMovies = otherMovies.filter((movie) => {
-      if (typeof movie.genre === 'string' && typeof genreToMatch === 'string') {
-        return movie.genre.toLowerCase().includes(genreToMatch);
-      } else if (Array.isArray(movie.genre) && typeof genreToMatch === 'string') {
-        return movie.genre.some((g) => g.toLowerCase().includes(genreToMatch));
-      } else if (typeof movie.genre === 'string' && Array.isArray(genreToMatch)) {
-        return genreToMatch.some((g) => movie.genre.toLowerCase().includes(g.toLowerCase()));
-      } else if (Array.isArray(movie.genre) && Array.isArray(genreToMatch)) {
-        return movie.genre.some((g) =>
-          genreToMatch.some((matchG) => g.toLowerCase().includes(matchG.toLowerCase()))
-        );
+      if (!movie.genre) return false;
+
+      let movieGenres: string[] = [];
+      if (Array.isArray(movie.genre)) {
+        movieGenres = movie.genre;
+      } else if (typeof movie.genre === 'string' && movie.genre) {
+        movieGenres = movie.genre.split(', ').filter(g => g && g.trim());
       }
-      return false;
+
+      // Convert to lowercase for matching
+      movieGenres = movieGenres.map(g => g.toLowerCase().trim());
+
+      // Check if any genre matches
+      return genreToMatch.some(matchGenre =>
+        movieGenres.some(movieGenre =>
+          movieGenre.includes(matchGenre) || matchGenre.includes(movieGenre)
+        )
+      );
     });
 
     // If we don't have enough matching movies, add some random ones

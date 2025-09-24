@@ -8,17 +8,7 @@ import Link from 'next/link';
 import { CachedUserProfile } from '@/components/auth/cached-user-profile';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { signOut } from '@/lib/auth-client';
-import {
-  Film,
-  Calendar,
-  Search,
-  X,
-  Ticket,
-  Shield,
-  User,
-  Settings,
-  LogOut,
-} from 'lucide-react';
+import { Film, Calendar, Search, X, Ticket, Shield, User, Settings, LogOut } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
@@ -76,7 +66,7 @@ export function Navbar() {
           console.log('[Navbar] Response type:', Array.isArray(data) ? 'array' : typeof data);
 
           // API returns movies array directly, not wrapped in {movies: []}
-          const movies = Array.isArray(data) ? data : (data.movies || []);
+          const movies = Array.isArray(data) ? data : data.movies || [];
           console.log('[Navbar] Fetched movies for search:', movies.length, 'movies');
           console.log('[Navbar] Sample movie:', movies[0]);
           setAllMovies(movies);
@@ -127,14 +117,26 @@ export function Navbar() {
               (movie.title?.toLowerCase() || '').includes(queryLower) ||
               (movie.description?.toLowerCase() || '').includes(queryLower) ||
               (movie.director?.toLowerCase() || '').includes(queryLower) ||
-              (movie.cast && Array.isArray(movie.cast) && movie.cast.some(actor =>
-                actor && typeof actor === 'string' && actor.toLowerCase().includes(queryLower)
-              )) ||
-              (movie.genre && Array.isArray(movie.genre) && movie.genre.some(g =>
-                g && typeof g === 'string' && g.toLowerCase().includes(queryLower)
-              ));
+              (movie.cast &&
+                Array.isArray(movie.cast) &&
+                movie.cast.some(
+                  (actor) =>
+                    actor && typeof actor === 'string' && actor.toLowerCase().includes(queryLower)
+                )) ||
+              (movie.genre &&
+                Array.isArray(movie.genre) &&
+                movie.genre.some(
+                  (g) => g && typeof g === 'string' && g.toLowerCase().includes(queryLower)
+                ));
 
-            console.log('[Navbar] Movie:', movie.title, 'hasSlug:', hasSlug, 'matches:', matchesSearch);
+            console.log(
+              '[Navbar] Movie:',
+              movie.title,
+              'hasSlug:',
+              hasSlug,
+              'matches:',
+              matchesSearch
+            );
             return hasSlug && matchesSearch;
           })
           .slice(0, 8); // Limit to 8 results
@@ -293,8 +295,12 @@ export function Navbar() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-white font-medium text-sm truncate">{movie.title}</h4>
-                              <p className="text-white/60 text-xs truncate">{movie.director} • {movie.releaseDate}</p>
+                              <h4 className="text-white font-medium text-sm truncate">
+                                {movie.title}
+                              </h4>
+                              <p className="text-white/60 text-xs truncate">
+                                {movie.director} • {movie.releaseDate}
+                              </p>
                               <div className="flex items-center space-x-2 mt-1">
                                 {movie.rating && (
                                   <span className="text-yellow-400 text-xs">★ {movie.rating}</span>
@@ -304,8 +310,7 @@ export function Navbar() {
                                     ? movie.genre.slice(0, 2).join(', ')
                                     : typeof movie.genre === 'string' && movie.genre
                                       ? (movie.genre as string).split(', ').slice(0, 2).join(', ')
-                                      : 'Unknown'
-                                  }
+                                      : 'Unknown'}
                                 </span>
                               </div>
                             </div>

@@ -46,10 +46,7 @@ export const auth = betterAuth({
           secret: process.env.POLAR_WEBHOOK_SECRET!,
           async onSubscriptionActive(payload) {
             const data = payload.data;
-            const planEnum =
-              data.recurringInterval === 'year'
-                ? 'YEARLY'
-                : 'MONTHLY'; // Default to MONTHLY for any non-yearly subscription
+            const planEnum = data.recurringInterval === 'year' ? 'YEARLY' : 'MONTHLY'; // Default to MONTHLY for any non-yearly subscription
 
             const userId = data.customer?.externalId as string | undefined;
             const subscription = data;

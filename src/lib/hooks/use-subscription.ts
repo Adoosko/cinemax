@@ -71,7 +71,7 @@ export function useSubscription() {
 
       try {
         const response: any = await authClient.customer.subscriptions.list({
-          query: { page: 1, limit: 1, active: true }
+          query: { page: 1, limit: 1, active: true },
         });
 
         let first: Subscription | null = null;
@@ -93,10 +93,13 @@ export function useSubscription() {
 
           // Cache the fresh subscription data
           try {
-            localStorage.setItem('cachedSubscription', JSON.stringify({
-              data: first,
-              cachedAt: new Date().toISOString()
-            }));
+            localStorage.setItem(
+              'cachedSubscription',
+              JSON.stringify({
+                data: first,
+                cachedAt: new Date().toISOString(),
+              })
+            );
           } catch (cacheErr) {
             console.warn('[useSubscription] Failed to cache subscription:', cacheErr);
           }

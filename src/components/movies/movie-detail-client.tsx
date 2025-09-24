@@ -81,7 +81,11 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
         <div className="absolute bottom-0 left-0 right-0 px-6 py-8">
           <div className="max-w-3xl">
             {movie.streamingUrl && (
-              <CreateWatchPartyButton movieId={movie.id} movieTitle={movie.title} className="mb-4" />
+              <CreateWatchPartyButton
+                movieId={movie.id}
+                movieTitle={movie.title}
+                className="mb-4"
+              />
             )}
             <h1 className="text-2xl mt-5 md:text-4xl lg:text-5xl font-bold text-white mb-3">
               {movie.title}
