@@ -10,10 +10,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   try {
     const { slug } = await params;
 
-    // Get comments for this movie, ordered by newest first
+    // Get top-level comments (no parent) with their replies
     const comments = await prisma.movieComment.findMany({
       where: {
         movieSlug: slug,
+        parentId: null, // Only top-level comments
       },
       select: {
         id: true,
@@ -22,7 +23,23 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         userAvatar: true,
         content: true,
         isSpoiler: true,
+        parentId: true,
         createdAt: true,
+        replies: {
+          select: {
+            id: true,
+            userId: true,
+            userName: true,
+            userAvatar: true,
+            content: true,
+            isSpoiler: true,
+            parentId: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'asc',
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -32,7 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({
       success: true,
       comments,
-      totalCount: comments.length,
+      totalCount: comments.reduce((total, comment) => total + 1 + comment.replies.length, 0),
     });
   } catch (error) {
     console.error('Error fetching comments:', error);
@@ -41,7 +58,10 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 // POST /api/movies/[slug]/comments - Create a new comment
-export async function POST(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
   try {
     const { slug } = await params;
 
@@ -49,13 +69,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const session = await auth.api.getSession({
       headers: await headers(),
     });
-
     if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { content, isSpoiler = false } = body;
+    const { content, isSpoiler = false, parentId } = body;
 
     // Validate input
     if (!content || typeof content !== 'string' || content.trim().length === 0) {
@@ -76,6 +95,23 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
+    // If parentId is provided, verify the parent comment exists and belongs to the same movie
+    if (parentId) {
+      const parentComment = await prisma.movieComment.findUnique({
+        where: { id: parentId },
+        select: { movieSlug: true, parentId: true },
+      });
+
+      if (!parentComment || parentComment.movieSlug !== slug) {
+        return NextResponse.json({ error: 'Parent comment not found' }, { status: 404 });
+      }
+
+      // Prevent nested replies (only allow 1 level of nesting)
+      if (parentComment.parentId) {
+        return NextResponse.json({ error: 'Cannot reply to a reply' }, { status: 400 });
+      }
+    }
+
     // Create the comment
     const comment = await prisma.movieComment.create({
       data: {
@@ -85,6 +121,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         userAvatar: session.user.image || null,
         content: content.trim(),
         isSpoiler,
+        parentId,
       },
       select: {
         id: true,
@@ -93,6 +130,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         userAvatar: true,
         content: true,
         isSpoiler: true,
+        parentId: true,
         createdAt: true,
       },
     });
@@ -108,7 +146,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 // DELETE /api/movies/[slug]/comments - Delete a comment (only by comment owner)
-export async function DELETE(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string }> }
+) {
   try {
     const { slug } = await params;
 

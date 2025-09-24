@@ -532,10 +532,13 @@ model MovieComment {
   userAvatar String?
   content    String
   isSpoiler  Boolean  @default(false)
+  parentId   String?  // For reply threading
   createdAt  DateTime @default(now())
 
   // Relations
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent MovieComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies MovieComment[] @relation("CommentReplies")
 
   @@map("movie_comments")
 }

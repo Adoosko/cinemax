@@ -23,6 +23,18 @@ function formatRelativeTime(dateString: string): string {
   return date.toLocaleDateString();
 }
 
+export interface MovieComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  content: string;
+  isSpoiler: boolean;
+  parentId?: string;
+  createdAt: string;
+  replies?: MovieComment[];
+}
+
 interface MovieCommentsProps {
   movieSlug: string;
 }
@@ -36,6 +48,9 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
   const [content, setContent] = useState('');
   const [isSpoiler, setIsSpoiler] = useState(false);
   const [revealedSpoilers, setRevealedSpoilers] = useState<Set<string>>(new Set());
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [replySpoiler, setReplySpoiler] = useState(false);
 
   // Fetch comments on mount
   useEffect(() => {
@@ -134,6 +149,122 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
       }
       return newSet;
     });
+  };
+
+  const handleReply = async (parentId: string, e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!replyContent.trim() || !isAuthenticated || submitting) return;
+
+    setSubmitting(true);
+
+    const optimisticReply: MovieComment = {
+      id: `temp-reply-${Date.now()}`,
+      userId: user!.id,
+      userName: user!.name || 'Anonymous',
+      userAvatar: user!.image || undefined,
+      content: replyContent.trim(),
+      isSpoiler: replySpoiler,
+      parentId,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Add reply optimistically
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment.id === parentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), optimisticReply],
+          };
+        }
+        return comment;
+      })
+    );
+    setTotalCount((prev) => prev + 1);
+
+    const currentReplyContent = replyContent;
+    const currentReplySpoiler = replySpoiler;
+
+    setReplyContent('');
+    setReplySpoiler(false);
+    setReplyingTo(null);
+
+    try {
+      const response = await fetch(`/api/movies/${movieSlug}/comments`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: currentReplyContent.trim(),
+          isSpoiler: currentReplySpoiler,
+          parentId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace optimistic reply with real one
+        setComments((prev) =>
+          prev.map((comment) => {
+            if (comment.id === parentId) {
+              return {
+                ...comment,
+                replies: (comment.replies || []).map((reply) =>
+                  reply.id === optimisticReply.id ? data.comment : reply
+                ),
+              };
+            }
+            return comment;
+          })
+        );
+      } else {
+        // Remove optimistic reply and show error
+        setComments((prev) =>
+          prev.map((comment) => {
+            if (comment.id === parentId) {
+              return {
+                ...comment,
+                replies: (comment.replies || []).filter(
+                  (reply) => reply.id !== optimisticReply.id
+                ),
+              };
+            }
+            return comment;
+          })
+        );
+        setTotalCount((prev) => prev - 1);
+        setReplyContent(currentReplyContent);
+        setReplySpoiler(currentReplySpoiler);
+        setReplyingTo(parentId);
+        alert(data.error || 'Failed to post reply');
+      }
+    } catch (error) {
+      // Remove optimistic reply and show error
+      setComments((prev) =>
+        prev.map((comment) => {
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replies: (comment.replies || []).filter(
+                (reply) => reply.id !== optimisticReply.id
+              ),
+            };
+          }
+          return comment;
+        })
+      );
+      setTotalCount((prev) => prev - 1);
+      setReplyContent(currentReplyContent);
+      setReplySpoiler(currentReplySpoiler);
+      setReplyingTo(parentId);
+      console.error('Failed to post reply:', error);
+      alert('Failed to post reply. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const deleteComment = async (commentId: string) => {
