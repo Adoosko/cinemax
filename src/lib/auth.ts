@@ -49,9 +49,7 @@ export const auth = betterAuth({
             const planEnum =
               data.recurringInterval === 'year'
                 ? 'YEARLY'
-                : data.recurringInterval === 'month'
-                  ? 'MONTHLY'
-                  : 'PREMIUM'; // fallback/default
+                : 'MONTHLY'; // Default to MONTHLY for any non-yearly subscription
 
             const userId = data.customer?.externalId as string | undefined;
             const subscription = data;

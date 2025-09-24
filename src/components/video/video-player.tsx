@@ -60,8 +60,6 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     },
     ref
   ) => {
-    console.log('VideoPlayer initialized:', { title, qualitiesCount: qualities.length });
-
     const videoRef = useRef<HTMLVideoElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -246,8 +244,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       [title]
     );
 
-    // Enhanced auto-hide controls
+    //  auto-hide controls - FIXED
     const resetControlsTimeout = useCallback(() => {
+      // Clear existing timeouts
       if (controlsTimeoutRef.current) {
         clearTimeout(controlsTimeoutRef.current);
         controlsTimeoutRef.current = null;
@@ -257,13 +256,17 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         mouseActivityRef.current = null;
       }
 
+      // Always show controls initially
       setShowControls(true);
       setIsMouseInactive(false);
 
-      // Hide controls when playing and no menus open
-      if (isPlaying && !showQualityMenu && !showSpeedMenu && !isKeyboardFocused) {
+      // Only hide controls if video is playing and no menus are open
+      if (isPlaying && !showQualityMenu && !showSpeedMenu && !videoError && !isLoading) {
+        console.log('⏰ Setting auto-hide timeout for controls (', isMobile ? 4000 : 3000, 'ms )');
+
         controlsTimeoutRef.current = setTimeout(
           () => {
+            console.log('👁️ Auto-hiding controls');
             setShowControls(false);
           },
           isMobile ? 4000 : 3000
@@ -271,17 +274,29 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
         mouseActivityRef.current = setTimeout(
           () => {
+            console.log('🐭 Setting mouse inactive');
             setIsMouseInactive(true);
           },
           isMobile ? 3000 : 2000
         );
+      } else {
+        console.log('❌ Not setting auto-hide timeout - conditions not met');
       }
-    }, [isPlaying, showQualityMenu, showSpeedMenu, isKeyboardFocused, isMobile]);
+    }, [
+      isPlaying,
+      showQualityMenu,
+      showSpeedMenu,
+      isKeyboardFocused,
+      videoError,
+      isLoading,
+      isMobile,
+    ]);
 
-    // Enhanced mouse controls
+    // Enhanced mouse controls - FIXED
     useEffect(() => {
       const container = containerRef.current;
-      if (!container) return;
+      const video = videoRef.current;
+      if (!container || !video) return;
 
       let lastX = 0;
       let lastY = 0;
@@ -296,7 +311,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           lastX = e.clientX;
           lastY = e.clientY;
 
+          // Only reset controls if no menus are open
           if (!showQualityMenu && !showSpeedMenu) {
+            console.log('Mouse moved, resetting controls timeout');
             resetControlsTimeout();
           }
         }
@@ -400,6 +417,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       const handlePlay = () => {
         setIsPlaying(true);
+        console.log('Video started playing, resetting controls timeout');
         resetControlsTimeout();
         video.playbackRate = playbackSpeed;
       };
@@ -1582,32 +1600,24 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
         </AnimatePresence>
 
-        {/* Quality Badge - Only when controls hidden */}
+        {/* Watermark - CinemaX Logo in top right */}
         <AnimatePresence>
-          {!videoError && !isLoading && currentQuality && !showControls && (
+          {isPlaying && !videoError && (
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1 }}
-              className="absolute top-4 md:top-6 left-4 md:left-6 z-30 pointer-events-none"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.5 }}
+              className="absolute top-3 md:top-4 right-3 md:right-4 z-25 pointer-events-none"
             >
-              <Badge
-                className={`px-2 py-1 md:px-3 md:py-1 rounded-md text-xs ${
-                  currentQuality.toUpperCase() === '4K'
-                    ? 'bg-netflix-red text-white shadow-lg'
-                    : 'bg-white/10 backdrop-blur-sm text-white border border-white/20'
-                }`}
-              >
-                {currentQuality.toUpperCase() === '4K' ? (
-                  <div className="flex items-center space-x-1">
-                    <span className="text-xs font-bold">ULTRA HD</span>
-                    <span className="text-[10px] opacity-90">4K</span>
-                  </div>
-                ) : (
-                  <span className="text-xs font-semibold">{currentQuality}</span>
-                )}
-              </Badge>
+              <Image
+                src="/text-logo.png"
+                alt="CinemaX"
+                width={isMobile ? 60 : 80}
+                height={isMobile ? 12 : 16}
+                className="opacity-80"
+                style={{ filter: 'brightness(0) invert(1)' }}
+              />
             </motion.div>
           )}
         </AnimatePresence>

@@ -31,7 +31,6 @@ export function CreateWatchPartyButton({
   const handleCreateParty = async () => {
     if (!subscription) {
       setError('Premium subscription required to create watch parties');
-      return;
     }
     setIsCreating(true);
     setError(null);

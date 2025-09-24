@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/hooks/use-auth';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, CreditCard } from 'lucide-react';
 import Link from 'next/link';
-import { signOut } from '@/lib/auth-client';
+import { authClient, signOut } from '@/lib/auth-client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -15,6 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuLabel,
 } from '@/components/ui/dropdown-menu';
+import { useSubscription } from '@/lib/hooks/use-subscription';
 
 interface CachedUserProfileProps {
   className?: string;
@@ -23,6 +24,7 @@ interface CachedUserProfileProps {
 
 export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfileProps) {
   const { user, isAuthenticated, isLoading } = useAuth();
+  const { subscription, error } = useSubscription();
   const [cachedProfile, setCachedProfile] = useState<any>(null);
 
   // Cache user data in localStorage for faster initial render
@@ -32,7 +34,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
         name: user.name,
         email: user.email,
         image: user.image,
-        role: user.role,
+        role: (user as any)?.role,
         lastUpdated: new Date().toISOString(),
       };
       setCachedProfile(profile);
@@ -43,7 +45,19 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
   // Handle sign out
   const handleSignOut = async () => {
     localStorage.removeItem('cachedUserProfile');
+    localStorage.removeItem('cachedSubscription');
     await signOut();
+  };
+
+  // Handle manage subscription
+  const handleManageSubscription = async () => {
+    try {
+      await authClient.customer.portal();
+    } catch (error) {
+      console.error('[CachedUserProfile] Failed to open customer portal:', error);
+      // Fallback to manual redirect if portal fails
+      window.location.href = 'https://sandbox.polar.sh/adoos-developer';
+    }
   };
 
   if (isLoading) {
@@ -59,7 +73,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
   }
 
   const userName = user?.name?.split(' ')[0] || user?.email?.split('@')[0] || 'User';
-  const userRole = user?.role === 'admin' ? 'Admin' : 'Member';
+  const userRole = (user as any)?.role === 'admin' ? 'Admin' : 'Member';
 
   return (
     <DropdownMenu onOpenChange={onMenuToggle}>
@@ -91,25 +105,18 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
         </DropdownMenuLabel>
         <div className="px-4 pb-2 text-white/50 text-xs">{user?.email}</div>
         <DropdownMenuSeparator className="bg-white/10" />
-        <DropdownMenuItem asChild>
-          <Link
-            href="/profile"
-            className="flex items-center px-4 py-2 gap-2 text-white hover:bg-white/10 rounded-none"
-          >
-            <User className="w-5 h-5 text-white hover:text-black" />
-            Profile
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link
-            href="/settings"
-            className="flex items-center px-4 py-2 gap-2 text-white hover:bg-white/10 rounded-none"
-          >
-            <Settings className="w-5 h-5 text-white hover:text-black" />
-            Settings
-          </Link>
-        </DropdownMenuItem>
-        {user?.role === 'admin' && (
+        {subscription && (
+          <DropdownMenuItem asChild>
+            <button
+              onClick={handleManageSubscription}
+              className="flex w-full items-center px-4 py-2 gap-2 text-white hover:bg-white/10 rounded-none"
+            >
+              <CreditCard className="w-5 h-5 text-white hover:text-black" />
+              Manage Subscription
+            </button>
+          </DropdownMenuItem>
+        )}
+        {(user as any)?.role === 'admin' && (
           <DropdownMenuItem asChild>
             <Link
               href="/admin"
