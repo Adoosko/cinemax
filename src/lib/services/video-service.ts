@@ -352,7 +352,9 @@ export class VideoService {
 
       // If we found real uploaded videos, return them
       if (availableQualities.length > 0) {
-        console.log(`[DEV] Found ${availableQualities.length} real uploaded videos for ${videoSlug}`);
+        console.log(
+          `[DEV] Found ${availableQualities.length} real uploaded videos for ${videoSlug}`
+        );
         availableQualities.sort((a, b) => b.bitrate - a.bitrate);
         return availableQualities;
       }

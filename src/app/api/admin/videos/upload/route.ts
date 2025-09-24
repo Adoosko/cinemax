@@ -15,9 +15,7 @@ export async function POST(request: NextRequest) {
 
     // If movieTitle is provided, convert it to a slug, otherwise create a slug from videoId
     // videoId might contain UUIDs or other characters that aren't URL-safe
-    const videoSlug = movieTitle
-      ? titleToSlug(movieTitle)
-      : titleToSlug(videoId as string);
+    const videoSlug = movieTitle ? titleToSlug(movieTitle) : titleToSlug(videoId as string);
 
     // Generate presigned URL for upload
     const uploadUrl = await S3VideoService.getUploadPresignedUrl(

@@ -4,7 +4,13 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Mic, Loader2, Sparkles } from 'lucide-react';
 import { Movie } from '@/lib/data/movies';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { VOICE_STYLES, VoiceStyleKey } from '@/lib/services/elevenlabs';
 
 interface AiTrailerButtonProps {
@@ -48,14 +54,16 @@ export default function AiTrailerButton({
       if (!response.ok) {
         const errorData = await response.json();
         console.log('Error response:', response.status, errorData);
-        
+
         // Handle the specific case where trailer already exists
         if (response.status === 409 && !overwrite) {
           console.log('Showing overwrite confirmation dialog');
           // We'll handle this in a separate state later
-          throw new Error('A trailer already exists for this movie and voice style. Use overwrite functionality.');
+          throw new Error(
+            'A trailer already exists for this movie and voice style. Use overwrite functionality.'
+          );
         }
-        
+
         throw new Error(errorData.error || 'Failed to generate trailer');
       }
 

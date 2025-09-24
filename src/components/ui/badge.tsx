@@ -13,7 +13,8 @@ const badgeVariants = cva(
         secondary: 'bg-white/10 text-white border border-white/20 ',
         destructive: 'bg-red-600/20 text-red-500 border border-red-500/30 hover:bg-red-600/30',
         outline: 'border border-white/20 text-white hover:bg-white/10',
-        premium: 'bg-gradient-to-r from-netflix-red to-netflix-dark-red text-white shadow-md hover:shadow-glow',
+        premium:
+          'bg-gradient-to-r from-netflix-red to-netflix-dark-red text-white shadow-md hover:shadow-glow',
       },
     },
     defaultVariants: {

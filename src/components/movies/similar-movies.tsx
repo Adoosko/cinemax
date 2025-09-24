@@ -1,7 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from '@/components/ui/carousel';
 import { MovieCard } from './movie-card';
 
 // Use the Movie type from the cached data
@@ -141,7 +147,14 @@ export function SimilarMovies({
         <CarouselContent className="-ml-4">
           {similarMovies.map((movie: Movie, index: number) => (
             <CarouselItem key={movie.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-              <MovieCard movie={movie} index={index} showPlayButton={true} showDetails={true} showStats={true} showDetailsOnMobile={true} />
+              <MovieCard
+                movie={movie}
+                index={index}
+                showPlayButton={true}
+                showDetails={true}
+                showStats={true}
+                showDetailsOnMobile={true}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>

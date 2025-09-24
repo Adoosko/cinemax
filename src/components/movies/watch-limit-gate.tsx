@@ -56,7 +56,9 @@ export function WatchLimitGate({ children }: WatchLimitGateProps) {
               <Lock className="w-6 h-6 sm:w-7 sm:h-7 text-netflix-red" />
             </div>
 
-            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">Watch Limit Reached</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-white mb-3 sm:mb-4">
+              Watch Limit Reached
+            </h1>
 
             <div className="bg-white/5 rounded-lg p-4 sm:p-6 mb-4 sm:mb-6 border border-white/10">
               {watchLimit && (
@@ -70,15 +72,23 @@ export function WatchLimitGate({ children }: WatchLimitGateProps) {
             </div>
 
             <p className="text-white/60 mb-4 sm:mb-6 text-sm sm:text-base leading-relaxed px-2">
-              You've reached your monthly watch limit. Upgrade to premium for unlimited movies and remove ads.
+              You've reached your monthly watch limit. Upgrade to premium for unlimited movies and
+              remove ads.
             </p>
 
             <div className="space-y-3 sm:space-y-4">
-              <Button onClick={() => setShowUpgradeModal(true)} variant="premium" size="sm" className="w-full text-base py-3">
+              <Button
+                onClick={() => setShowUpgradeModal(true)}
+                variant="premium"
+                size="sm"
+                className="w-full text-base py-3"
+              >
                 Upgrade to Premium
               </Button>
 
-              <p className="text-white/40 text-xs sm:text-sm">Premium starts at $3/month • Cancel anytime</p>
+              <p className="text-white/40 text-xs sm:text-sm">
+                Premium starts at $3/month • Cancel anytime
+              </p>
             </div>
           </div>
         </div>

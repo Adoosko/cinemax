@@ -191,7 +191,9 @@ export function WatchPartyOverlay({
         {/* Watch Party Header */}
         <div className="flex items-center justify-between p-3 sm:p-4">
           <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <h3 className="text-netflix-white font-semibold text-sm sm:text-base">Watch Party: {movieTitle}</h3>
+            <h3 className="text-netflix-white font-semibold text-sm sm:text-base">
+              Watch Party: {movieTitle}
+            </h3>
             <Badge
               variant={isConnected ? 'default' : 'destructive'}
               className={

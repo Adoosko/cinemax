@@ -131,7 +131,9 @@ export function UpgradeModal({
                             <span>2 movies per month</span>
                           </li>
                           <li className="flex items-center gap-2">
-                            <span className="w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center text-black text-[10px] font-bold flex-shrink-0">!</span>
+                            <span className="w-3 h-3 bg-yellow-400 rounded-full flex items-center justify-center text-black text-[10px] font-bold flex-shrink-0">
+                              !
+                            </span>
                             <span>Ads may appear</span>
                           </li>
                         </>
