@@ -82,7 +82,10 @@ export async function POST(
     }
 
     if (content.length > 1000) {
-      return NextResponse.json({ error: 'Comment must be less than 1000 characters' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Comment must be less than 1000 characters' },
+        { status: 400 }
+      );
     }
 
     // Verify movie exists

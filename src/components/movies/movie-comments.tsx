@@ -451,11 +451,158 @@ export function MovieComments({ movieSlug }: MovieCommentsProps) {
                     ) : (
                       <p className="text-white text-sm leading-relaxed">{comment.content}</p>
                     )}
+
+                    <div className="flex items-center space-x-2 mt-2">
+                      {isAuthenticated && (
+                        <button
+                          onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                          className="text-netflix-text-gray hover:text-white text-xs underline"
+                        >
+                          Reply
+                        </button>
+                      )}
+
+                      {/* Reply Form */}
+                      {replyingTo === comment.id && isAuthenticated && (
+                        <div className="mt-3 pt-3 border-t border-netflix-gray/30">
+                          <form onSubmit={(e) => handleReply(comment.id, e)} className="space-y-3">
+                            <div className="flex items-start space-x-2">
+                              <Avatar className="w-6 h-6">
+                                {user?.image ? (
+                                  <AvatarImage src={user.image} alt={user.name || 'User'} />
+                                ) : (
+                                  <AvatarFallback className="bg-netflix-red text-white text-xs">
+                                    {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div className="flex-1 space-y-2">
+                                <Textarea
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  placeholder={`Reply to ${comment.userName}...`}
+                                  className="min-h-[60px] bg-netflix-black/30 border-0 ring-0 focus:ring-0 focus:border-0 focus-visible:ring-0 focus-visible:border-0 text-white placeholder:text-netflix-text-gray resize-none text-sm"
+                                  maxLength={1000}
+                                />
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`reply-spoiler-${comment.id}`}
+                                      checked={replySpoiler}
+                                      onCheckedChange={(checked) => setReplySpoiler(checked as boolean)}
+                                      className="data-[state=checked]:bg-netflix-red data-[state=checked]:border-netflix-red scale-75"
+                                    />
+                                    <label
+                                      htmlFor={`reply-spoiler-${comment.id}`}
+                                      className="text-xs text-netflix-text-gray cursor-pointer"
+                                    >
+                                      Spoiler
+                                    </label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-netflix-text-gray">
+                                      {replyContent.length}/1000
+                                    </span>
+                                    <Button
+                                      type="submit"
+                                      disabled={!replyContent.trim() || submitting}
+                                      className="bg-netflix-red hover:bg-netflix-red/80 disabled:opacity-50 h-7 px-3"
+                                      size="sm"
+                                    >
+                                      <Send className="w-3 h-3 mr-1" />
+                                      {submitting ? '...' : 'Reply'}
+                                    </Button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReplyingTo(null);
+                                        setReplyContent('');
+                                        setReplySpoiler(false);
+                                      }}
+                                      className="text-netflix-text-gray hover:text-white text-xs underline"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="mt-4 space-y-3 pl-6 border-l border-netflix-gray/30">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="flex items-start space-x-2">
+                              <Avatar className="w-6 h-6">
+                                {reply.userAvatar ? (
+                                  <AvatarImage src={reply.userAvatar} alt={reply.userName} />
+                                ) : (
+                                  <AvatarFallback className="bg-netflix-red/70 text-white text-xs">
+                                    {reply.userName[0].toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="font-semibold text-white text-xs">{reply.userName}</span>
+                                  {reply.isSpoiler && (
+                                    <span className="text-netflix-red text-xs italic">[spoiler]</span>
+                                  )}
+                                  <span className="text-netflix-text-gray text-xs">
+                                    {formatRelativeTime(reply.createdAt)}
+                                  </span>
+                                  {isAuthenticated && user?.id === reply.userId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteComment(reply.id)}
+                                      className="text-netflix-text-gray hover:text-red-400 h-4 w-4 p-0"
+                                    >
+                                      <Trash2 className="w-2 h-2" />
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {reply.isSpoiler ? (
+                                  <div className="relative">
+                                    {revealedSpoilers.has(reply.id) ? (
+                                      <div>
+                                        <p className="text-white text-xs leading-relaxed mb-1">
+                                          {reply.content}
+                                        </p>
+                                        <button
+                                          onClick={() => toggleSpoiler(reply.id)}
+                                          className="text-netflix-text-gray hover:text-white text-xs underline"
+                                        >
+                                          Hide
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => toggleSpoiler(reply.id)}
+                                        className="text-netflix-red hover:text-netflix-red/80 text-xs italic underline"
+                                      >
+                                        Spoiler - Click to reveal
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-white text-xs leading-relaxed">{reply.content}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Card>
-            ))}
-          </div>
+            ))}</div>
         )}
       </div>
     </div>
