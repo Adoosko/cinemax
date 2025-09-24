@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useWatchLimit } from '@/lib/hooks/use-watch-limit';
+import { useSubscription } from '@/lib/hooks/use-subscription';
 import { Button } from '@/components/ui/button';
 import { Loader2, AlertCircle, Lock } from 'lucide-react';
 import { UpgradeModal } from '@/components/modals/upgrade-modal';
@@ -12,10 +13,25 @@ interface WatchLimitGateProps {
 
 export function WatchLimitGate({ children }: WatchLimitGateProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const { subscription, loading: subscriptionLoading } = useSubscription();
   const { watchLimit, isLoading, error, canWatchMore } = useWatchLimit();
 
-  // Show loading state
-  if (isLoading) {
+  // If user has an active subscription, skip watch limit entirely
+  const hasActiveSubscription = subscription?.status === 'ACTIVE';
+  if (hasActiveSubscription) {
+    return (
+      <>
+        {/* Debug overlay - shows premium status */}
+        <div className="fixed top-4 right-4 bg-purple-600/80 text-white p-2 rounded text-xs z-50">
+          👑 Premium User
+        </div>
+        {children}
+      </>
+    );
+  }
+
+  // Show loading state while checking subscription or watch limit
+  if (subscriptionLoading || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="text-center">
