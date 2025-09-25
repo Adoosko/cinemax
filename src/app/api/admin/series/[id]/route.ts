@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
 // GET a specific series by ID
-export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
@@ -21,8 +21,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { id } = await params;
+
     const series = await prisma.series.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         seasons: {
           include: {
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
 }
 
 // PATCH - Update a series
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
@@ -62,10 +64,11 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { id } = await params;
     const data = await request.json();
 
     const series = await prisma.series.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         title: data.title,
         slug: data.slug,
@@ -89,7 +92,10 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
 }
 
 // DELETE - Delete a series
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
@@ -104,8 +110,10 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
+    const { id } = await params;
+
     await prisma.series.delete({
-      where: { id: params.id },
+      where: { id },
     });
 
     return NextResponse.json({ success: true });

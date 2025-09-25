@@ -3,6 +3,9 @@ import { Suspense } from 'react';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
 
+// Force dynamic rendering to avoid build-time fetch errors
+export const dynamic = 'force-dynamic';
+
 import { ContinueWatchingTray } from '@/components/movies/continue-watching-tray';
 import { CachedPublicSeriesData } from '@/components/series/cached-series-data';
 import { FeaturedSeries } from '@/components/series/featured-series';
@@ -10,9 +13,6 @@ import { SeriesProvider } from '@/components/series/series-context';
 import { SeriesFilters } from '@/components/series/series-filters';
 import { SeriesGrid } from '@/components/series/series-grid';
 import { SeriesRecommendations } from '@/components/series/series-recommendations';
-
-// PPR Nextjs 15+ experimental feature
-export const experimental_ppr = true;
 
 export default async function SeriesPage() {
   const cachedData = await CachedPublicSeriesData();

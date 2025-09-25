@@ -29,13 +29,24 @@ export async function CachedSeriesData({ slug }: { slug: string }) {
 
 // Function to fetch all public series
 export async function fetchCachedPublicSeries(): Promise<Series[]> {
+  // During build time, return empty array to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log('Build time: Skipping series fetch');
+    return [];
+  }
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour
-      }
-    );
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const response = await fetch(`${baseUrl}/api/series`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
 
     if (!response.ok) {
       console.error('Failed to fetch series data:', response.statusText);
@@ -51,13 +62,24 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
 }
 
 export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
+  // During build time, return empty array to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log('Build time: Skipping series data fetch');
+    return { series: [] };
+  }
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour
-      }
-    );
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const response = await fetch(`${baseUrl}/api/series`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
 
     if (!response.ok) {
       console.error('Failed to fetch series data:', response.statusText);
@@ -73,13 +95,24 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
 }
 
 export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping series fetch for slug ${slug}`);
+    return null;
+  }
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour
-      }
-    );
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const response = await fetch(`${baseUrl}/api/series/${slug}`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -171,9 +204,25 @@ export async function fetchCachedEpisode(
   seasonNumber: string,
   episodeNumber: string
 ): Promise<Episode | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(
+      `Build time: Skipping episode fetch for ${seriesSlug}/s${seasonNumber}/e${episodeNumber}`
+    );
+    return null;
+  }
+
   try {
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
+      `${baseUrl}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
       {
         next: { revalidate: 1800 }, // Cache for 30 minutes (episodes change less frequently than series)
       }
@@ -196,13 +245,24 @@ export async function fetchCachedEpisode(
 }
 
 export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> {
+  // During build time, return empty array to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping seasons fetch for ${seriesSlug}`);
+    return [];
+  }
+
   try {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${seriesSlug}/seasons`,
-      {
-        next: { revalidate: 3600 }, // Cache for 1 hour
-      }
-    );
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const response = await fetch(`${baseUrl}/api/series/${seriesSlug}/seasons`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
 
     if (!response.ok) {
       console.error('Failed to fetch seasons:', response.statusText);

@@ -1,12 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MovieCard } from './movie-card';
 
 // Use the Movie type from the cached data
-import { type Movie } from '@/lib/data/movies-with-use-cache';
 
-import { FilterOptions } from '@/components/movies/search-filter-bar';
 import { useMoviesContext } from './movies-context';
 
 export function MovieGrid() {
@@ -43,11 +41,7 @@ export function MovieGrid() {
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
           const titleMatch = movie.title.toLowerCase().includes(searchLower);
-          const genreMatch =
-            typeof movie.genre === 'string'
-              ? movie.genre.toLowerCase().includes(searchLower)
-              : Array.isArray(movie.genre) &&
-                movie.genre.some((g) => g.toLowerCase().includes(searchLower));
+          const genreMatch = movie.genre.some((g) => g.toLowerCase().includes(searchLower));
           const descMatch =
             movie.description && movie.description.toLowerCase().includes(searchLower);
 
@@ -59,15 +53,7 @@ export function MovieGrid() {
         // Genre filter
         if (filterOptions.genre && filterOptions.genre !== 'all') {
           const genreFilter = filterOptions.genre.toLowerCase();
-          if (typeof movie.genre === 'string') {
-            if (!movie.genre.toLowerCase().includes(genreFilter)) {
-              return false;
-            }
-          } else if (Array.isArray(movie.genre)) {
-            if (!movie.genre.some((g) => g.toLowerCase().includes(genreFilter))) {
-              return false;
-            }
-          } else {
+          if (!movie.genre.some((g) => g.toLowerCase().includes(genreFilter))) {
             return false;
           }
         }
@@ -156,7 +142,7 @@ export function MovieGrid() {
       {/* End of results indicator */}
       {!hasMore && filteredMovies.length > 0 && (
         <div className="text-center py-8">
-          <p className="text-netflix-text-gray">You've seen all available movies!</p>
+          <p className="text-netflix-text-gray">You have seen all available movies!</p>
         </div>
       )}
     </div>

@@ -1,34 +1,21 @@
-import { notFound } from 'next/navigation';
-import { NetflixBg } from '@/components/ui/netflix-bg';
-import { MovieDetailClient } from '@/components/movies/movie-detail-client';
 import {
   CachedMovieData,
   fetchCachedMovieBySlug,
   fetchCachedPublicMovies,
 } from '@/components/movies/cached-movie-data';
+import { MovieDetailClient } from '@/components/movies/movie-detail-client';
+import { NetflixBg } from '@/components/ui/netflix-bg';
+import { notFound } from 'next/navigation';
 
 // Import the Movie types from both sources
-import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 import { type Movie as DetailMovie } from '@/components/movies/movie-detail-client';
+import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 
 // Use the imported type
 type Movie = CachedMovie;
 
-// Generate static params for popular movies (optional)
-export async function generateStaticParams() {
-  try {
-    const response = await fetch('http://localhost:3000/api/movies');
-    const movies = await response.json();
-
-    // Generate static params for the first 20 movies
-    return movies.slice(0, 20).map((movie: Movie) => ({
-      slug: movie.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
-}
+// Force dynamic rendering to avoid build-time fetch errors
+export const dynamic = 'force-dynamic';
 
 // Fetch movie data with caching using 'use cache' directive
 async function getMovie(slug: string): Promise<Movie | null> {

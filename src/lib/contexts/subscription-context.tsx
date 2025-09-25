@@ -33,6 +33,11 @@ interface SubscriptionProviderProps {
 export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
   // Check localStorage synchronously for instant cached data
   const getInitialCachedSubscription = () => {
+    // Only access localStorage on the client side
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
     try {
       const cached = localStorage.getItem('cachedSubscription');
       if (cached) {
@@ -80,13 +85,15 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
 
       // Cache the fresh subscription data
       try {
-        localStorage.setItem(
-          'cachedSubscription',
-          JSON.stringify({
-            data: data.subscription,
-            cachedAt: new Date().toISOString(),
-          })
-        );
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(
+            'cachedSubscription',
+            JSON.stringify({
+              data: data.subscription,
+              cachedAt: new Date().toISOString(),
+            })
+          );
+        }
       } catch (cacheErr) {
         console.warn('[SubscriptionContext] Failed to cache subscription:', cacheErr);
       }

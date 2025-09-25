@@ -1,22 +1,15 @@
+import { CachedMovieVideoData } from '@/components/movies/cached-movie-data';
+import { VideoPlayerWithResume } from '@/components/movies/video-player-with-resume';
+import { auth } from '@/lib/auth';
+import { ArrowLeft, Loader2, Share } from 'lucide-react';
+import { Metadata } from 'next';
+import { headers } from 'next/headers';
+import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
-import { Metadata } from 'next';
-import Link from 'next/link';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
-import {
-  ArrowLeft,
-  Download,
-  Share,
-  Clock,
-  Calendar,
-  Star,
-  Users,
-  Eye,
-  Loader2,
-} from 'lucide-react';
-import { VideoPlayerWithResume } from '@/components/movies/video-player-with-resume';
-import { CachedMovieVideoData } from '@/components/movies/cached-movie-data';
+
+// Force dynamic rendering for watch pages (authentication required)
+export const dynamic = 'force-dynamic';
 
 interface WatchPageProps {
   params: { slug: string };
@@ -251,11 +244,4 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
     keywords: Array.isArray(movie.genre) ? movie.genre.join(', ') : movie.genre,
     authors: movie.director ? [{ name: movie.director }] : undefined,
   };
-}
-
-// Generate static params for better performance (optional)
-export async function generateStaticParams() {
-  // This would fetch your movie slugs from the database
-  // For now, return empty array to generate pages on-demand
-  return [];
 }

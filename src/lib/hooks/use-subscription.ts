@@ -29,6 +29,8 @@ export function useSubscription() {
 
     // Immediately load cached subscription data
     const loadCachedSubscription = () => {
+      if (typeof window === 'undefined') return;
+
       try {
         const cached = localStorage.getItem('cachedSubscription');
         if (cached) {
@@ -93,13 +95,15 @@ export function useSubscription() {
 
           // Cache the fresh subscription data
           try {
-            localStorage.setItem(
-              'cachedSubscription',
-              JSON.stringify({
-                data: first,
-                cachedAt: new Date().toISOString(),
-              })
-            );
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(
+                'cachedSubscription',
+                JSON.stringify({
+                  data: first,
+                  cachedAt: new Date().toISOString(),
+                })
+              );
+            }
           } catch (cacheErr) {
             console.warn('[useSubscription] Failed to cache subscription:', cacheErr);
           }

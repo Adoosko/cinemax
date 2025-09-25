@@ -4,9 +4,9 @@ export type Movie = {
   id: string;
   title: string;
   description: string;
-  duration: number | string;
-  genre: string[] | string;
-  rating?: string | number;
+  duration: number;
+  genre: string[];
+  rating?: string;
   director: string;
   cast: string[];
   posterUrl?: string;
@@ -24,6 +24,14 @@ export type Movie = {
   releaseDateFull?: Date;
   streamingUrl?: string;
   featured?: boolean;
+  // Video streaming fields
+  poster?: string;
+  backdrop?: string;
+  qualities?: Array<{
+    quality: string;
+    url: string;
+    bitrate: number;
+  }>;
   // Review related fields
   reviews?: Array<{
     id: string;
@@ -38,9 +46,23 @@ export type Movie = {
 };
 
 export async function getMovies(isAdmin: boolean = false): Promise<Movie[]> {
+  // During build time, return empty array to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log('Build time: Skipping movies fetch');
+    return [];
+  }
+
   try {
     const endpoint = isAdmin ? '/api/admin/movies' : '/api/movies';
-    const url = new URL(endpoint, 'http://localhost:3000');
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const url = new URL(endpoint, baseUrl);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -57,8 +79,22 @@ export async function getMovies(isAdmin: boolean = false): Promise<Movie[]> {
 
 // Get a single movie by ID
 export async function getMovieById(id: string): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie fetch for id ${id}`);
+    return null;
+  }
+
   try {
-    const url = new URL(`/api/movies/${id}`, 'http://localhost:3000');
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const url = new URL(`/api/movies/${id}`, baseUrl);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -75,8 +111,22 @@ export async function getMovieById(id: string): Promise<Movie | null> {
 
 // Get a single movie by slug
 export async function getMovieBySlug(slug: string): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie fetch for slug ${slug}`);
+    return null;
+  }
+
   try {
-    const url = new URL(`/api/movies/slug/${slug}`, 'http://localhost:3000');
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const url = new URL(`/api/movies/slug/${slug}`, baseUrl);
     const response = await fetch(url);
 
     if (!response.ok) {

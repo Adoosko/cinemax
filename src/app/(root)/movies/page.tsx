@@ -1,16 +1,16 @@
-import { Suspense } from 'react';
-import { MovieGrid } from '@/components/movies/movie-grid';
-import { MovieFilters } from '@/components/movies/movie-filters';
-import { FeaturedMovies } from '@/components/movies/featured-movies';
-import { UserRecommendations } from '@/components/movies/user-recommendations';
-import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
-import { NetflixBg } from '@/components/ui/netflix-bg';
-import { MoviesProvider } from '@/components/movies/movies-context';
 import { CachedPublicMoviesData } from '@/components/movies/cached-movie-data';
 import { ContinueWatchingTray } from '@/components/movies/continue-watching-tray';
+import { FeaturedMovies } from '@/components/movies/featured-movies';
+import { MovieFilters } from '@/components/movies/movie-filters';
+import { MovieGrid } from '@/components/movies/movie-grid';
+import { MoviesProvider } from '@/components/movies/movies-context';
+import { UserRecommendations } from '@/components/movies/user-recommendations';
+import { NetflixBg } from '@/components/ui/netflix-bg';
+import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
+import { Suspense } from 'react';
 
-// PPR Nextjs 15+ experimental feature
-export const experimental_ppr = true;
+// Force dynamic rendering to avoid build-time fetch errors
+export const dynamic = 'force-dynamic';
 
 export default async function MoviesPage() {
   const cachedData = await CachedPublicMoviesData();

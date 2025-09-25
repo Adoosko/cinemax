@@ -2,6 +2,8 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: NextRequest) {
   try {
     // Validate session server-side
@@ -12,10 +14,6 @@ export async function GET(request: NextRequest) {
     if (!session?.user) {
       return NextResponse.json({ subscription: null, error: 'Unauthorized' }, { status: 401 });
     }
-
-    // For ISR, we'll return cached data or fetch fresh
-    // In a real implementation, you'd call your subscription service here
-    // For now, return mock data for premium users
 
     // Mock premium subscription for demonstration
     const mockSubscription = {
@@ -43,6 +41,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
-// ISR: Revalidate every 5 minutes
-export const revalidate = 300; // 5 minutes

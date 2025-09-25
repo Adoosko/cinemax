@@ -7,31 +7,12 @@ import {
   fetchCachedSeriesBySlug,
 } from '@/components/series/cached-series-data';
 
-// Import the Series types from both sources
-import {
-  SeriesDetailClient,
-  type Series as DetailSeries,
-} from '@/components/series/series-detail-client';
-import { type Series as CachedSeries } from '@/lib/data/movies-with-use-cache';
+// Import the Series types
+import { type Series } from '@/components/series/cached-series-data';
+import { SeriesDetailClient } from '@/components/series/series-detail-client';
 
-// Use the imported type
-type Series = CachedSeries;
-
-// Generate static params for popular series (optional)
-export async function generateStaticParams() {
-  try {
-    const response = await fetch('http://localhost:3000/api/series');
-    const series = await response.json();
-
-    // Generate static params for the first 20 series
-    return series.slice(0, 20).map((seriesItem: Series) => ({
-      slug: seriesItem.slug,
-    }));
-  } catch (error) {
-    console.error('Error generating static params:', error);
-    return [];
-  }
-}
+// Force dynamic rendering to avoid build-time fetch errors
+export const dynamic = 'force-dynamic';
 
 // Fetch series data with caching using 'use cache' directive
 async function getSeries(slug: string): Promise<Series | null> {
@@ -78,42 +59,15 @@ export default async function SeriesDetailsPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  // Transform the series data to match the expected format for SeriesDetailClient
-  const transformedSeries = {
-    ...series,
-    // Transform showtimes from string[] to the expected Record format if it exists
-    showtimes: transformShowtimes(series.showtimes),
-  } as DetailSeries;
+  // Use the series data directly
+  const transformedSeries = series;
 
-  // Transform all series for similar series recommendations
-  const transformedAllSeries = allSeries.map((s) => ({
-    ...s,
-    showtimes: transformShowtimes(s.showtimes),
-  })) as DetailSeries[];
+  // Use all series directly
+  const transformedAllSeries = allSeries;
 
   return (
     <NetflixBg variant="solid" className="min-h-screen">
       <SeriesDetailClient series={transformedSeries} allSeries={transformedAllSeries} />
     </NetflixBg>
   );
-}
-
-// Helper function to transform showtimes from string[] to the expected Record format
-function transformShowtimes(showtimes?: string[]):
-  | Record<
-      string,
-      Array<{
-        id: string;
-        time: string;
-        startTime: Date;
-        endTime: Date;
-        theater: string;
-        cinema: string;
-        price: number;
-        available: number;
-      }>
-    >
-  | undefined {
-  // For series, we don't have showtimes like movies, so return undefined
-  return undefined;
 }

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { VideoPlayer } from '@/components/video/video-player';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface VideoQuality {
   quality: string;
@@ -152,7 +152,6 @@ export function AdminVideoPlayer({
 
   return (
     <VideoPlayer
-      src={videoUrl}
       poster={posterUrl || undefined}
       title={movieTitle || `${movieSlug} (${initialQuality})`}
       qualities={qualities}

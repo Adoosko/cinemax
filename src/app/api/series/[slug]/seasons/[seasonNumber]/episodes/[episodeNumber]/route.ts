@@ -1,5 +1,5 @@
 import { VideoService } from '@/lib/services/video-service';
-import { formatDuration, formatGenre, formatReleaseYear } from '@/lib/utils/movie-utils';
+import { formatDuration, formatGenre } from '@/lib/utils/movie-utils';
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
@@ -110,7 +110,7 @@ export async function GET(
         description: episode.season.series.description,
         genre: formatGenre(episode.season.series.genres),
         genres: episode.season.series.genres,
-        releaseYear: formatReleaseYear(episode.season.series.releaseDate),
+        releaseYear: episode.season.series.releaseYear?.toString() || '2024',
         coverUrl: episode.season.series.coverUrl,
         backdropUrl: episode.season.series.backdropUrl,
         rating: episode.season.series.rating,

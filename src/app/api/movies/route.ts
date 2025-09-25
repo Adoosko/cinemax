@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import {
   formatDuration,
+  formatGenre,
   formatMovieRating,
   formatReleaseYear,
-  formatGenre,
 } from '@/lib/utils/movie-utils';
+import { PrismaClient } from '@prisma/client';
+import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 

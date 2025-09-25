@@ -7,7 +7,7 @@ const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string; seasonNumber: string } }
+  { params }: { params: Promise<{ id: string; seasonNumber: string }> }
 ) {
   try {
     // Check authentication and admin role
@@ -23,8 +23,7 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const id = params.id;
-    const seasonNumber = params.seasonNumber;
+    const { id, seasonNumber } = await params;
 
     // Fetch TV season details
     const seasonUrl = `${TMDB_BASE_URL}/tv/${id}/season/${seasonNumber}?api_key=${TMDB_API_KEY}&language=en-US`;

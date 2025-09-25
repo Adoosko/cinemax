@@ -1,11 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
@@ -20,7 +23,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const movieId = params.id;
+    const { id } = await params;
+    const movieId = id;
 
     // Check if movie exists
     const existingMovie = await prisma.movie.findUnique({
@@ -43,7 +47,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
@@ -58,7 +62,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const movieId = params.id;
+    const { id } = await params;
+    const movieId = id;
     const data = await request.json();
 
     // Check if movie exists

@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
+import { formatDuration, formatGenre } from '@/lib/utils/movie-utils';
 import { PrismaClient } from '@prisma/client';
-import { formatDuration, formatReleaseYear, formatGenre } from '@/lib/utils/movie-utils';
-import { VideoService } from '@/lib/services/video-service';
+import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -77,8 +76,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       description: series.description || 'An exciting TV series awaits you.',
       genre: formatGenre(series.genres),
       genres: series.genres,
-      releaseYear: formatReleaseYear(series.releaseDate),
-      releaseDateFull: series.releaseDate,
+      releaseYear: series.releaseYear?.toString() || '2024',
+      releaseDateFull: series.releaseYear,
       director: series.director || 'Various Directors',
       cast: series.cast || [],
       coverUrl:

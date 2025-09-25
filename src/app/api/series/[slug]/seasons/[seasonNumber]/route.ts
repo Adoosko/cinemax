@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { formatDuration, formatGenre } from '@/lib/utils/movie-utils';
 import { PrismaClient } from '@prisma/client';
-import { formatDuration, formatReleaseYear, formatGenre } from '@/lib/utils/movie-utils';
+import { NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -72,7 +72,7 @@ export async function GET(
         description: season.series.description,
         genre: formatGenre(season.series.genres),
         genres: season.series.genres,
-        releaseYear: formatReleaseYear(season.series.releaseDate),
+        releaseYear: season.series.releaseYear?.toString() || '2024',
         coverUrl: season.series.coverUrl,
         backdropUrl: season.series.backdropUrl,
         rating: season.series.rating,

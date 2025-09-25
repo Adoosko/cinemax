@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           episodeId,
           progress,
-          ...(positionSeconds !== undefined ? { positionSeconds } : {}),
+          positionSeconds: positionSeconds || 0,
           completed: completed || false,
           completedAt: completed ? new Date() : null,
         },

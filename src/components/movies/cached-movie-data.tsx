@@ -4,8 +4,22 @@ import { type Movie } from '@/lib/data/movies-with-use-cache';
 
 // This component fetches and caches a single movie by slug
 export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie fetch for slug ${slug}`);
+    return null;
+  }
+
   try {
-    const url = new URL(`/api/movies/${slug}`, 'http://localhost:3000');
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const url = new URL(`/api/movies/${slug}`, baseUrl);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -45,8 +59,22 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
 
 // This component fetches and caches a single movie by ID
 export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie fetch for id ${id}`);
+    return null;
+  }
+
   try {
-    const url = new URL(`/api/movies/${id}`, 'http://localhost:3000');
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const url = new URL(`/api/movies/${id}`, baseUrl);
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -63,6 +91,11 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
 
 // This component fetches and caches all movies for the public page
 export async function fetchCachedPublicMovies(): Promise<Movie[]> {
+  // During build time, return empty array to avoid fetch errors
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return [];
+  }
+
   try {
     const url = new URL('/api/movies', 'http://localhost:3000');
     const response = await fetch(url);
@@ -93,9 +126,23 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
 export async function fetchCachedMovieVideo(
   slug: string,
   useDirect: boolean = true
-): Promise<any | null> {
+): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie video fetch for slug ${slug}`);
+    return null;
+  }
+
   try {
-    const baseUrl = new URL(`/api/movies/${slug}/video`, 'http://localhost:3000');
+    const baseUrlStr =
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        : 'http://localhost:3000';
+
+    const baseUrl = new URL(`/api/movies/${slug}/video`, baseUrlStr);
 
     // Add direct=true parameter to use direct URLs instead of presigned URLs
     if (useDirect) {
