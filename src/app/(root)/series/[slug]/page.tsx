@@ -1,4 +1,5 @@
 import { NetflixBg } from '@/components/ui/netflix-bg';
+import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 
 import {
@@ -11,8 +12,30 @@ import {
 import { type Series } from '@/components/series/cached-series-data';
 import { SeriesDetailClient } from '@/components/series/series-detail-client';
 
-// Force dynamic rendering to avoid build-time fetch errors
-export const dynamic = 'force-dynamic';
+// Enable PPR and ISR for optimal performance
+export const experimental_ppr = true;
+export const revalidate = 3600;
+
+// Generate static params for all active series
+export async function generateStaticParams() {
+  const prisma = new PrismaClient();
+
+  try {
+    const series = await prisma.series.findMany({
+      where: { isActive: true, isPublished: true },
+      select: { slug: true },
+    });
+
+    return series.map((seriesItem) => ({
+      slug: seriesItem.slug,
+    }));
+  } catch (error) {
+    console.error('Failed to generate static params for series:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
 // Fetch series data with caching using 'use cache' directive
 async function getSeries(slug: string): Promise<Series | null> {

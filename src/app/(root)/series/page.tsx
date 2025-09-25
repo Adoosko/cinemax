@@ -3,8 +3,9 @@ import { Suspense } from 'react';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
 
-// Force dynamic rendering to avoid build-time fetch errors
-export const dynamic = 'force-dynamic';
+// Enable PPR and ISR for optimal performance
+export const experimental_ppr = true;
+export const revalidate = 3600;
 
 import { ContinueWatchingTray } from '@/components/movies/continue-watching-tray';
 import { CachedPublicSeriesData } from '@/components/series/cached-series-data';

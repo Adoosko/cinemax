@@ -5,6 +5,7 @@ import {
 } from '@/components/movies/cached-movie-data';
 import { MovieDetailClient } from '@/components/movies/movie-detail-client';
 import { NetflixBg } from '@/components/ui/netflix-bg';
+import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 
 // Import the Movie types from both sources
@@ -14,8 +15,30 @@ import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 // Use the imported type
 type Movie = CachedMovie;
 
-// Force dynamic rendering to avoid build-time fetch errors
-export const dynamic = 'force-dynamic';
+// Enable PPR and ISR for optimal performance
+export const experimental_ppr = true;
+export const revalidate = 3600;
+
+// Generate static params for all active movies
+export async function generateStaticParams() {
+  const prisma = new PrismaClient();
+
+  try {
+    const movies = await prisma.movie.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    });
+
+    return movies.map((movie) => ({
+      slug: movie.slug,
+    }));
+  } catch (error) {
+    console.error('Failed to generate static params for movies:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
+}
 
 // Fetch movie data with caching using 'use cache' directive
 async function getMovie(slug: string): Promise<Movie | null> {

@@ -1,4 +1,5 @@
 import { SeasonClient } from '@/components/series/season-client';
+import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
 
 interface SeasonPageProps {
@@ -6,6 +7,46 @@ interface SeasonPageProps {
     slug: string;
     seasonNumber: string;
   }>;
+}
+
+// Enable PPR and ISR for optimal performance
+export const experimental_ppr = true;
+export const revalidate = 3600;
+
+// Generate static params for all seasons
+export async function generateStaticParams() {
+  const prisma = new PrismaClient();
+
+  try {
+    const series = await prisma.series.findMany({
+      where: { isActive: true, isPublished: true },
+      select: {
+        slug: true,
+        seasons: {
+          where: { isActive: true },
+          select: { number: true },
+        },
+      },
+    });
+
+    const params: { slug: string; seasonNumber: string }[] = [];
+
+    for (const seriesItem of series) {
+      for (const season of seriesItem.seasons) {
+        params.push({
+          slug: seriesItem.slug,
+          seasonNumber: season.number.toString(),
+        });
+      }
+    }
+
+    return params;
+  } catch (error) {
+    console.error('Failed to generate static params for seasons:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
 // Generate metadata for SEO
@@ -44,10 +85,10 @@ export default async function SeasonPage({ params }: SeasonPageProps) {
   const { slug, seasonNumber } = await params;
 
   try {
-    // Fetch season data
+    // Fetch season data with ISR
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}/seasons/${seasonNumber}`,
-      { cache: 'no-store' }
+      { next: { revalidate: 3600 } }
     );
 
     if (!response.ok) {
