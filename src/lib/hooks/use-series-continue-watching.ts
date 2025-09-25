@@ -18,14 +18,70 @@ export interface SeriesContinueWatchingItem {
   lastActive: string;
 }
 
+const CACHE_KEY = 'seriesContinueWatching';
+const CACHE_DURATION = 60 * 60 * 1000; // 1 hour in milliseconds
+
+interface CacheData {
+  data: SeriesContinueWatchingItem[];
+  timestamp: number;
+}
+
 export function useSeriesContinueWatching() {
   const [continueWatching, setContinueWatching] = useState<SeriesContinueWatchingItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
 
-  const fetchContinueWatching = async () => {
+  const getCacheKey = () => `${CACHE_KEY}_${user?.id || 'anonymous'}`;
+
+  const getCachedData = (): SeriesContinueWatchingItem[] | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+      const cached = localStorage.getItem(getCacheKey());
+      if (!cached) return null;
+
+      const parsed: CacheData = JSON.parse(cached);
+      const now = Date.now();
+
+      if (now - parsed.timestamp > CACHE_DURATION) {
+        localStorage.removeItem(getCacheKey());
+        return null;
+      }
+
+      return parsed.data;
+    } catch (err) {
+      console.error('Error reading cached series continue watching:', err);
+      return null;
+    }
+  };
+
+  const setCachedData = (data: SeriesContinueWatchingItem[]) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+      const cacheData: CacheData = {
+        data,
+        timestamp: Date.now(),
+      };
+      localStorage.setItem(getCacheKey(), JSON.stringify(cacheData));
+    } catch (err) {
+      console.error('Error caching series continue watching:', err);
+    }
+  };
+
+  const fetchContinueWatching = async (forceRefresh = false) => {
     if (!isAuthenticated) return;
+
+    // Check cache first unless force refresh
+    if (!forceRefresh) {
+      const cached = getCachedData();
+      if (cached) {
+        setContinueWatching(cached);
+        setIsLoading(false);
+        return;
+      }
+    }
 
     setIsLoading(true);
     setError(null);
@@ -38,7 +94,9 @@ export function useSeriesContinueWatching() {
       }
 
       const data = await response.json();
-      setContinueWatching(data.continueWatching || []);
+      const continueWatchingData = data.continueWatching || [];
+      setContinueWatching(continueWatchingData);
+      setCachedData(continueWatchingData);
     } catch (err) {
       console.error('Error fetching continue watching series:', err);
       setError('Failed to load your continue watching series');
@@ -58,7 +116,11 @@ export function useSeriesContinueWatching() {
       }
 
       // Update local state to remove the deleted series
-      setContinueWatching((prev) => prev.filter((item) => item.seriesId !== seriesId));
+      setContinueWatching((prev) => {
+        const updated = prev.filter((item) => item.seriesId !== seriesId);
+        setCachedData(updated);
+        return updated;
+      });
 
       return true;
     } catch (err) {
@@ -79,7 +141,7 @@ export function useSeriesContinueWatching() {
     continueWatching,
     isLoading,
     error,
-    refetch: fetchContinueWatching,
+    refetch: () => fetchContinueWatching(true), // Force refresh when refetching
     removeFromContinueWatching,
   };
 }
