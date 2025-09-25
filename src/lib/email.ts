@@ -29,9 +29,10 @@ export async function sendMagicLinkEmail({
 
             <!-- Logo -->
             <div style="text-align: center; margin-bottom: 40px;">
-              ${process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_APP_URL ?
-                `<img src="${process.env.NEXT_PUBLIC_APP_URL}/text-logo.png" alt="CINEMX" style="max-width: 200px; height: auto;">` :
-                `<div style="font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.02em;">CINEMX</div>`
+              ${
+                process.env.NODE_ENV === 'production' && process.env.NEXT_PUBLIC_APP_URL
+                  ? `<img src="${process.env.NEXT_PUBLIC_APP_URL}/text-logo.png" alt="CINEMX" style="max-width: 200px; height: auto;">`
+                  : `<div style="font-size: 32px; font-weight: 700; color: white; letter-spacing: -0.02em;">CINEMX</div>`
               }
             </div>
 

@@ -45,6 +45,12 @@ model User {
   WatchHistory WatchHistory[]
   watchParties WatchParty[] @relation("HostWatchParties")
   comments     MovieComment[]
+  seriesReviews      SeriesReview[]
+  seriesWatchHistories SeriesWatchHistory[]
+  episodeWatchHistories EpisodeWatchHistory[]
+  seriesComments     SeriesComment[]
+  episodeComments    EpisodeComment[]
+  seriesWatchParties SeriesWatchParty[] @relation("HostSeriesWatchParties")
 
   @@map("user")
 }
@@ -353,6 +359,8 @@ model Subscription {
   user             User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   watchHistory     WatchHistory[]
   creditEvents     CreditEvent[]
+  seriesWatchHistories SeriesWatchHistory[]
+  episodeWatchHistories EpisodeWatchHistory[]
 
   @@map("subscriptions")
 }
@@ -541,4 +549,206 @@ model MovieComment {
   replies MovieComment[] @relation("CommentReplies")
 
   @@map("movie_comments")
+}
+
+// ============================================
+// TV SERIES MANAGEMENT
+// ============================================
+
+model Series {
+  id           String    @id @default(cuid())
+  title        String
+  slug         String    @unique // URL-friendly version of title
+  description  String?
+  genres       String[]  // Array of genre names
+  releaseYear  Int?
+  coverUrl     String?   // Main cover/poster image
+  backdropUrl  String?   // Landscape background image
+  cast         String[]  // Array of actor names
+  director     String?   // Main director or showrunner
+  rating       String?   // TV rating (TV-14, TV-MA, etc.)
+  isActive     Boolean   @default(true)
+  isPublished  Boolean   @default(false) // For scheduling releases
+  publishedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  seasons      Season[]
+  reviews      SeriesReview[]
+  WatchHistory SeriesWatchHistory[]
+  comments     SeriesComment[]
+  watchParties SeriesWatchParty[]
+
+  @@map("series")
+}
+
+model Season {
+  id          String   @id @default(cuid())
+  seriesId    String
+  number      Int      // Season number (1, 2, 3, etc.)
+  title       String?  // Optional season title (e.g., "Season 1: The Beginning")
+  description String?  // Season description
+  releaseDate DateTime?
+  coverUrl    String?  // Optional season-specific cover
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  series   Series    @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  episodes Episode[]
+
+  @@unique([seriesId, number])
+  @@map("seasons")
+}
+
+model Episode {
+  id          String   @id @default(cuid())
+  seasonId    String
+  number      Int      // Episode number within season
+  title       String
+  description String?
+  videoUrl    String?  // Streaming URL for the episode
+  runtime     Int      // Duration in minutes
+  coverUrl    String?  // Episode thumbnail/cover
+  airDate     DateTime?
+  isActive    Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  season       Season              @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  WatchHistory EpisodeWatchHistory[]
+  comments     EpisodeComment[]
+
+  @@unique([seasonId, number])
+  @@map("episodes")
+}
+
+// ============================================
+// SERIES-SPECIFIC FEATURES
+// ============================================
+
+model SeriesReview {
+  id         String  @id @default(cuid())
+  userId     String
+  seriesId   String
+  rating     Int     // 1-5 stars
+  comment    String?
+  isApproved Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user   User   @relation(fields: [userId], references: [id])
+  series Series @relation(fields: [seriesId], references: [id])
+
+  @@unique([userId, seriesId])
+  @@map("series_reviews")
+}
+
+model SeriesWatchHistory {
+  id         String    @id @default(cuid())
+  userId     String
+  seriesId   String
+  progress   Float     // 0.0 - 1.0 (fraction watched of the entire series)
+  completed  Boolean   @default(false)
+  completedAt DateTime?
+  startedAt  DateTime  @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series         Series        @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String? // optional: to relate to subscription
+
+  @@unique([userId, seriesId])
+  @@map("series_watch_histories")
+}
+
+model EpisodeWatchHistory {
+  id         String    @id @default(cuid())
+  userId     String
+  episodeId  String
+  progress   Float     // 0.0 - 1.0 (fraction watched)
+  completed  Boolean   @default(false)
+  completedAt DateTime?
+  startedAt  DateTime  @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode        Episode       @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String? // optional: to relate to subscription
+
+  @@unique([userId, episodeId])
+  @@map("episode_watch_histories")
+}
+
+model SeriesComment {
+  id         String   @id @default(cuid())
+  seriesId   String
+  userId     String
+  userName   String
+  userAvatar String?
+  content    String
+  isSpoiler  Boolean  @default(false)
+  parentId   String?  // For reply threading
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  series   Series         @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+  parent   SeriesComment? @relation("SeriesCommentReplies", fields: [parentId], references: [id])
+  replies  SeriesComment[] @relation("SeriesCommentReplies")
+
+  @@map("series_comments")
+}
+
+model EpisodeComment {
+  id         String   @id @default(cuid())
+  episodeId  String
+  userId     String
+  userName   String
+  userAvatar String?
+  content    String
+  isSpoiler  Boolean  @default(false)
+  parentId   String?  // For reply threading
+  createdAt  DateTime @default(now())
+
+  // Relations
+  user     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode  Episode         @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  parent   EpisodeComment? @relation("EpisodeCommentReplies", fields: [parentId], references: [id])
+  replies  EpisodeComment[] @relation("EpisodeCommentReplies")
+
+  @@map("episode_comments")
+}
+
+model SeriesWatchParty {
+  id           String   @id @default(cuid())
+  hostUserId   String
+  seriesId     String
+  episodeId    String?  // Optional: focus on specific episode
+  createdAt    DateTime @default(now())
+  expiresAt    DateTime?
+  isActive     Boolean  @default(true)
+  maxGuests    Int      @default(5)
+
+  // Relations
+  host    User   @relation("HostSeriesWatchParties", fields: [hostUserId], references: [id], onDelete: Cascade)
+  series  Series @relation(fields: [seriesId], references: [id], onDelete: Cascade)
+
+  @@map("series_watch_parties")
 }

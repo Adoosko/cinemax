@@ -1,8 +1,8 @@
 import {
-  S3Client,
+  DeleteObjectCommand,
   GetObjectCommand,
   PutObjectCommand,
-  DeleteObjectCommand,
+  S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
@@ -440,6 +440,292 @@ export class VideoService {
     availableQualities.sort((a, b) => b.bitrate - a.bitrate);
 
     return availableQualities;
+  }
+
+  // Discover all available episode qualities
+  static async discoverEpisodeQualities(
+    seriesSlug: string,
+    seasonNumber: number,
+    episodeNumber: number,
+    episodeTitle?: string
+  ): Promise<Array<{ quality: string; url: string; bitrate: number }>> {
+    const videoPath = `${seriesSlug}/season-${seasonNumber}/episodes/${episodeNumber}`;
+
+    // Define all possible video file patterns to check
+    const possibleFiles = [
+      // Standard quality designations
+      { file: '4k.mp4', quality: '4K', bitrate: 15000 },
+      { file: '1080p.mp4', quality: '1080P', bitrate: 8000 },
+      { file: '720p.mp4', quality: '720P', bitrate: 5000 },
+      { file: '480p.mp4', quality: '480P', bitrate: 2500 },
+      { file: '360p.mp4', quality: '360P', bitrate: 1500 },
+      { file: '240p.mp4', quality: '240P', bitrate: 800 },
+
+      // Alternative naming patterns
+      { file: 'uhd.mp4', quality: '4K', bitrate: 15000 },
+      { file: 'hd.mp4', quality: 'HD', bitrate: 5000 },
+      { file: 'sd.mp4', quality: 'SD', bitrate: 2500 },
+      { file: 'high.mp4', quality: 'HIGH', bitrate: 8000 },
+      { file: 'medium.mp4', quality: 'MEDIUM', bitrate: 5000 },
+      { file: 'low.mp4', quality: 'LOW', bitrate: 2500 },
+
+      // Numeric naming
+      { file: '2160.mp4', quality: '4K', bitrate: 15000 },
+      { file: '1080.mp4', quality: '1080P', bitrate: 8000 },
+      { file: '720.mp4', quality: '720P', bitrate: 5000 },
+      { file: '480.mp4', quality: '480P', bitrate: 2500 },
+    ];
+
+    const availableQualities: Array<{ quality: string; url: string; bitrate: number }> = [];
+
+    // Check both old and new path structures
+    const pathsToCheck = [
+      // New structure: episodes/series-slug/season-X/episodes/Y/
+      videoPath,
+    ];
+
+    // If episode title is provided, also check old structure
+    if (episodeTitle) {
+      // Handle different title formats for old structure
+      let cleanTitle = episodeTitle;
+
+      // Try to extract from "S1.E1 ∙ Title" format
+      const formattedMatch = episodeTitle.match(/^S\d+\.E\d+\s*[∙•·]\s*(.+)$/i);
+      if (formattedMatch) {
+        cleanTitle = formattedMatch[1];
+      }
+      // If it's already a slug (contains only letters, numbers, hyphens), use as-is
+      else if (/^[a-zA-Z0-9-]+$/.test(episodeTitle)) {
+        cleanTitle = episodeTitle;
+      }
+      // Otherwise, convert to slug
+      else {
+        cleanTitle = titleToSlug(episodeTitle);
+      }
+
+      // Add old structure path: episodes/series-slug/season-X/sXeX-episode-title-slug/
+      const episodeSlug = `s${seasonNumber}e${episodeNumber}-${cleanTitle}`;
+      pathsToCheck.push(`${seriesSlug}/season-${seasonNumber}/${episodeSlug}`);
+    }
+
+    // In development mode, first try to check for real uploaded videos
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+      // Check each path structure
+      for (const pathToCheck of pathsToCheck) {
+        // Check each possible file pattern
+        for (const filePattern of possibleFiles) {
+          try {
+            const s3Key = `episodes/${pathToCheck}/${filePattern.file}`;
+            // Check if this file exists in S3
+            const command = new GetObjectCommand({
+              Bucket: this.S3_BUCKET,
+              Key: s3Key,
+            });
+
+            try {
+              const s3Client = this.getS3Client();
+              if (!s3Client) {
+                throw new Error('S3 client not available (client-side environment)');
+              }
+              await s3Client.send(command);
+              // File exists, generate a presigned URL
+              const url = await this.getEpisodePresignedUrl(pathToCheck, filePattern.quality, 7200); // 2 hours
+
+              // Add to available qualities
+              availableQualities.push({
+                quality: filePattern.quality,
+                url,
+                bitrate: filePattern.bitrate,
+              });
+            } catch (error) {
+              // File doesn't exist, skip silently
+            }
+          } catch (error) {
+            console.error(`Error checking for episode file ${filePattern.file}:`, error);
+          }
+        }
+      }
+
+      // If we found real uploaded videos, return them
+      if (availableQualities.length > 0) {
+        availableQualities.sort((a, b) => b.bitrate - a.bitrate);
+        return availableQualities;
+      }
+
+      // If no real videos found, fall back to simulation
+      // For demo purposes, simulate having 720p with new path structure
+      try {
+        const url720p = await this.getEpisodePresignedUrl(videoPath, '720p', 7200); // 2 hour expiry
+
+        return [
+          {
+            quality: '720P',
+            url: url720p,
+            bitrate: 5000,
+          },
+        ];
+      } catch (error) {
+        console.error('Error generating episode presigned URLs in development:', error);
+        // Fallback to direct URLs (will likely cause 403 errors)
+        const fallbackUrl = this.getEpisodeVideoUrl(videoPath, '720p');
+        return [
+          {
+            quality: '720P',
+            url: fallbackUrl,
+            bitrate: 5000,
+          },
+        ];
+      }
+    }
+
+    // In production, check each path structure
+    for (const pathToCheck of pathsToCheck) {
+      // Check each possible file pattern
+      for (const filePattern of possibleFiles) {
+        try {
+          // Check if this file exists in S3
+          const command = new GetObjectCommand({
+            Bucket: this.S3_BUCKET,
+            Key: `episodes/${pathToCheck}/${filePattern.file}`,
+          });
+
+          try {
+            const s3Client = this.getS3Client();
+            if (!s3Client) {
+              throw new Error('S3 client not available (client-side environment)');
+            }
+            await s3Client.send(command);
+            // File exists, generate a presigned URL
+            const url = await this.getEpisodePresignedUrl(pathToCheck, filePattern.quality, 7200); // 2 hours
+
+            // Add to available qualities
+            availableQualities.push({
+              quality: filePattern.quality,
+              url,
+              bitrate: filePattern.bitrate,
+            });
+
+            console.log(
+              `Found episode video quality: ${filePattern.quality} (${filePattern.file}) at ${pathToCheck}`
+            );
+          } catch (error) {
+            // File doesn't exist, skip silently
+          }
+        } catch (error) {
+          console.error(`Error checking for episode file ${filePattern.file}:`, error);
+        }
+      }
+    }
+
+    // Sort qualities by bitrate (highest first)
+    availableQualities.sort((a, b) => b.bitrate - a.bitrate);
+
+    return availableQualities;
+  }
+
+  // Episode-specific methods
+  static getEpisodeVideoUrl(videoPath: string, quality: string = '1080p'): string {
+    const baseUrl =
+      this.CLOUDFRONT_URL || `https://${this.S3_BUCKET}.s3.${this.S3_REGION}.amazonaws.com`;
+
+    // Map quality to file name
+    let videoFileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        videoFileName = '4k.mp4';
+        break;
+      case '1080p':
+        videoFileName = '1080p.mp4';
+        break;
+      case '720p':
+        videoFileName = '720p.mp4';
+        break;
+      case '480p':
+        videoFileName = '480p.mp4';
+        break;
+      default:
+        videoFileName = `${quality}.mp4`;
+    }
+
+    return `${baseUrl}/episodes/${videoPath}/${videoFileName}`;
+  }
+
+  static async getEpisodeUploadPresignedUrl(
+    videoPath: string,
+    quality: string,
+    contentType: string = 'video/mp4'
+  ): Promise<string> {
+    // Map quality to file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
+    const command = new PutObjectCommand({
+      Bucket: this.S3_BUCKET,
+      Key: `episodes/${videoPath}/${fileName}`,
+      ContentType: contentType,
+    });
+
+    try {
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      return await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+    } catch (error) {
+      console.error('Error generating episode upload presigned URL:', error);
+      throw error;
+    }
+  }
+
+  static async getEpisodePresignedUrl(
+    videoPath: string,
+    quality: string = '1080p',
+    expiresIn: number = 7200
+  ): Promise<string> {
+    // Map quality to file name
+    let fileName;
+    switch (quality.toLowerCase()) {
+      case '4k':
+        fileName = '4k.mp4';
+        break;
+      case '1080p':
+        fileName = '1080p.mp4';
+        break;
+      case '720p':
+        fileName = '720p.mp4';
+        break;
+      case '480p':
+        fileName = '480p.mp4';
+        break;
+      default:
+        fileName = `${quality}.mp4`;
+    }
+
+    const command = new GetObjectCommand({
+      Bucket: this.S3_BUCKET,
+      Key: `episodes/${videoPath}/${fileName}`,
+    });
+
+    try {
+      const s3Client = this.getS3Client();
+      if (!s3Client) {
+        throw new Error('S3 client not available (client-side environment)');
+      }
+      return await getSignedUrl(s3Client, command, { expiresIn });
+    } catch (error) {
+      console.error('Error generating episode presigned URL:', error);
+      // Fallback to direct URL
+      return this.getEpisodeVideoUrl(videoPath, quality);
+    }
   }
 }
 

@@ -17,11 +17,12 @@ import {
   Home,
   User,
   Settings,
+  Tv,
 } from 'lucide-react';
 
 const adminNavItems = [
   { name: 'Movies', href: '/admin/movies', icon: Film, badge: '24' },
-
+  { name: 'TV Series', href: '/admin/series', icon: Tv, badge: 'New' },
   { name: 'Showtimes', href: '/admin/showtimes', icon: Calendar, badge: '48' },
   { name: 'Bookings', href: '/admin/bookings', icon: Ticket, badge: '12' },
 ];

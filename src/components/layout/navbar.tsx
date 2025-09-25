@@ -171,7 +171,10 @@ export function Navbar() {
     setIsSearchOpen(false);
   }, [pathname]);
 
-  const navLinks = [{ name: 'Movies', href: '/movies', icon: Film }];
+  const navLinks = [
+    { name: 'Movies', href: '/movies', icon: Film },
+    { name: 'Series', href: '/series', icon: Calendar },
+  ];
 
   return (
     <>

@@ -1,24 +1,22 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback, forwardRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Play,
-  Pause,
-  Volume2,
-  VolumeX,
+  AlertTriangle,
   Maximize,
+  Minimize,
+  Pause,
+  Play,
+  RotateCcw,
   Settings,
   SkipBack,
   SkipForward,
-  Minimize,
-  RotateCcw,
-  AlertTriangle,
-  FastForward,
-  Rewind,
+  Volume2,
+  VolumeX,
 } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import Image from 'next/image';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 
@@ -224,8 +222,64 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         if (!title) return null;
 
         try {
-          const slug = title.toLowerCase().replace(/\s+/g, '-');
-          const response = await fetch(`/api/movies/${slug}/presigned?quality=${quality}`);
+          // Check if this is an episode (contains "Episode" or "SXXEXX" pattern)
+          const isEpisode =
+            title.toLowerCase().includes('episode') || /\bs\d+\.?\s*e\d+\b/i.test(title);
+          let response;
+
+          if (isEpisode) {
+            // Extract episode info from title - support multiple formats:
+            // Format 1: "Series Title - Season X Episode Y: Episode Title"
+            // Format 2: "Series Title - SXXEXX: Episode Title"
+            const titleParts = title.split(' - ');
+            if (titleParts.length >= 2) {
+              const seriesPart = titleParts[0];
+              const seasonEpisodePart = titleParts[1];
+
+              // Extract series slug
+              const seriesSlug = seriesPart
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '-')
+                .replace(/^-|-$/g, '');
+
+              let seasonNumber, episodeNumber;
+
+              // Try Format 1: "Season X Episode Y: Episode Title"
+              const seasonMatch = seasonEpisodePart.match(/Season (\d+)/i);
+              const episodeMatch = seasonEpisodePart.match(/Episode (\d+)/i);
+
+              if (seasonMatch && episodeMatch) {
+                seasonNumber = seasonMatch[1];
+                episodeNumber = episodeMatch[1];
+              } else {
+                // Try Format 2: "SXXEXX: Episode Title"
+                const sxxexxMatch = seasonEpisodePart.match(/S(\d+)E(\d+)/i);
+                if (sxxexxMatch) {
+                  seasonNumber = sxxexxMatch[1];
+                  episodeNumber = sxxexxMatch[2];
+                }
+              }
+
+              if (seasonNumber && episodeNumber) {
+                console.log(
+                  `Fetching presigned URL for ${seriesSlug} S${seasonNumber}E${episodeNumber}`
+                );
+                response = await fetch(
+                  `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/presigned?quality=${quality}`
+                );
+              } else {
+                console.error('Could not parse episode info from title:', title);
+                return null;
+              }
+            } else {
+              console.error('Invalid episode title format:', title);
+              return null;
+            }
+          } else {
+            // Movie URL refresh
+            const slug = title.toLowerCase().replace(/\s+/g, '-');
+            response = await fetch(`/api/movies/${slug}/presigned?quality=${quality}`);
+          }
 
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -238,7 +292,19 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           throw new Error('Invalid response');
         } catch (error) {
           console.error(`Failed to refresh URL for ${quality}:`, error);
-          return null;
+
+          // Check if this is an episode (contains "Episode" or "SXXEXX" pattern)
+          const titleIsEpisode =
+            title.toLowerCase().includes('episode') || /\bs\d+\.?\s*e\d+\b/i.test(title);
+
+          // Don't provide fallback URLs for episodes as they use different path structure
+          if (titleIsEpisode) {
+            return null;
+          }
+
+          // For movies only, provide fallback to direct URL
+          const slug = title.toLowerCase().replace(/\s+/g, '-');
+          return `https://cinemx.s3.eu-north-1.amazonaws.com/videos/${slug}/${quality.toLowerCase()}.mp4`;
         }
       },
       [title]

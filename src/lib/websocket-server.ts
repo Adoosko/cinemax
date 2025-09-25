@@ -11,7 +11,9 @@ const server = createServer(app);
 const io = new SocketIOServer(server, {
   cors: {
     origin:
-      process.env.NODE_ENV === 'production' ? process.env.NEXTAUTH_URL : 'http://localhost:3000',
+      process.env.NODE_ENV === 'production'
+        ? process.env.NEXT_PUBLIC_APP_URL
+        : 'http://localhost:3000',
     methods: ['GET', 'POST'],
   },
   pingTimeout: 60000,

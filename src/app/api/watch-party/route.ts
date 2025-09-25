@@ -78,7 +78,8 @@ export async function POST(req: NextRequest) {
 
     if (existingParty) {
       // Generate invite link for existing party
-      const baseUrl = process.env.NEXTAUTH_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`;
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`;
       const inviteLink = `${baseUrl}/movies/${existingParty.movie.slug}/watch?party=${existingParty.id}`;
 
       return NextResponse.json(
@@ -113,7 +114,8 @@ export async function POST(req: NextRequest) {
     });
 
     // Generate invite link using the request origin for full public URL
-    const baseUrl = process.env.NEXTAUTH_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`;
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL || `${req.nextUrl.protocol}//${req.nextUrl.host}`;
     const inviteLink = `${baseUrl}/movies/${watchParty.movie.slug}/watch?party=${watchParty.id}`;
 
     return NextResponse.json({
