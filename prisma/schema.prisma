@@ -675,13 +675,14 @@ model SeriesWatchHistory {
 }
 
 model EpisodeWatchHistory {
-  id         String    @id @default(cuid())
-  userId     String
-  episodeId  String
-  progress   Float     // 0.0 - 1.0 (fraction watched)
-  completed  Boolean   @default(false)
-  completedAt DateTime?
-  startedAt  DateTime  @default(now())
+  id             String    @id @default(cuid())
+  userId         String
+  episodeId      String
+  progress       Float     // 0.0 - 1.0 (fraction watched)
+  positionSeconds Int      // Position in seconds for precise resuming
+  completed      Boolean   @default(false)
+  completedAt    DateTime?
+  startedAt      DateTime  @default(now())
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -82,8 +82,11 @@ export function EpisodeVideoPlayer({
           setWatchHistoryId(episodeHistory.id);
           setSavedProgress(episodeHistory.progress);
 
-          // Calculate the time to seek to based on the saved progress
-          if (episodeHistory.progress > 0 && episodeHistory.progress < 0.99) {
+          // Use positionSeconds for precise resuming, fallback to progress calculation
+          const positionSeconds = (episodeHistory as any).positionSeconds;
+          if (positionSeconds > 0) {
+            setInitialTime(positionSeconds);
+          } else if (episodeHistory.progress > 0 && episodeHistory.progress < 0.99) {
             setInitialTime(episodeHistory.progress);
           }
         }
@@ -96,7 +99,11 @@ export function EpisodeVideoPlayer({
   }, [isAuthenticated, episodeId]);
 
   // Update episode watch history as the user watches
-  const updateWatchHistory = async (currentProgress: number, completed: boolean = false) => {
+  const updateWatchHistory = async (
+    currentProgress: number,
+    positionSeconds: number,
+    completed: boolean = false
+  ) => {
     if (!isAuthenticated || !episodeId) return;
 
     try {
@@ -108,6 +115,7 @@ export function EpisodeVideoPlayer({
         body: JSON.stringify({
           episodeId,
           progress: currentProgress,
+          positionSeconds,
           completed,
           watchHistoryId,
         }),
@@ -141,7 +149,7 @@ export function EpisodeVideoPlayer({
     // Update watch history every 10 seconds or when progress changes significantly
     if (Math.abs(currentProgress - savedProgress) > 0.05) {
       setSavedProgress(currentProgress);
-      updateWatchHistory(currentProgress);
+      updateWatchHistory(currentProgress, Math.floor(time));
     }
   };
 
@@ -158,7 +166,7 @@ export function EpisodeVideoPlayer({
 
   const handleVideoEnded = () => {
     // Mark the episode as completed when it ends
-    updateWatchHistory(1.0, true);
+    updateWatchHistory(1.0, 0, true); // Position doesn't matter for completed episodes
 
     // Show next episode prompt only when episode is fully watched
     if (nextEpisode && !showNextEpisodePrompt) {

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         id: history.id,
         episodeId: history.episodeId,
         progress: history.progress,
+        positionSeconds: (history as any).positionSeconds || 0,
         completed: history.completed,
         completedAt: history.completedAt,
         startedAt: history.startedAt,

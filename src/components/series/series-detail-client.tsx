@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
 import { ArrowLeft, Heart, Play, Share, Star } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -21,6 +22,10 @@ interface SeriesDetailClientProps {
 export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProps) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
+  const { continueWatching } = useSeriesContinueWatching();
+
+  // Find if user has progress in this series
+  const seriesProgress = continueWatching.find((item) => item.seriesId === series.id);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -97,11 +102,24 @@ export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProp
             </p>
 
             <div className="flex gap-3 flex-wrap">
-              <Link href={`/series/${series.slug}/season/1/episode/1`}>
-                <Button size={'sm'} variant={'premium'}>
-                  <Play className="w-4 h-4 mr-2" /> Watch Now
-                </Button>
-              </Link>
+              {seriesProgress ? (
+                <Link
+                  href={`/series/${series.slug}/season/${seriesProgress.seasonNumber}/episode/${seriesProgress.episodeNumber}`}
+                >
+                  <Button size={'sm'} variant={'premium'}>
+                    <Play className="w-4 h-4 mr-2" /> Resume S{seriesProgress.seasonNumber}E
+                    {seriesProgress.episodeNumber} at{' '}
+                    {Math.floor(seriesProgress.positionSeconds / 60)}:
+                    {(seriesProgress.positionSeconds % 60).toString().padStart(2, '0')}
+                  </Button>
+                </Link>
+              ) : (
+                <Link href={`/series/${series.slug}/season/1/episode/1`}>
+                  <Button size={'sm'} variant={'premium'}>
+                    <Play className="w-4 h-4 mr-2" /> Watch Now
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>

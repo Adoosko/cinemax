@@ -1,19 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
 
-    if (!session?.user?.id) {
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { episodeId, progress, completed, watchHistoryId } = body;
+    const { episodeId, progress, positionSeconds, completed, watchHistoryId } = body;
 
     if (!episodeId) {
       return NextResponse.json({ error: 'Episode ID is required' }, { status: 400 });
@@ -37,6 +40,7 @@ export async function POST(request: NextRequest) {
         },
         data: {
           progress,
+          ...(positionSeconds !== undefined ? { positionSeconds } : {}),
           completed: completed || false,
           completedAt: completed ? new Date() : null,
         },
@@ -48,6 +52,7 @@ export async function POST(request: NextRequest) {
           userId: session.user.id,
           episodeId,
           progress,
+          ...(positionSeconds !== undefined ? { positionSeconds } : {}),
           completed: completed || false,
           completedAt: completed ? new Date() : null,
         },
