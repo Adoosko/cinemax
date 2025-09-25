@@ -6,7 +6,7 @@ import { createAuthClient } from 'better-auth/react';
 
 export const authClient = createAuthClient({
   basePath: '/api/auth',
-  baseURL: process.env.NEXT_PUBLIC_NEXT_PUBLIC_BETTER_AUTH_URL || 'https://cinemx.adrianfinik.sk',
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'https://cinemx.adrianfinik.sk',
   plugins: [magicLinkClient(), polarClient()],
 });
 

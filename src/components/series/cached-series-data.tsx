@@ -30,10 +30,7 @@ export async function CachedSeriesData({ slug }: { slug: string }) {
 // Function to fetch all public series
 export async function fetchCachedPublicSeries(): Promise<Series[]> {
   // During build time, return empty array to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log('Build time: Skipping series fetch');
     return [];
   }
@@ -41,9 +38,8 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
@@ -63,10 +59,7 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
 
 export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
   // During build time, return empty array to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log('Build time: Skipping series data fetch');
     return { series: [] };
   }
@@ -74,9 +67,8 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
@@ -96,10 +88,7 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
 
 export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | null> {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping series fetch for slug ${slug}`);
     return null;
   }
@@ -107,9 +96,8 @@ export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | nu
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series/${slug}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });
@@ -205,10 +193,7 @@ export async function fetchCachedEpisode(
   episodeNumber: string
 ): Promise<Episode | null> {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(
       `Build time: Skipping episode fetch for ${seriesSlug}/s${seasonNumber}/e${episodeNumber}`
     );
@@ -218,9 +203,8 @@ export async function fetchCachedEpisode(
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     const response = await fetch(
       `${baseUrl}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
       {
@@ -246,10 +230,7 @@ export async function fetchCachedEpisode(
 
 export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> {
   // During build time, return empty array to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping seasons fetch for ${seriesSlug}`);
     return [];
   }
@@ -257,9 +238,8 @@ export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> 
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series/${seriesSlug}/seasons`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
     });

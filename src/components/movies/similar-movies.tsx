@@ -140,16 +140,35 @@ export function SimilarMovies({
     const otherMovies = allMovies.filter((movie) => movie.id !== currentMovie.id);
 
     // Find movies with similar genre
-    let genreToMatch: string[] = currentMovie.genre;
+    let genreToMatch: string[];
+
+    // Handle both string and array formats
+    const genre = currentMovie.genre as string[] | string | undefined;
+    if (Array.isArray(genre)) {
+      genreToMatch = genre;
+    } else if (typeof genre === 'string' && genre) {
+      // Split by comma and clean up
+      genreToMatch = genre.split(',').map((g: string) => g.trim());
+    } else {
+      genreToMatch = ['Drama']; // fallback
+    }
 
     // Convert to lowercase for matching
     genreToMatch = genreToMatch.map((g) => g.toLowerCase().trim());
 
     // Find movies with similar genre
     const matchingMovies = otherMovies.filter((movie) => {
-      if (!movie.genre || movie.genre.length === 0) return false;
+      const movieGenre = movie.genre as string[] | string | undefined;
+      if (!movieGenre) return false;
 
-      let movieGenres: string[] = movie.genre;
+      let movieGenres: string[];
+      if (Array.isArray(movieGenre)) {
+        movieGenres = movieGenre;
+      } else if (typeof movieGenre === 'string' && movieGenre) {
+        movieGenres = movieGenre.split(',').map((g: string) => g.trim());
+      } else {
+        return false;
+      }
 
       // Convert to lowercase for matching
       movieGenres = movieGenres.map((g) => g.toLowerCase().trim());

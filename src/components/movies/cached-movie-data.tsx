@@ -5,10 +5,7 @@ import { type Movie } from '@/lib/data/movies-with-use-cache';
 // This component fetches and caches a single movie by slug
 export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null> {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping movie fetch for slug ${slug}`);
     return null;
   }
@@ -16,10 +13,9 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
-    const url = new URL(`/api/movies/${slug}`, baseUrl);
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
+    const url = `${baseUrl}/api/movies/${slug}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -60,10 +56,7 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
 // This component fetches and caches a single movie by ID
 export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping movie fetch for id ${id}`);
     return null;
   }
@@ -71,10 +64,9 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
-
-    const url = new URL(`/api/movies/${id}`, baseUrl);
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
+    const url = `${baseUrl}/api/movies/${id}`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -97,10 +89,11 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
   }
 
   try {
-    const url = new URL(
-      '/api/movies',
-      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
-    );
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
+    const url = `${baseUrl}/api/movies`;
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -131,29 +124,22 @@ export async function fetchCachedMovieVideo(
   useDirect: boolean = true
 ): Promise<Movie | null> {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping movie video fetch for slug ${slug}`);
     return null;
   }
 
   try {
-    const baseUrlStr =
+    const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL
-        : 'https://cinemx.adrianfinik.sk';
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
+    const url = useDirect
+      ? `${baseUrl}/api/movies/${slug}/video?direct=true`
+      : `${baseUrl}/api/movies/${slug}/video`;
 
-    const baseUrl = new URL(`/api/movies/${slug}/video`, baseUrlStr);
-
-    // Add direct=true parameter to use direct URLs instead of presigned URLs
-    if (useDirect) {
-      baseUrl.searchParams.append('direct', 'true');
-    }
-
-    console.log(`Fetching cached movie video from: ${baseUrl.toString()}`);
-    const response = await fetch(baseUrl);
+    console.log(`Fetching cached movie video from: ${url}`);
+    const response = await fetch(url);
 
     if (!response.ok) {
       throw new Error(`Failed to fetch movie video: ${response.status}`);
@@ -170,10 +156,7 @@ export async function fetchCachedMovieVideo(
 // This component renders movie data with cached data
 export async function CachedMovieData({ slug }: { slug: string }) {
   // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log(`Build time: Skipping CachedMovieData for slug ${slug}`);
     return {
       movie: null,

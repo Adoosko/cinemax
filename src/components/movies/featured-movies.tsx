@@ -17,20 +17,18 @@ interface Movie {
 
 async function getFeaturedMovies() {
   // During build time, return empty array to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
     console.log('Build time: Skipping featured movies fetch');
     return [];
   }
 
   try {
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? 'https://cinemx.adrianfinik.sk'
+        : 'http://localhost:3000';
     // Fetch with revalidation every 10 minutes (600 seconds)
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}/api/movies`,
-      { next: { revalidate: 600 } }
-    );
+    const response = await fetch(`${baseUrl}/api/movies`, { next: { revalidate: 600 } });
     if (!response.ok) {
       throw new Error(`Failed to fetch movies: ${response.status}`);
     }
