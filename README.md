@@ -98,7 +98,7 @@ DATABASE_URL="postgresql://username:password@localhost:5432/cinemax"
 
 # Authentication
 BETTER_AUTH_SECRET="your-secret-key"
-NEXT_PUBLIC_BETTER_AUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_BETTER_AUTH_URL="https://cinemx.adrianfinik.sk"
 
 # AWS S3
 AWS_ACCESS_KEY_ID="your-access-key"

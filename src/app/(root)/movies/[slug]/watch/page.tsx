@@ -45,7 +45,7 @@ async function getMovieForStreaming(
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     // Add direct=true parameter to use direct URLs instead of presigned URLs
     const url = useDirect

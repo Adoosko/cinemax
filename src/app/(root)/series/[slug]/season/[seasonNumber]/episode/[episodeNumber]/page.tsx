@@ -66,7 +66,7 @@ export async function generateMetadata({ params }: EpisodePageProps) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}/api/series/${slug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
       { next: { revalidate: 3600 } }
     );
 

@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
 import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -75,6 +75,9 @@ export async function POST(request: NextRequest) {
         isPublished: data.isPublished || false,
       },
     });
+
+    // Revalidate the series list page to show new content immediately
+    revalidatePath('/series');
 
     return NextResponse.json({ success: true, series });
   } catch (error) {

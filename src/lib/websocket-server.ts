@@ -1,7 +1,7 @@
+import cors from 'cors';
+import express from 'express';
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
-import express from 'express';
-import cors from 'cors';
 import { db } from './db';
 
 const app = express();
@@ -13,7 +13,7 @@ const io = new SocketIOServer(server, {
     origin:
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000',
+        : 'https://cinemx.adrianfinik.sk',
     methods: ['GET', 'POST'],
   },
   pingTimeout: 60000,

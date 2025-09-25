@@ -60,7 +60,7 @@ export async function getMovies(isAdmin: boolean = false): Promise<Movie[]> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(endpoint, baseUrl);
     const response = await fetch(url);
@@ -92,7 +92,7 @@ export async function getMovieById(id: string): Promise<Movie | null> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(`/api/movies/${id}`, baseUrl);
     const response = await fetch(url);
@@ -124,7 +124,7 @@ export async function getMovieBySlug(slug: string): Promise<Movie | null> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(`/api/movies/slug/${slug}`, baseUrl);
     const response = await fetch(url);
@@ -146,7 +146,7 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
   try {
     const url = new URL(
       '/api/admin/movies',
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
     );
     const response = await fetch(url, {
       method: 'POST',
@@ -177,7 +177,7 @@ export async function updateMovie(id: string, movieData: Partial<Movie>): Promis
   try {
     const url = new URL(
       `/api/admin/movies/${id}`,
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
     );
     const response = await fetch(url, {
       method: 'PUT',
@@ -208,7 +208,7 @@ export async function deleteMovie(id: string): Promise<boolean> {
   try {
     const url = new URL(
       `/api/admin/movies/${id}`,
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
     );
     const response = await fetch(url, {
       method: 'DELETE',
@@ -238,7 +238,7 @@ async function revalidateMoviesCache(tags: string | string[] = 'movies'): Promis
       tagsArray.map(async (tag) => {
         const revalidateUrl = new URL(
           `/api/revalidate?tag=${tag}`,
-          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+          `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
         );
         const revalidateResponse = await fetch(revalidateUrl, { method: 'POST' });
 

@@ -84,6 +84,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       },
     });
 
+    // Revalidate the series list and specific series page
+    revalidatePath('/series');
+    revalidatePath(`/series/${series.slug}`);
+
     return NextResponse.json({ success: true, series });
   } catch (error) {
     console.error('Error updating series:', error);
@@ -115,6 +119,9 @@ export async function DELETE(
     await prisma.series.delete({
       where: { id },
     });
+
+    // Revalidate the series list page
+    revalidatePath('/series');
 
     return NextResponse.json({ success: true });
   } catch (error) {

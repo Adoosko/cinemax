@@ -55,7 +55,7 @@ export async function generateMetadata({ params }: SeasonPageProps) {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}/seasons/${seasonNumber}`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}/api/series/${slug}/seasons/${seasonNumber}`,
       { next: { revalidate: 3600 } }
     );
 
@@ -95,7 +95,7 @@ export default async function SeasonPage({ params }: SeasonPageProps) {
   try {
     // Fetch season data with ISR
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}/seasons/${seasonNumber}`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}/api/series/${slug}/seasons/${seasonNumber}`,
       { next: { revalidate: 3600 } }
     );
 

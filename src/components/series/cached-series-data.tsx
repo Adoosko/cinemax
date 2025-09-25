@@ -42,7 +42,7 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const response = await fetch(`${baseUrl}/api/series`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
@@ -75,7 +75,7 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const response = await fetch(`${baseUrl}/api/series`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
@@ -108,7 +108,7 @@ export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | nu
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const response = await fetch(`${baseUrl}/api/series/${slug}`, {
       next: { revalidate: 3600 }, // Cache for 1 hour
@@ -219,7 +219,7 @@ export async function fetchCachedEpisode(
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const response = await fetch(
       `${baseUrl}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
@@ -258,7 +258,7 @@ export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> 
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const response = await fetch(`${baseUrl}/api/series/${seriesSlug}/seasons`, {
       next: { revalidate: 3600 }, // Cache for 1 hour

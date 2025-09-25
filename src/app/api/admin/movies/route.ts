@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { slugify } from '@/lib/utils';
+import { PrismaClient } from '@prisma/client';
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
         isActive: true,
       },
     });
+
+    // Revalidate the movies list page to show new content immediately
+    revalidatePath('/movies');
 
     return NextResponse.json({ movie }, { status: 201 });
   } catch (error) {

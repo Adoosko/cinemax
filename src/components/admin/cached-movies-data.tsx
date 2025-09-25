@@ -23,7 +23,7 @@ export async function fetchCachedMovies(isAdmin: boolean = false): Promise<Movie
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(endpoint, baseUrl);
     const response = await fetch(url);

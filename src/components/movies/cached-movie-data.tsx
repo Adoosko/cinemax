@@ -17,7 +17,7 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(`/api/movies/${slug}`, baseUrl);
     const response = await fetch(url);
@@ -72,7 +72,7 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
     const baseUrl =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const url = new URL(`/api/movies/${id}`, baseUrl);
     const response = await fetch(url);
@@ -99,7 +99,7 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
   try {
     const url = new URL(
       '/api/movies',
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+      `${process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'}`
     );
     const response = await fetch(url);
 
@@ -143,7 +143,7 @@ export async function fetchCachedMovieVideo(
     const baseUrlStr =
       process.env.NODE_ENV === 'production'
         ? process.env.NEXT_PUBLIC_APP_URL
-        : 'http://localhost:3000';
+        : 'https://cinemx.adrianfinik.sk';
 
     const baseUrl = new URL(`/api/movies/${slug}/video`, baseUrlStr);
 

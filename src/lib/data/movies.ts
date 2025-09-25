@@ -26,7 +26,10 @@ export const getMovies = unstable_cache(
   async (isAdmin: boolean = false): Promise<Movie[]> => {
     try {
       const endpoint = isAdmin ? '/api/admin/movies' : '/api/movies';
-      const url = new URL(endpoint, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
+      const url = new URL(
+        endpoint,
+        process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
+      );
       const response = await fetch(url, {
         next: { tags: ['movies'] },
       });
@@ -76,7 +79,7 @@ export const getMovieBySlug = unstable_cache(
     try {
       const url = new URL(
         `/api/movies/slug/${slug}`,
-        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+        process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
       );
       const response = await fetch(url, {
         next: { tags: [`movie-${slug}`] },
@@ -102,7 +105,7 @@ export async function revalidateMoviesCache() {
   try {
     const revalidateUrl = new URL(
       '/api/revalidate?tag=movies',
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
     );
     const revalidateResponse = await fetch(revalidateUrl, {
       method: 'POST',
@@ -124,7 +127,7 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
   try {
     const url = new URL(
       '/api/admin/movies',
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
     );
     const response = await fetch(url, {
       method: 'POST',
@@ -155,7 +158,7 @@ export async function updateMovie(id: string, movieData: Partial<Movie>): Promis
   try {
     const url = new URL(
       `/api/admin/movies/${id}`,
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
     );
     const response = await fetch(url, {
       method: 'PUT',
@@ -186,7 +189,7 @@ export async function deleteMovie(id: string): Promise<boolean> {
   try {
     const url = new URL(
       `/api/admin/movies/${id}`,
-      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
     );
     const response = await fetch(url, {
       method: 'DELETE',

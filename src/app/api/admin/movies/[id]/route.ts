@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -39,6 +40,9 @@ export async function DELETE(
     await prisma.movie.delete({
       where: { id: movieId },
     });
+
+    // Revalidate the movies list page
+    revalidatePath('/movies');
 
     return NextResponse.json({ message: 'Movie deleted successfully' });
   } catch (error) {
@@ -93,6 +97,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         isActive: data.isActive ?? existingMovie.isActive,
       },
     });
+
+    // Revalidate the movies list and specific movie page
+    revalidatePath('/movies');
+    revalidatePath(`/movies/${updatedMovie.slug}`);
 
     return NextResponse.json({ movie: updatedMovie });
   } catch (error) {
