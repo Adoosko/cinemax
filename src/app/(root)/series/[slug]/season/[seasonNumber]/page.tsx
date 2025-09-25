@@ -82,6 +82,14 @@ export async function generateMetadata({ params }: SeasonPageProps) {
 }
 
 export default async function SeasonPage({ params }: SeasonPageProps) {
+  // During build time, return not found to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    notFound();
+  }
+
   const { slug, seasonNumber } = await params;
 
   try {

@@ -18,6 +18,15 @@ interface Series {
 }
 
 async function getFeaturedSeries() {
+  // During build time, return empty array to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log('Build time: Skipping featured series fetch');
+    return [];
+  }
+
   try {
     // Fetch with revalidation every 10 minutes (600 seconds)
     const response = await fetch(

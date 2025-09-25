@@ -92,6 +92,14 @@ export async function generateMetadata({ params }: EpisodePageProps) {
 }
 
 export default async function EpisodeWatchPage({ params }: EpisodePageProps) {
+  // During build time, return not found to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    notFound();
+  }
+
   const { slug, seasonNumber, episodeNumber } = await params;
 
   try {

@@ -4,6 +4,15 @@ import { type Movie } from '@/lib/data/movies-with-use-cache';
 
 // This component fetches and caches a single movie by slug
 export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null> {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping movie fetch for slug ${slug}`);
+    return null;
+  }
+
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
@@ -160,6 +169,18 @@ export async function fetchCachedMovieVideo(
 
 // This component renders movie data with cached data
 export async function CachedMovieData({ slug }: { slug: string }) {
+  // During build time, return null to avoid fetch errors
+  if (
+    process.env.NEXT_PHASE === 'phase-production-build' ||
+    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
+  ) {
+    console.log(`Build time: Skipping CachedMovieData for slug ${slug}`);
+    return {
+      movie: null,
+      fetchedAt: new Date().toISOString(),
+    };
+  }
+
   const movie = await fetchCachedMovieBySlug(slug);
 
   // Debug logging
