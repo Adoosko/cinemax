@@ -1,23 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { AlertTriangle, MessageSquare, Send } from 'lucide-react';
 import { useAuth } from '@/lib/hooks/use-auth';
+import { MessageSquare, Send, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
-interface Comment {
+// Helper function to format relative time
+function formatRelativeTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffInSeconds < 60) return 'just now';
+  if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+  if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+  if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+
+  return date.toLocaleDateString();
+}
+
+export interface EpisodeComment {
   id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
   content: string;
   isSpoiler: boolean;
+  parentId?: string;
   createdAt: string;
-  user: {
-    name: string;
-    avatar?: string;
-  };
-  replies?: Comment[];
+  replies?: EpisodeComment[];
 }
 
 interface EpisodeCommentsProps {
@@ -28,39 +43,66 @@ interface EpisodeCommentsProps {
 
 export function EpisodeComments({ seriesSlug, seasonNumber, episodeNumber }: EpisodeCommentsProps) {
   const { user, isAuthenticated } = useAuth();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState('');
+  const [comments, setComments] = useState<EpisodeComment[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [content, setContent] = useState('');
   const [isSpoiler, setIsSpoiler] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSpoilers, setShowSpoilers] = useState(false);
+  const [revealedSpoilers, setRevealedSpoilers] = useState<Set<string>>(new Set());
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState('');
+  const [replySpoiler, setReplySpoiler] = useState(false);
 
-  // Fetch comments
+  // Fetch comments on mount
   useEffect(() => {
-    const fetchComments = async () => {
-      try {
-        const response = await fetch(
-          `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/comments`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setComments(data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch episode comments:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchComments();
   }, [seriesSlug, seasonNumber, episodeNumber]);
 
-  // Submit comment
-  const handleSubmitComment = async () => {
-    if (!newComment.trim() || !isAuthenticated) return;
+  const fetchComments = async () => {
+    try {
+      const response = await fetch(
+        `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/comments`
+      );
+      const data = await response.json();
 
-    setIsSubmitting(true);
+      if (data.success) {
+        setComments(data.comments);
+        setTotalCount(data.totalCount);
+      }
+    } catch (error) {
+      console.error('Failed to fetch comments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!content.trim() || !isAuthenticated || submitting) return;
+
+    setSubmitting(true);
+
+    // Optimistically add the comment
+    const optimisticComment: EpisodeComment = {
+      id: `temp-${Date.now()}`,
+      userId: user!.id,
+      userName: user!.name || 'Anonymous',
+      userAvatar: user!.image || undefined,
+      content: content.trim(),
+      isSpoiler,
+      createdAt: new Date().toISOString(),
+    };
+
+    setComments((prev) => [optimisticComment, ...prev]);
+    setTotalCount((prev) => prev + 1);
+    const currentContent = content;
+    const currentIsSpoiler = isSpoiler;
+
+    setContent('');
+    setIsSpoiler(false);
+
     try {
       const response = await fetch(
         `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/comments`,
@@ -70,40 +112,199 @@ export function EpisodeComments({ seriesSlug, seasonNumber, episodeNumber }: Epi
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            content: newComment,
-            isSpoiler,
+            content: currentContent.trim(),
+            isSpoiler: currentIsSpoiler,
           }),
         }
       );
 
-      if (response.ok) {
-        const newCommentData = await response.json();
-        setComments((prev) => [newCommentData, ...prev]);
-        setNewComment('');
-        setIsSpoiler(false);
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace optimistic comment with real one
+        setComments((prev) =>
+          prev.map((comment) => (comment.id === optimisticComment.id ? data.comment : comment))
+        );
+      } else {
+        // Remove optimistic comment and show error
+        setComments((prev) => prev.filter((comment) => comment.id !== optimisticComment.id));
+        setTotalCount((prev) => prev - 1);
+        setContent(currentContent);
+        setIsSpoiler(currentIsSpoiler);
+        alert(data.error || 'Failed to post comment');
       }
     } catch (error) {
-      console.error('Failed to submit episode comment:', error);
+      // Remove optimistic comment and show error
+      setComments((prev) => prev.filter((comment) => comment.id !== optimisticComment.id));
+      setTotalCount((prev) => prev - 1);
+      setContent(currentContent);
+      setIsSpoiler(currentIsSpoiler);
+      console.error('Failed to post comment:', error);
+      alert('Failed to post comment. Please try again.');
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+  const toggleSpoiler = (commentId: string) => {
+    setRevealedSpoilers((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(commentId)) {
+        newSet.delete(commentId);
+      } else {
+        newSet.add(commentId);
+      }
+      return newSet;
     });
   };
 
-  if (isLoading) {
+  const handleReply = async (parentId: string, e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!replyContent.trim() || !isAuthenticated || submitting) return;
+
+    setSubmitting(true);
+
+    const optimisticReply: EpisodeComment = {
+      id: `temp-reply-${Date.now()}`,
+      userId: user!.id,
+      userName: user!.name || 'Anonymous',
+      userAvatar: user!.image || undefined,
+      content: replyContent.trim(),
+      isSpoiler: replySpoiler,
+      parentId,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Add reply optimistically
+    setComments((prev) =>
+      prev.map((comment) => {
+        if (comment.id === parentId) {
+          return {
+            ...comment,
+            replies: [...(comment.replies || []), optimisticReply],
+          };
+        }
+        return comment;
+      })
+    );
+    setTotalCount((prev) => prev + 1);
+
+    const currentReplyContent = replyContent;
+    const currentReplySpoiler = replySpoiler;
+
+    setReplyContent('');
+    setReplySpoiler(false);
+    setReplyingTo(null);
+
+    try {
+      const response = await fetch(
+        `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/comments`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: currentReplyContent.trim(),
+            isSpoiler: currentReplySpoiler,
+            parentId,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Replace optimistic reply with real one
+        setComments((prev) =>
+          prev.map((comment) => {
+            if (comment.id === parentId) {
+              return {
+                ...comment,
+                replies: (comment.replies || []).map((reply) =>
+                  reply.id === optimisticReply.id ? data.comment : reply
+                ),
+              };
+            }
+            return comment;
+          })
+        );
+      } else {
+        // Remove optimistic reply and show error
+        setComments((prev) =>
+          prev.map((comment) => {
+            if (comment.id === parentId) {
+              return {
+                ...comment,
+                replies: (comment.replies || []).filter((reply) => reply.id !== optimisticReply.id),
+              };
+            }
+            return comment;
+          })
+        );
+        setTotalCount((prev) => prev - 1);
+        setReplyContent(currentReplyContent);
+        setReplySpoiler(currentReplySpoiler);
+        setReplyingTo(parentId);
+        alert(data.error || 'Failed to post reply');
+      }
+    } catch (error) {
+      // Remove optimistic reply and show error
+      setComments((prev) =>
+        prev.map((comment) => {
+          if (comment.id === parentId) {
+            return {
+              ...comment,
+              replies: (comment.replies || []).filter((reply) => reply.id !== optimisticReply.id),
+            };
+          }
+          return comment;
+        })
+      );
+      setTotalCount((prev) => prev - 1);
+      setReplyContent(currentReplyContent);
+      setReplySpoiler(currentReplySpoiler);
+      setReplyingTo(parentId);
+      console.error('Failed to post reply:', error);
+      alert('Failed to post reply. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const response = await fetch(
+        `/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}/comments?commentId=${commentId}`,
+        {
+          method: 'DELETE',
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setComments((prev) => prev.filter((comment) => comment.id !== commentId));
+        setTotalCount((prev) => prev - 1);
+      } else {
+        alert(data.error || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Failed to delete comment:', error);
+      alert('Failed to delete comment. Please try again.');
+    }
+  };
+
+  if (loading) {
     return (
       <div className="space-y-4">
-        <div className="h-6 bg-gray-800 rounded animate-pulse" />
+        <div className="h-8 bg-white/10 animate-pulse rounded-lg" />
         <div className="space-y-3">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-20 bg-gray-800 rounded animate-pulse" />
+            <div key={i} className="h-24 bg-white/10 animate-pulse rounded-lg" />
           ))}
         </div>
       </div>
@@ -112,127 +313,316 @@ export function EpisodeComments({ seriesSlug, seasonNumber, episodeNumber }: Epi
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <MessageSquare className="h-5 w-5 text-white" />
-        <h3 className="text-xl font-bold text-white">Episode Discussion</h3>
-      </div>
-
       {/* Comment Form */}
       {isAuthenticated ? (
-        <Card className="bg-gray-900/50 border-gray-700">
-          <CardContent className="p-4">
-            <Textarea
-              placeholder="Share your thoughts about this episode..."
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="bg-gray-800 border-gray-600 text-white placeholder-gray-400 mb-3"
-              rows={3}
-            />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={isSpoiler}
-                    onChange={(e) => setIsSpoiler(e.target.checked)}
-                    className="rounded border-gray-600"
-                  />
-                  <AlertTriangle className="h-4 w-4" />
-                  Spoiler warning
-                </label>
+        <Card className="bg-netflix-black/50 p-6 border-0">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <Avatar className="w-10 h-10">
+                {user?.image ? (
+                  <AvatarImage src={user.image} alt={user.name || 'User'} />
+                ) : (
+                  <AvatarFallback className="bg-netflix-red text-white">
+                    {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="flex-1 space-y-3">
+                <Textarea
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  placeholder="Share your thoughts about this episode..."
+                  className="min-h-[100px] bg-netflix-black/30 border-0 ring-0 focus:ring-0 focus:border-0 focus-visible:ring-0 focus-visible:border-0 text-white placeholder:text-netflix-text-gray resize-none"
+                  maxLength={1000}
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="spoiler"
+                      checked={isSpoiler}
+                      onCheckedChange={(checked) => setIsSpoiler(checked as boolean)}
+                      className="data-[state=checked]:bg-netflix-red data-[state=checked]:border-netflix-red"
+                    />
+                    <label
+                      htmlFor="spoiler"
+                      className="text-sm text-netflix-text-gray cursor-pointer"
+                    >
+                      Mark as spoiler
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-netflix-text-gray">{content.length}/1000</span>
+                    <Button
+                      type="submit"
+                      disabled={!content.trim() || submitting}
+                      className="bg-netflix-red hover:bg-netflix-red/80 disabled:opacity-50"
+                      size="sm"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      {submitting ? 'Posting...' : 'Post Comment'}
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <Button
-                onClick={handleSubmitComment}
-                disabled={!newComment.trim() || isSubmitting}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {isSubmitting ? 'Posting...' : 'Post Comment'}
-              </Button>
             </div>
-          </CardContent>
+          </form>
         </Card>
       ) : (
-        <Card className="bg-gray-900/50 border-gray-700">
-          <CardContent className="p-4 text-center">
-            <p className="text-gray-300 mb-4">Sign in to join the discussion</p>
-            <Button className="bg-red-600 hover:bg-red-700">Sign In</Button>
-          </CardContent>
+        <Card className="bg-netflix-black/50 p-6">
+          <div className="text-center py-4">
+            <MessageSquare className="w-12 h-12 mx-auto text-netflix-text-gray mb-4" />
+            <p className="text-netflix-text-gray mb-4">
+              Sign in to share your thoughts about this episode
+            </p>
+            <Button asChild className="bg-netflix-red hover:bg-netflix-red/80">
+              <a href="/signin">Sign In</a>
+            </Button>
+          </div>
         </Card>
-      )}
-
-      {/* Spoiler Toggle */}
-      {comments.some((comment) => comment.isSpoiler) && (
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showSpoilers}
-              onChange={(e) => setShowSpoilers(e.target.checked)}
-              className="rounded border-gray-600"
-            />
-            Show spoiler comments
-          </label>
-        </div>
       )}
 
       {/* Comments List */}
       <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-xl font-bold text-white">Comments ({totalCount})</h3>
+        </div>
+
         {comments.length === 0 ? (
-          <Card className="bg-gray-900/50 border-gray-700">
-            <CardContent className="p-6 text-center">
-              <MessageSquare className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-              <h4 className="text-white font-medium mb-2">No comments yet</h4>
-              <p className="text-gray-400 text-sm">
-                Be the first to share your thoughts about this episode!
-              </p>
-            </CardContent>
+          <Card className="bg-netflix-black/50 p-8">
+            <div className="text-center">
+              <MessageSquare className="w-16 h-16 mx-auto text-netflix-text-gray mb-4" />
+              <p className="text-netflix-text-gray text-lg mb-2">No comments yet</p>
+              <p className="text-netflix-text-gray/70">Be the first to share your thoughts!</p>
+            </div>
           </Card>
         ) : (
-          comments.map((comment) => (
-            <Card key={comment.id} className="bg-gray-900/50 border-gray-700">
-              <CardContent className="p-4">
-                <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0">
-                    {comment.user.avatar ? (
-                      <img
-                        src={comment.user.avatar}
-                        alt={comment.user.name}
-                        className="w-full h-full rounded-full object-cover"
-                      />
+          <div className="space-y-4">
+            {comments.map((comment) => (
+              <Card key={comment.id} className="bg-transparent p-4 border-0">
+                <div className="flex items-start space-x-3">
+                  <Avatar className="w-8 h-8">
+                    {comment.userAvatar ? (
+                      <AvatarImage src={comment.userAvatar} alt={comment.userName} />
                     ) : (
-                      <span className="text-white text-xs font-medium">
-                        {comment.user.name.charAt(0).toUpperCase()}
-                      </span>
+                      <AvatarFallback className="bg-netflix-red/70 text-white text-xs">
+                        {(comment.userName || 'U')[0].toUpperCase()}
+                      </AvatarFallback>
                     )}
-                  </div>
+                  </Avatar>
+
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-white font-medium text-sm">{comment.user.name}</span>
-                      <span className="text-gray-400 text-xs">{formatDate(comment.createdAt)}</span>
-                      {comment.isSpoiler && (
-                        <Badge variant="destructive" className="text-xs">
-                          <AlertTriangle className="h-3 w-3 mr-1" />
-                          Spoiler
-                        </Badge>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-white text-sm">{comment.userName}</span>
+                        {comment.isSpoiler && (
+                          <span className="text-netflix-red text-xs italic ml-2">[spoiler]</span>
+                        )}
+                        <span className="text-netflix-text-gray text-xs">
+                          {formatRelativeTime(comment.createdAt)}
+                        </span>
+                      </div>
+
+                      {isAuthenticated && user?.id === comment.userId && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteComment(comment.id)}
+                          className="text-netflix-text-gray hover:text-red-400 h-6 w-6 p-0"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
                       )}
                     </div>
-                    <div
-                      className={`text-gray-200 text-sm ${comment.isSpoiler && !showSpoilers ? 'blur-sm select-none' : ''}`}
-                    >
-                      {comment.isSpoiler && !showSpoilers ? (
-                        <p className="italic text-gray-400 text-sm">
-                          This comment contains spoilers. Toggle spoiler visibility to read.
-                        </p>
-                      ) : (
-                        <p className="whitespace-pre-wrap">{comment.content}</p>
+
+                    {comment.isSpoiler ? (
+                      <div className="relative">
+                        {revealedSpoilers.has(comment.id) ? (
+                          <div>
+                            <p className="text-white text-sm leading-relaxed mb-1">
+                              {comment.content}
+                            </p>
+                            <button
+                              onClick={() => toggleSpoiler(comment.id)}
+                              className="text-netflix-text-gray hover:text-white text-xs underline"
+                            >
+                              Hide
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => toggleSpoiler(comment.id)}
+                            className="text-netflix-red hover:text-netflix-red/80 text-sm italic underline"
+                          >
+                            Spoiler - Click to reveal
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-white text-sm leading-relaxed">{comment.content}</p>
+                    )}
+
+                    <div className="flex items-center space-x-2 mt-2">
+                      {isAuthenticated && (
+                        <button
+                          onClick={() =>
+                            setReplyingTo(replyingTo === comment.id ? null : comment.id)
+                          }
+                          className="text-netflix-text-gray hover:text-white text-xs underline"
+                        >
+                          Reply
+                        </button>
+                      )}
+
+                      {/* Reply Form */}
+                      {replyingTo === comment.id && isAuthenticated && (
+                        <div className="mt-3 pt-3 border-t border-netflix-gray/30">
+                          <form onSubmit={(e) => handleReply(comment.id, e)} className="space-y-3">
+                            <div className="flex items-start space-x-2">
+                              <Avatar className="w-6 h-6">
+                                {user?.image ? (
+                                  <AvatarImage src={user.image} alt={user.name || 'User'} />
+                                ) : (
+                                  <AvatarFallback className="bg-netflix-red text-white text-xs">
+                                    {(user?.name || user?.email || 'U')[0].toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+                              <div className="flex-1 space-y-2">
+                                <Textarea
+                                  value={replyContent}
+                                  onChange={(e) => setReplyContent(e.target.value)}
+                                  placeholder={`Reply to ${comment.userName}...`}
+                                  className="min-h-[60px] bg-netflix-black/30 border-0 ring-0 focus:ring-0 focus:border-0 focus-visible:ring-0 focus-visible:border-0 text-white placeholder:text-netflix-text-gray resize-none text-sm"
+                                  maxLength={1000}
+                                />
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`reply-spoiler-${comment.id}`}
+                                      checked={replySpoiler}
+                                      onCheckedChange={(checked) =>
+                                        setReplySpoiler(checked as boolean)
+                                      }
+                                      className="data-[state=checked]:bg-netflix-red data-[state=checked]:border-netflix-red scale-75"
+                                    />
+                                    <label
+                                      htmlFor={`reply-spoiler-${comment.id}`}
+                                      className="text-xs text-netflix-text-gray cursor-pointer"
+                                    >
+                                      Spoiler
+                                    </label>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-xs text-netflix-text-gray">
+                                      {replyContent.length}/1000
+                                    </span>
+                                    <Button
+                                      type="submit"
+                                      disabled={!replyContent.trim() || submitting}
+                                      className="bg-netflix-red hover:bg-netflix-red/80 disabled:opacity-50 h-7 px-3"
+                                      size="sm"
+                                    >
+                                      <Send className="w-3 h-3 mr-1" />
+                                      {submitting ? '...' : 'Reply'}
+                                    </Button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReplyingTo(null);
+                                        setReplyContent('');
+                                        setReplySpoiler(false);
+                                      }}
+                                      className="text-netflix-text-gray hover:text-white text-xs underline"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      )}
+
+                      {/* Replies */}
+                      {comment.replies && comment.replies.length > 0 && (
+                        <div className="mt-4 space-y-3 pl-6 border-l border-netflix-gray/30">
+                          {comment.replies.map((reply) => (
+                            <div key={reply.id} className="flex items-start space-x-2">
+                              <Avatar className="w-6 h-6">
+                                {reply.userAvatar ? (
+                                  <AvatarImage src={reply.userAvatar} alt={reply.userName} />
+                                ) : (
+                                  <AvatarFallback className="bg-netflix-red/70 text-white text-xs">
+                                    {(reply.userName || 'U')[0].toUpperCase()}
+                                  </AvatarFallback>
+                                )}
+                              </Avatar>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center space-x-2 mb-1">
+                                  <span className="font-semibold text-white text-xs">
+                                    {reply.userName}
+                                  </span>
+                                  {reply.isSpoiler && (
+                                    <span className="text-netflix-red text-xs italic">
+                                      [spoiler]
+                                    </span>
+                                  )}
+                                  <span className="text-netflix-text-gray text-xs">
+                                    {formatRelativeTime(reply.createdAt)}
+                                  </span>
+                                  {isAuthenticated && user?.id === reply.userId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => deleteComment(reply.id)}
+                                      className="text-netflix-text-gray hover:text-red-400 h-4 w-4 p-0"
+                                    >
+                                      <Trash2 className="w-2 h-2" />
+                                    </Button>
+                                  )}
+                                </div>
+
+                                {reply.isSpoiler ? (
+                                  <div className="relative">
+                                    {revealedSpoilers.has(reply.id) ? (
+                                      <div>
+                                        <p className="text-white text-xs leading-relaxed mb-1">
+                                          {reply.content}
+                                        </p>
+                                        <button
+                                          onClick={() => toggleSpoiler(reply.id)}
+                                          className="text-netflix-text-gray hover:text-white text-xs underline"
+                                        >
+                                          Hide
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <button
+                                        onClick={() => toggleSpoiler(reply.id)}
+                                        className="text-netflix-red hover:text-netflix-red/80 text-xs italic underline"
+                                      >
+                                        Spoiler - Click to reveal
+                                      </button>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <p className="text-white text-xs leading-relaxed">
+                                    {reply.content}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ))
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

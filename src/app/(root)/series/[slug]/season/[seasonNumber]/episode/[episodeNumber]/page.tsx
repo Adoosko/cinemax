@@ -1,3 +1,4 @@
+import { fetchCachedEpisode, fetchCachedSeasons } from '@/components/series/cached-series-data';
 import { EpisodePlayerClient } from '@/components/series/episode-player-client';
 import { notFound } from 'next/navigation';
 
@@ -44,19 +45,17 @@ export default async function EpisodeWatchPage({ params }: EpisodePageProps) {
   const { slug, seasonNumber, episodeNumber } = await params;
 
   try {
-    // Fetch episode data
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${slug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
-      { cache: 'no-store' }
-    );
+    // Fetch episode data with caching
+    const episode = await fetchCachedEpisode(slug, seasonNumber, episodeNumber);
 
-    if (!response.ok) {
+    if (!episode) {
       notFound();
     }
 
-    const episode = await response.json();
+    // Fetch all seasons for navigation with caching
+    const allSeasons = await fetchCachedSeasons(slug);
 
-    return <EpisodePlayerClient episode={episode} />;
+    return <EpisodePlayerClient episode={episode} allSeasons={allSeasons} />;
   } catch (error) {
     console.error('Failed to fetch episode:', error);
     notFound();

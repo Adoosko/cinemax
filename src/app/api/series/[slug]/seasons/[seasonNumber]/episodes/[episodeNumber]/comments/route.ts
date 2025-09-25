@@ -1,6 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { auth } from '@/lib/auth';
+import { PrismaClient } from '@prisma/client';
+import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
 
@@ -113,7 +114,14 @@ export async function GET(
         })),
       }));
 
-    return NextResponse.json(transformedComments);
+    return NextResponse.json({
+      success: true,
+      comments: transformedComments,
+      totalCount: transformedComments.reduce(
+        (total, comment) => total + 1 + (comment.replies?.length || 0),
+        0
+      ),
+    });
   } catch (error) {
     console.error('Failed to fetch episode comments:', error);
     return NextResponse.json({ error: 'Failed to fetch comments' }, { status: 500 });
@@ -126,9 +134,12 @@ export async function POST(
 ) {
   try {
     const { slug, seasonNumber, episodeNumber } = await params;
-    const session = await auth();
 
-    if (!session?.user?.id) {
+    // Validate session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+    if (!session?.user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -209,20 +220,75 @@ export async function POST(
     });
 
     return NextResponse.json({
-      id: comment.id,
-      content: comment.content,
-      isSpoiler: comment.isSpoiler,
-      createdAt: comment.createdAt,
-      user: {
-        name:
+      success: true,
+      comment: {
+        id: comment.id,
+        userId: session.user.id,
+        userName:
           comment.user.name ||
           `${comment.user.firstName || ''} ${comment.user.lastName || ''}`.trim() ||
           'Anonymous',
-        avatar: comment.user.image,
+        userAvatar: comment.user.image,
+        content: comment.content,
+        isSpoiler: comment.isSpoiler,
+        parentId: comment.parentId,
+        createdAt: comment.createdAt,
       },
     });
   } catch (error) {
     console.error('Failed to create episode comment:', error);
     return NextResponse.json({ error: 'Failed to create comment' }, { status: 500 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ slug: string; seasonNumber: string; episodeNumber: string }> }
+) {
+  try {
+    const { slug, seasonNumber, episodeNumber } = await params;
+
+    // Validate session
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const commentId = searchParams.get('commentId');
+
+    if (!commentId) {
+      return NextResponse.json({ error: 'Comment ID is required' }, { status: 400 });
+    }
+
+    // Find and verify ownership of the comment
+    const comment = await prisma.episodeComment.findUnique({
+      where: { id: commentId },
+      select: { userId: true, episodeId: true },
+    });
+
+    if (!comment) {
+      return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
+    }
+
+    if (comment.userId !== session.user.id) {
+      return NextResponse.json({ error: 'You can only delete your own comments' }, { status: 403 });
+    }
+
+    // Delete the comment
+    await prisma.episodeComment.delete({
+      where: { id: commentId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: 'Comment deleted successfully',
+    });
+  } catch (error) {
+    console.error('Error deleting comment:', error);
+    return NextResponse.json({ error: 'Failed to delete comment' }, { status: 500 });
   }
 }

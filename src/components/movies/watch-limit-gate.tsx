@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { useWatchLimit } from '@/lib/hooks/use-watch-limit';
-import { useSubscription } from '@/lib/hooks/use-subscription';
-import { Button } from '@/components/ui/button';
-import { Loader2, AlertCircle, Lock } from 'lucide-react';
 import { UpgradeModal } from '@/components/modals/upgrade-modal';
+import { Button } from '@/components/ui/button';
+import { useSubscriptionContext } from '@/lib/contexts/subscription-context';
+import { useWatchLimit } from '@/lib/hooks/use-watch-limit';
+import { AlertCircle, Loader2, Lock } from 'lucide-react';
+import { useState } from 'react';
 
 interface WatchLimitGateProps {
   children: React.ReactNode;
@@ -13,11 +13,32 @@ interface WatchLimitGateProps {
 
 export function WatchLimitGate({ children }: WatchLimitGateProps) {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const { subscription, loading: subscriptionLoading } = useSubscriptionContext();
   const { watchLimit, isLoading, error, canWatchMore } = useWatchLimit();
 
-  // If user has an active subscription, skip watch limit entirely
-  const hasActiveSubscription = subscription?.status === 'ACTIVE';
+  // Check cached subscription immediately for instant premium detection
+  const getCachedSubscription = () => {
+    try {
+      const cached = localStorage.getItem('cachedSubscription');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        const cacheAge = Date.now() - new Date(parsed.cachedAt).getTime();
+        const isCacheValid = cacheAge < 24 * 60 * 60 * 1000; // 24 hours
+        if (isCacheValid && parsed.data?.status === 'ACTIVE') {
+          return parsed.data;
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to read cached subscription:', err);
+    }
+    return null;
+  };
+
+  const cachedSubscription = getCachedSubscription();
+
+  // If user has cached active subscription, skip watch limit entirely (no loading)
+  const hasActiveSubscription =
+    cachedSubscription?.status === 'ACTIVE' || subscription?.status === 'ACTIVE';
   if (hasActiveSubscription) {
     return (
       <>
@@ -31,7 +52,8 @@ export function WatchLimitGate({ children }: WatchLimitGateProps) {
   }
 
   // Show loading state while checking subscription or watch limit
-  if (subscriptionLoading || isLoading) {
+  // Skip loading if we have a cached active subscription
+  if ((subscriptionLoading || isLoading) && !cachedSubscription) {
     return (
       <div className="flex items-center justify-center min-h-[200px]">
         <div className="text-center">

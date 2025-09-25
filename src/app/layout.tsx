@@ -1,4 +1,5 @@
 import { Navbar } from '@/components/layout/navbar';
+import { SubscriptionProvider } from '@/lib/contexts/subscription-context';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
@@ -15,9 +16,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Navbar />
-        {children}
-        <Toaster />
+        <SubscriptionProvider>
+          <Navbar />
+          {children}
+          <Toaster />
+        </SubscriptionProvider>
       </body>
     </html>
   );

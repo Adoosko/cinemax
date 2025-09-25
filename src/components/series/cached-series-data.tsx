@@ -96,3 +96,123 @@ export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | nu
     return null;
   }
 }
+
+// Episode interface for caching
+export interface Episode {
+  id: string;
+  number: number;
+  title: string;
+  description: string;
+  runtime: number;
+  runtimeFormatted: string;
+  airDate: string;
+  coverUrl: string;
+  streamingUrl: string;
+  qualities?: Array<{
+    quality: string;
+    url: string;
+    bitrate: number;
+  }>;
+  series: {
+    id: string;
+    slug: string;
+    title: string;
+    description: string;
+    genre: string;
+    genres: string[];
+    releaseYear: string;
+    coverUrl: string;
+    backdropUrl: string;
+    rating: string;
+    cast: string[];
+    director: string;
+  };
+  season: {
+    id: string;
+    number: number;
+    title: string;
+    description: string;
+    releaseDate: string;
+    coverUrl: string;
+    episodeCount: number;
+    episodes?: Array<{
+      id: string;
+      number: number;
+      title: string;
+    }>;
+  };
+  nextEpisode?: {
+    id: string;
+    number: number;
+    title: string;
+  };
+  previousEpisode?: {
+    id: string;
+    number: number;
+    title: string;
+  };
+}
+
+// Season interface for caching
+export interface Season {
+  id: string;
+  number: number;
+  title: string;
+  episodeCount: number;
+  episodes: Array<{
+    id: string;
+    number: number;
+    title: string;
+  }>;
+}
+
+export async function fetchCachedEpisode(
+  seriesSlug: string,
+  seasonNumber: string,
+  episodeNumber: string
+): Promise<Episode | null> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
+      {
+        next: { revalidate: 1800 }, // Cache for 30 minutes (episodes change less frequently than series)
+      }
+    );
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        return null;
+      }
+      console.error('Failed to fetch episode:', response.statusText);
+      return null;
+    }
+
+    const episode = await response.json();
+    return episode;
+  } catch (error) {
+    console.error('Error fetching episode:', error);
+    return null;
+  }
+}
+
+export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> {
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/series/${seriesSlug}/seasons`,
+      {
+        next: { revalidate: 3600 }, // Cache for 1 hour
+      }
+    );
+
+    if (!response.ok) {
+      console.error('Failed to fetch seasons:', response.statusText);
+      return [];
+    }
+
+    const seasons = await response.json();
+    return seasons;
+  } catch (error) {
+    console.error('Error fetching seasons:', error);
+    return [];
+  }
+}
