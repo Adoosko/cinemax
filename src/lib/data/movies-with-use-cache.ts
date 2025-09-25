@@ -200,7 +200,10 @@ export async function updateMovie(id: string, movieData: Partial<Movie>): Promis
 // Delete a movie and revalidate the cache
 export async function deleteMovie(id: string): Promise<boolean> {
   try {
-    const url = new URL(`/api/admin/movies/${id}`, 'http://localhost:3000');
+    const url = new URL(
+      `/api/admin/movies/${id}`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+    );
     const response = await fetch(url, {
       method: 'DELETE',
     });
@@ -227,7 +230,10 @@ async function revalidateMoviesCache(tags: string | string[] = 'movies'): Promis
     // Call revalidation API for each tag
     await Promise.all(
       tagsArray.map(async (tag) => {
-        const revalidateUrl = new URL(`/api/revalidate?tag=${tag}`, 'http://localhost:3000');
+        const revalidateUrl = new URL(
+          `/api/revalidate?tag=${tag}`,
+          `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+        );
         const revalidateResponse = await fetch(revalidateUrl, { method: 'POST' });
 
         if (!revalidateResponse.ok) {

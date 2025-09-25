@@ -13,7 +13,7 @@ export async function sendMagicLinkEmail({
     const data = await resend.emails.send({
       from: 'CINEMX <cinemx@adrianfinik.sk>',
       to: email,
-      subject: '🎬 Your CiNEMX Magic Link - Sign In Instantly',
+      subject: '🎬 Your CINEMX Magic Link - Sign In Instantly',
       html: `
         <!DOCTYPE html>
         <html lang="en">
