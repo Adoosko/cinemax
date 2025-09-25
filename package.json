@@ -12,7 +12,8 @@
     "lint": "eslint",
     "seed": "bun x tsx prisma/seed.ts",
     "prepare": "husky",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.890.0",
