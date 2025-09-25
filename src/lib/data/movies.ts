@@ -1,6 +1,5 @@
 'use server';
 
-import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
 
 export type Movie = {
@@ -27,7 +26,7 @@ export const getMovies = unstable_cache(
   async (isAdmin: boolean = false): Promise<Movie[]> => {
     try {
       const endpoint = isAdmin ? '/api/admin/movies' : '/api/movies';
-      const url = new URL(endpoint, 'http://localhost:3000');
+      const url = new URL(endpoint, process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000');
       const response = await fetch(url, {
         next: { tags: ['movies'] },
       });
@@ -51,7 +50,7 @@ export const getMovies = unstable_cache(
 export const getMovieById = unstable_cache(
   async (id: string): Promise<Movie | null> => {
     try {
-      const url = new URL(`/api/movies/${id}`, 'http://localhost:3000');
+      const url = new URL(`/api/movies/${id}`, ``);
       const response = await fetch(url, {
         next: { tags: [`movie-${id}`] },
       });
@@ -75,7 +74,10 @@ export const getMovieById = unstable_cache(
 export const getMovieBySlug = unstable_cache(
   async (slug: string): Promise<Movie | null> => {
     try {
-      const url = new URL(`/api/movies/slug/${slug}`, 'http://localhost:3000');
+      const url = new URL(
+        `/api/movies/slug/${slug}`,
+        process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+      );
       const response = await fetch(url, {
         next: { tags: [`movie-${slug}`] },
       });
@@ -98,7 +100,10 @@ export const getMovieBySlug = unstable_cache(
 // Function to revalidate the movies cache
 export async function revalidateMoviesCache() {
   try {
-    const revalidateUrl = new URL('/api/revalidate?tag=movies', 'http://localhost:3000');
+    const revalidateUrl = new URL(
+      '/api/revalidate?tag=movies',
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    );
     const revalidateResponse = await fetch(revalidateUrl, {
       method: 'POST',
     });
@@ -117,7 +122,10 @@ export async function revalidateMoviesCache() {
 // Add a movie and revalidate the cache
 export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL('/api/admin/movies', 'http://localhost:3000');
+    const url = new URL(
+      '/api/admin/movies',
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    );
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -145,7 +153,10 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
 // Update a movie and revalidate the cache
 export async function updateMovie(id: string, movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL(`/api/admin/movies/${id}`, 'http://localhost:3000');
+    const url = new URL(
+      `/api/admin/movies/${id}`,
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    );
     const response = await fetch(url, {
       method: 'PUT',
       headers: {
@@ -173,7 +184,10 @@ export async function updateMovie(id: string, movieData: Partial<Movie>): Promis
 // Delete a movie and revalidate the cache
 export async function deleteMovie(id: string): Promise<boolean> {
   try {
-    const url = new URL(`/api/admin/movies/${id}`, 'http://localhost:3000');
+    const url = new URL(
+      `/api/admin/movies/${id}`,
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+    );
     const response = await fetch(url, {
       method: 'DELETE',
     });

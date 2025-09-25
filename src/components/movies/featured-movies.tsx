@@ -18,7 +18,10 @@ interface Movie {
 async function getFeaturedMovies() {
   try {
     // Fetch with revalidation every 10 minutes (600 seconds)
-    const response = await fetch('http://localhost:3000/api/movies', { next: { revalidate: 600 } });
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/movies`,
+      { next: { revalidate: 600 } }
+    );
     if (!response.ok) {
       throw new Error(`Failed to fetch movies: ${response.status}`);
     }

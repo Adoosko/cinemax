@@ -4,19 +4,10 @@ import { type Movie } from '@/lib/data/movies-with-use-cache';
 
 // This component fetches and caches a single movie by slug
 export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null> {
-  // During build time, return null to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
-    console.log(`Build time: Skipping movie fetch for slug ${slug}`);
-    return null;
-  }
-
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const url = new URL(`/api/movies/${slug}`, baseUrl);
@@ -71,7 +62,7 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const url = new URL(`/api/movies/${id}`, baseUrl);
@@ -97,7 +88,10 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
   }
 
   try {
-    const url = new URL('/api/movies', 'http://localhost:3000');
+    const url = new URL(
+      '/api/movies',
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+    );
     const response = await fetch(url);
 
     if (!response.ok) {
@@ -139,7 +133,7 @@ export async function fetchCachedMovieVideo(
   try {
     const baseUrlStr =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const baseUrl = new URL(`/api/movies/${slug}/video`, baseUrlStr);

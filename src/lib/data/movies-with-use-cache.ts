@@ -59,7 +59,7 @@ export async function getMovies(isAdmin: boolean = false): Promise<Movie[]> {
     const endpoint = isAdmin ? '/api/admin/movies' : '/api/movies';
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const url = new URL(endpoint, baseUrl);
@@ -91,7 +91,7 @@ export async function getMovieById(id: string): Promise<Movie | null> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const url = new URL(`/api/movies/${id}`, baseUrl);
@@ -123,7 +123,7 @@ export async function getMovieBySlug(slug: string): Promise<Movie | null> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const url = new URL(`/api/movies/slug/${slug}`, baseUrl);
@@ -144,7 +144,10 @@ export async function getMovieBySlug(slug: string): Promise<Movie | null> {
 // Add a movie and revalidate the cache
 export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL('/api/admin/movies', 'http://localhost:3000');
+    const url = new URL(
+      '/api/admin/movies',
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+    );
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -172,7 +175,10 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
 // Update a movie and revalidate the cache
 export async function updateMovie(id: string, movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL(`/api/admin/movies/${id}`, 'http://localhost:3000');
+    const url = new URL(
+      `/api/admin/movies/${id}`,
+      `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}`
+    );
     const response = await fetch(url, {
       method: 'PUT',
       headers: {

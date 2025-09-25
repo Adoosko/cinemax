@@ -41,7 +41,7 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const response = await fetch(`${baseUrl}/api/series`, {
@@ -74,7 +74,7 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const response = await fetch(`${baseUrl}/api/series`, {
@@ -107,7 +107,7 @@ export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | nu
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const response = await fetch(`${baseUrl}/api/series/${slug}`, {
@@ -218,7 +218,7 @@ export async function fetchCachedEpisode(
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const response = await fetch(
@@ -257,7 +257,7 @@ export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> 
   try {
     const baseUrl =
       process.env.NODE_ENV === 'production'
-        ? process.env.NEXT_PUBLIC_APP_URL || 'https://your-app.vercel.app'
+        ? process.env.NEXT_PUBLIC_APP_URL
         : 'http://localhost:3000';
 
     const response = await fetch(`${baseUrl}/api/series/${seriesSlug}/seasons`, {
