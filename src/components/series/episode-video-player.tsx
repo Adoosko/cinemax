@@ -232,12 +232,14 @@ export function EpisodeVideoPlayer({
             {/* Episode Preview */}
             <div className="flex-shrink-0">
               <div className="w-16 h-12 bg-gray-800 rounded overflow-hidden">
-                <img
+                <Image
                   src={
                     posterUrl ||
                     'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop'
                   }
                   alt={nextEpisode.title}
+                  width={64}
+                  height={48}
                   className="w-full h-full object-cover"
                 />
               </div>

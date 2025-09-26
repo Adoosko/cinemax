@@ -161,9 +161,9 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       }
 
       const getBestQuality = () => {
-        const qualityOrder = ['4K', '1080P', '720P', '480P'];
         const videoId = getVideoId();
 
+        // Check for saved quality preference first
         if (videoId) {
           const saved = localStorage.getItem(`video-quality-${videoId}`);
           if (saved) {
@@ -174,11 +174,40 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           }
         }
 
+        // Adaptive quality selection based on device and connection
+        const connection =
+          (navigator as any).connection ||
+          (navigator as any).mozConnection ||
+          (navigator as any).webkitConnection;
+
+        const isSlowConnection =
+          connection &&
+          (connection.effectiveType === 'slow-2g' ||
+            connection.effectiveType === '2g' ||
+            connection.downlink < 1.5); // Less than 1.5 Mbps
+
+        const isMobileDevice =
+          /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+            navigator.userAgent
+          );
+
+        // Quality priority based on device and connection
+        let qualityOrder;
+        if (isMobileDevice || isSlowConnection) {
+          // Mobile or slow connection: prioritize lower quality for smooth playback
+          qualityOrder = ['480P', '720P', '1080P', '4K'];
+        } else {
+          // Desktop or fast connection: prioritize higher quality
+          qualityOrder = ['1080P', '4K', '720P', '480P'];
+        }
+
+        // Find the best available quality from our priority list
         for (const preferred of qualityOrder) {
           const found = availableQualities.find((q) => q.quality.toUpperCase() === preferred);
           if (found) return found;
         }
 
+        // Fallback to first available quality
         return availableQualities[0];
       };
 
@@ -745,10 +774,18 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         setIsLoading(true);
 
         try {
-          const newUrl = await refreshVideoUrl(quality);
+          // Add timeout to prevent hanging on API calls
+          const timeoutPromise = new Promise<null>((resolve) => {
+            setTimeout(() => resolve(null), 5000); // 5 second timeout
+          });
+
+          const refreshPromise = refreshVideoUrl(quality);
+          const newUrl = await Promise.race([refreshPromise, timeoutPromise]);
+
+          // Use new URL if available, otherwise fallback to original URL
           const urlToUse = newUrl || selectedQuality.url;
 
-          console.log(`Switching to ${quality}`);
+          console.log(`Switching to ${quality} (URL: ${urlToUse})`);
 
           setCurrentQuality(quality);
           setCurrentSrc(urlToUse);
@@ -759,6 +796,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             localStorage.setItem(`video-quality-${videoId}`, quality);
           }
 
+          // Set up event handlers for successful load
           const handleLoadedData = () => {
             video.currentTime = currentTimeStamp;
             video.playbackRate = currentSpeed;
@@ -767,11 +805,37 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             setIsLoading(false);
           };
 
-          video.addEventListener('loadeddata', handleLoadedData);
+          const handleError = () => {
+            console.error('Failed to load video with new quality');
+            video.removeEventListener('error', handleError);
+            setIsLoading(false);
+            setVideoError('Failed to switch video quality. Please try again.');
+          };
+
+          // Add timeout for video loading (10 seconds)
+          const loadTimeout = setTimeout(() => {
+            console.error('Video load timeout');
+            video.removeEventListener('loadeddata', handleLoadedData);
+            video.removeEventListener('error', handleError);
+            setIsLoading(false);
+            setVideoError('Video quality change timed out. Please try again.');
+          }, 10000);
+
+          video.addEventListener('loadeddata', () => {
+            clearTimeout(loadTimeout);
+            handleLoadedData();
+          });
+
+          video.addEventListener('error', () => {
+            clearTimeout(loadTimeout);
+            handleError();
+          });
+
           video.load();
         } catch (error) {
           console.error('Quality change failed:', error);
           setIsLoading(false);
+          setVideoError('Failed to change video quality. Please try again.');
         }
 
         setShowQualityMenu(false);

@@ -1,10 +1,10 @@
 'use client';
 
-import { TMDBService } from '@/lib/services/tmdb-service';
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { NetflixCard } from '@/components/ui/glass-card';
-import { Search, X, Star, Calendar, MapPin, Download } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Calendar, Download, Search, Star, X } from 'lucide-react';
+import Image from 'next/image';
+import { useState } from 'react';
 
 interface TMDBMovie {
   id: number;
@@ -170,7 +170,7 @@ export function MovieSearchModal({ isOpen, onClose, onSelectMovie }: MovieSearch
                         {/* Poster */}
                         <div className="w-16 h-24 rounded overflow-hidden bg-netflix-medium-gray flex-shrink-0">
                           {movie.poster_path ? (
-                            <img
+                            <Image
                               src={`https://image.tmdb.org/t/p/w200${movie.poster_path}`}
                               alt={movie.title}
                               className="w-full h-full object-cover"

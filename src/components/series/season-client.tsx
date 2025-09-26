@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, Play } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -170,9 +171,11 @@ export function SeasonClient({ season }: SeasonClientProps) {
                 <div className="flex">
                   {/* Episode Thumbnail */}
                   <div className="relative w-48 h-28 flex-shrink-0">
-                    <img
+                    <Image
                       src={episode.coverUrl}
                       alt={episode.title}
+                      width={192}
+                      height={112}
                       className="w-full h-full object-cover"
                     />
                     {isWatched && (

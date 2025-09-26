@@ -11,44 +11,42 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
   }
 
   try {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://cinemx.adrianfinik.sk'
-        : 'http://localhost:3000';
+    // Determine base URL - handle both local production builds and deployed production
+    const isLocalDevelopment =
+      process.env.NODE_ENV === 'development' ||
+      !process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('localhost') ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1');
+
+    const baseUrl = isLocalDevelopment
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk';
+
     const url = `${baseUrl}/api/movies/${slug}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
 
     if (!response.ok) {
+      if (response.status === 404) return null;
       throw new Error(`Failed to fetch movie by slug: ${response.status}`);
     }
 
     const data = await response.json();
-
-    // Debug logging
-    console.log(`Fetched movie data for slug ${slug}:`, {
-      dataType: typeof data,
-      isNull: data === null,
-      hasMovieProperty: data && typeof data === 'object' && 'movie' in data,
-      keys: data && typeof data === 'object' ? Object.keys(data) : [],
-      firstFewProps:
-        data && typeof data === 'object'
-          ? Object.entries(data)
-              .slice(0, 3)
-              .map(([k, v]) => `${k}: ${typeof v}`)
-          : [],
-    });
 
     // The API returns the movie directly, not wrapped in a 'movie' property
     if (data && typeof data === 'object' && ('id' in data || 'title' in data)) {
       return data;
     } else if (data && typeof data === 'object' && 'movie' in data) {
       return data.movie;
-    } else {
-      console.error('Unexpected API response format for movie:', data);
-      return null;
     }
+
+    return null;
   } catch (error) {
-    console.error(`Error fetching movie by slug ${slug}:`, error);
+    // Silent error handling for production
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Error fetching movie by slug ${slug}:`, error);
+    }
     return null;
   }
 }
@@ -62,21 +60,34 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
   }
 
   try {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://cinemx.adrianfinik.sk'
-        : 'http://localhost:3000';
+    // Determine base URL - handle both local production builds and deployed production
+    const isLocalDevelopment =
+      process.env.NODE_ENV === 'development' ||
+      !process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('localhost') ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1');
+
+    const baseUrl = isLocalDevelopment
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk';
+
     const url = `${baseUrl}/api/movies/${id}`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 300 }, // Cache for 5 minutes
+    });
 
     if (!response.ok) {
+      if (response.status === 404) return null;
       throw new Error(`Failed to fetch movie: ${response.status}`);
     }
 
     const data = await response.json();
     return data.movie || null;
   } catch (error) {
-    console.error(`Error fetching movie ${id}:`, error);
+    // Silent error handling for production
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Error fetching movie ${id}:`, error);
+    }
     return null;
   }
 }
@@ -89,31 +100,41 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
   }
 
   try {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://cinemx.adrianfinik.sk'
-        : 'http://localhost:3000';
+    // Determine base URL - handle both local production builds and deployed production
+    const isLocalDevelopment =
+      process.env.NODE_ENV === 'development' ||
+      !process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('localhost') ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1');
+
+    const baseUrl = isLocalDevelopment
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk';
+
     const url = `${baseUrl}/api/movies`;
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 60 }, // Cache for 1 minute for listings
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to fetch movies: ${response.status}`);
     }
 
-    // The API returns an array directly, not an object with a movies property
     const data = await response.json();
 
-    // Check if the response is an array
+    // The API returns an array directly, not an object with a movies property
     if (Array.isArray(data)) {
       return data;
     } else if (data.movies && Array.isArray(data.movies)) {
       return data.movies;
-    } else {
-      console.error('Unexpected API response format:', data);
-      return [];
     }
+
+    return [];
   } catch (error) {
-    console.error('Error fetching public movies:', error);
+    // Silent error handling for production
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching public movies:', error);
+    }
     return [];
   }
 }
@@ -130,25 +151,37 @@ export async function fetchCachedMovieVideo(
   }
 
   try {
-    const baseUrl =
-      process.env.NODE_ENV === 'production'
-        ? 'https://cinemx.adrianfinik.sk'
-        : 'http://localhost:3000';
+    // Determine base URL - handle both local production builds and deployed production
+    const isLocalDevelopment =
+      process.env.NODE_ENV === 'development' ||
+      !process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('localhost') ||
+      process.env.NEXT_PUBLIC_APP_URL.includes('127.0.0.1');
+
+    const baseUrl = isLocalDevelopment
+      ? 'http://localhost:3000'
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk';
+
     const url = useDirect
       ? `${baseUrl}/api/movies/${slug}/video?direct=true`
       : `${baseUrl}/api/movies/${slug}/video`;
 
-    console.log(`Fetching cached movie video from: ${url}`);
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      next: { revalidate: 1800 }, // Cache for 30 minutes for video data
+    });
 
     if (!response.ok) {
+      if (response.status === 404) return null;
       throw new Error(`Failed to fetch movie video: ${response.status}`);
     }
 
     const data = await response.json();
     return data.movie || null;
   } catch (error) {
-    console.error(`Error fetching movie video for ${slug}:`, error);
+    // Silent error handling for production
+    if (process.env.NODE_ENV === 'development') {
+      console.error(`Error fetching movie video for ${slug}:`, error);
+    }
     return null;
   }
 }
@@ -165,15 +198,6 @@ export async function CachedMovieData({ slug }: { slug: string }) {
   }
 
   const movie = await fetchCachedMovieBySlug(slug);
-
-  // Debug logging
-  console.log('CachedMovieData result:', {
-    hasMovie: Boolean(movie),
-    movieType: movie ? typeof movie : 'null',
-    movieId: movie?.id,
-    movieTitle: movie?.title,
-    movieSlug: movie?.slug,
-  });
 
   return {
     movie,

@@ -12,9 +12,8 @@ import {
 import { type Series } from '@/components/series/cached-series-data';
 import { SeriesDetailClient } from '@/components/series/series-detail-client';
 
-// Enable PPR and ISR for optimal performance
+// PPR configuration for dynamic series pages - static parts pre-rendered, dynamic parts on-demand
 export const experimental_ppr = true;
-export const revalidate = 3600;
 
 // Generate static params for all active series
 export async function generateStaticParams() {

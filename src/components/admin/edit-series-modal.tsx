@@ -6,7 +6,7 @@ import {
   Calendar,
   Check,
   Download,
-  Image,
+  ImageIcon,
   Info,
   Loader,
   Plus,
@@ -18,6 +18,7 @@ import {
   User,
   X,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { EpisodeUpload } from './episode-upload';
@@ -799,7 +800,7 @@ function EditSeriesModal({
                           onClick={() => populateFromTMDB(series)}
                         >
                           {series.coverUrl && (
-                            <img
+                            <Image
                               src={series.coverUrl}
                               alt={series.title}
                               className="w-12 h-18 object-cover rounded"
@@ -1045,7 +1046,7 @@ function EditSeriesModal({
                 <div className="space-y-2">
                   <label className="block text-white font-semibold">Cover URL</label>
                   <div className="relative">
-                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                     <input
                       type="text"
                       name="coverUrl"
@@ -1057,7 +1058,7 @@ function EditSeriesModal({
                   </div>
                   {formData.coverUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                      <img
+                      <Image
                         src={formData.coverUrl}
                         alt="Cover preview"
                         className="h-32 object-contain mx-auto rounded-lg"
@@ -1073,7 +1074,7 @@ function EditSeriesModal({
                 <div className="space-y-2">
                   <label className="block text-white font-semibold">Backdrop URL</label>
                   <div className="relative">
-                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                     <input
                       type="text"
                       name="backdropUrl"
@@ -1085,7 +1086,7 @@ function EditSeriesModal({
                   </div>
                   {formData.backdropUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                      <img
+                      <Image
                         src={formData.backdropUrl}
                         alt="Backdrop preview"
                         className="h-32 w-full object-cover rounded-lg"
@@ -1373,7 +1374,7 @@ function EditSeriesModal({
                                                           }}
                                                         >
                                                           {tmdbEpisode.still_path && (
-                                                            <img
+                                                            <Image
                                                               src={`https://image.tmdb.org/t/p/w92${tmdbEpisode.still_path}`}
                                                               alt={tmdbEpisode.name}
                                                               className="w-12 h-8 object-cover rounded"

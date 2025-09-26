@@ -1,4 +1,4 @@
-import 'server-only';
+'use cache';
 
 export interface Series {
   id: string;

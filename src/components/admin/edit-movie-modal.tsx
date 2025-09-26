@@ -1,27 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
-  Film,
+  AlertCircle,
   Calendar,
+  Check,
   Clock,
+  Download,
+  Film,
+  ImageIcon,
+  Info,
+  Loader,
+  Mic,
+  Plus,
+  Search,
+  Settings,
   Star,
   Tag,
   User,
   Video,
-  Image,
-  Info,
   X,
-  Plus,
-  Check,
-  AlertCircle,
-  Loader,
-  Mic,
-  Settings,
-  Search,
-  Download,
 } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { Input } from '../ui/input';
 import AiTrailerGenerator from './ai-trailer-generator';
 
 interface EditMovieModalProps {
@@ -350,7 +352,8 @@ function EditMovieModal({
                   </p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input
+                  <Input
+                    aria-label="active"
                     type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) =>
@@ -408,7 +411,7 @@ function EditMovieModal({
                           onClick={() => populateFromTMDB(movie)}
                         >
                           {movie.posterUrl && (
-                            <img
+                            <Image
                               src={movie.posterUrl}
                               alt={movie.title}
                               className="w-12 h-18 object-cover rounded"
@@ -704,7 +707,7 @@ function EditMovieModal({
                 <div className="space-y-2">
                   <label className="block text-white font-semibold">Poster URL</label>
                   <div className="relative">
-                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                     <input
                       type="text"
                       name="posterUrl"
@@ -716,7 +719,7 @@ function EditMovieModal({
                   </div>
                   {formData.posterUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                      <img
+                      <Image
                         src={formData.posterUrl}
                         alt="Poster preview"
                         className="h-32 object-contain mx-auto rounded-lg"
@@ -732,7 +735,7 @@ function EditMovieModal({
                 <div className="space-y-2">
                   <label className="block text-white font-semibold">Backdrop URL</label>
                   <div className="relative">
-                    <Image className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
+                    <ImageIcon className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
                     <input
                       type="text"
                       name="backdropUrl"
@@ -744,7 +747,7 @@ function EditMovieModal({
                   </div>
                   {formData.backdropUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
-                      <img
+                      <Image
                         src={formData.backdropUrl}
                         alt="Backdrop preview"
                         className="h-32 w-full object-cover rounded-lg"

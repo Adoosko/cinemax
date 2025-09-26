@@ -1,6 +1,7 @@
 'use client';
 
 import { Edit, Eye, Trash2, Upload } from 'lucide-react';
+import Image from 'next/image';
 import { useState } from 'react';
 
 interface SeriesCardProps {
@@ -50,7 +51,7 @@ export function SeriesCard({
       <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-netflix-red/50 transition-all duration-300 hover:shadow-lg hover:shadow-black/50">
         {/* Series Image */}
         <div className="relative aspect-video overflow-hidden">
-          <img
+          <Image
             src={
               series.backdropUrl ||
               series.coverUrl ||
@@ -77,7 +78,7 @@ export function SeriesCard({
           {/* Poster Thumbnail */}
           {series.coverUrl && (
             <div className="absolute left-4 top-4 w-16 h-24 shadow-xl rounded-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
-              <img
+              <Image
                 src={series.coverUrl}
                 alt={series.title + ' poster'}
                 className="w-full h-full object-cover"

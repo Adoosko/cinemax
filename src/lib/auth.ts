@@ -1,8 +1,9 @@
-import { polar, checkout, portal, usage, webhooks } from '@polar-sh/better-auth';
+import { checkout, polar, portal, usage, webhooks } from '@polar-sh/better-auth';
 import { betterAuth } from 'better-auth';
 
 import { prismaAdapter } from 'better-auth/adapters/prisma';
 import { magicLink } from 'better-auth/plugins';
+import { revalidatePath } from 'next/cache';
 import { db } from './db';
 import { sendMagicLinkEmail } from './email';
 import { polarClient } from './polar';
@@ -100,6 +101,34 @@ export const auth = betterAuth({
         defaultValue: 'customer',
         required: true,
       },
+    },
+  },
+  callbacks: {
+    async signIn({ user, account, profile, email, credentials }) {
+      // Revalidate cached pages that might contain user-specific content
+      try {
+        // Revalidate main pages that show user state
+        await revalidatePath('/');
+        await revalidatePath('/movies');
+        await revalidatePath('/series');
+
+        console.log('Revalidated pages after sign in for user:', user.id);
+      } catch (error) {
+        console.error('Failed to revalidate after sign in:', error);
+      }
+    },
+    async signOut({ session, token }) {
+      // Revalidate cached pages to clear user-specific content
+      try {
+        // Revalidate main pages that show user state
+        await revalidatePath('/');
+        await revalidatePath('/movies');
+        await revalidatePath('/series');
+
+        console.log('Revalidated pages after sign out');
+      } catch (error) {
+        console.error('Failed to revalidate after sign out:', error);
+      }
     },
   },
 });

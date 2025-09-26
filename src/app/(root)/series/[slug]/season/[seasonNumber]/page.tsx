@@ -9,9 +9,8 @@ interface SeasonPageProps {
   }>;
 }
 
-// Enable PPR and ISR for optimal performance
+// PPR configuration for season pages - static parts pre-rendered, dynamic parts on-demand
 export const experimental_ppr = true;
-export const revalidate = 3600;
 
 // Generate static params for all seasons
 export async function generateStaticParams() {
@@ -82,14 +81,6 @@ export async function generateMetadata({ params }: SeasonPageProps) {
 }
 
 export default async function SeasonPage({ params }: SeasonPageProps) {
-  // During build time, return not found to avoid fetch errors
-  if (
-    process.env.NEXT_PHASE === 'phase-production-build' ||
-    (process.env.NODE_ENV === 'development' && !process.env.VERCEL)
-  ) {
-    notFound();
-  }
-
   const { slug, seasonNumber } = await params;
 
   try {

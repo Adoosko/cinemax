@@ -1,28 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { getMovies, addMovie, updateMovie, deleteMovie, type Movie } from '@/lib/data/movies';
-import { VideoUpload } from '@/components/admin/video-upload';
-
 import { AdminMovieFilters } from '@/components/admin/admin-movie-filters';
 import {
   AdminMoviesProvider,
   useAdminMoviesContext,
 } from '@/components/admin/admin-movies-context';
-import {
-  Plus,
-  Edit,
-  Trash2,
-  Eye,
-  Star,
-  Clock,
-  Upload,
-  AlertCircle,
-  Film,
-  Mic,
-  Sparkles,
-} from 'lucide-react';
+import { VideoUpload } from '@/components/admin/video-upload';
+import { addMovie, deleteMovie, getMovies, updateMovie, type Movie } from '@/lib/data/movies';
+import { AnimatePresence } from 'framer-motion';
+import { AlertCircle, Clock, Edit, Eye, Film, Mic, Plus, Star, Trash2, Upload } from 'lucide-react';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 import EditMovieModal from './edit-movie-modal';
 interface MoviesAdminContentProps {
   initialMovies?: Movie[];
@@ -305,13 +293,15 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                   <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-netflix-red/50 transition-all duration-300 hover:shadow-lg hover:shadow-black/50">
                     {/* Movie Image */}
                     <div className="relative aspect-video overflow-hidden">
-                      <img
+                      <Image
                         src={
                           movie.backdropUrl ||
                           movie.posterUrl ||
                           'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=500&h=300&fit=crop'
                         }
                         alt={movie.title}
+                        width={500}
+                        height={300}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       />
 
@@ -334,7 +324,7 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                       {/* Poster Thumbnail */}
                       {movie.posterUrl && (
                         <div className="absolute left-4 top-4 w-16 h-24 shadow-xl rounded-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
-                          <img
+                          <Image
                             src={movie.posterUrl}
                             alt={movie.title + ' poster'}
                             className="w-full h-full object-cover"
