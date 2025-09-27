@@ -327,6 +327,8 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                           <Image
                             src={movie.posterUrl}
                             alt={movie.title + ' poster'}
+                            width={64}
+                            height={96}
                             className="w-full h-full object-cover"
                           />
                         </div>

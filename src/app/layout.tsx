@@ -1,3 +1,5 @@
+import { FloatingDock } from '@/components/layout/floating-dock';
+import { MobileHeader } from '@/components/layout/mobile-header';
 import { Navbar } from '@/components/layout/navbar';
 import { SubscriptionProvider } from '@/lib/contexts/subscription-context';
 import type { Metadata } from 'next';
@@ -17,7 +19,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <SubscriptionProvider>
-          <Navbar />
+          {/* Desktop: Navbar, Mobile: Header + FloatingDock */}
+          <div className="hidden md:block">
+            <Navbar />
+          </div>
+          <div className="md:hidden">
+            <MobileHeader />
+            <FloatingDock />
+          </div>
+          <div className="md:hidden pt-14" />
           {children}
           <Toaster />
         </SubscriptionProvider>

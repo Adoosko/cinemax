@@ -1,6 +1,7 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
 import { useWatchHistory } from '@/lib/hooks/use-watch-history';
 import { ChevronUp, Film, Play, X } from 'lucide-react';
@@ -9,6 +10,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
 export function ContinueWatchingTray() {
+  const { isAuthenticated } = useAuth();
   const {
     watchHistory,
     isLoading: moviesLoading,
@@ -26,7 +28,7 @@ export function ContinueWatchingTray() {
   const [isStickyVisible, setIsStickyVisible] = useState<boolean>(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const isLoading = moviesLoading || seriesLoading;
+  const isLoading = isAuthenticated && (moviesLoading || seriesLoading);
   const error = moviesError || seriesError;
 
   // Combine movies and series continue watching
@@ -61,6 +63,11 @@ export function ContinueWatchingTray() {
 
     return () => observer.disconnect();
   }, [combinedContinueWatching.length]);
+
+  // Don't show anything for unauthenticated users
+  if (!isAuthenticated) {
+    return null;
+  }
 
   // Show skeleton during loading to prevent layout shift
   if (isLoading) {

@@ -1,21 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { User, LogOut, CreditCard } from 'lucide-react';
-import Link from 'next/link';
-import { authClient, signOut } from '@/lib/auth-client';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuTrigger,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { authClient, signOut } from '@/lib/auth-client';
+import { useAuth } from '@/lib/hooks/use-auth';
 import { useSubscription } from '@/lib/hooks/use-subscription';
+import { CreditCard, LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 interface CachedUserProfileProps {
   className?: string;
@@ -66,7 +66,7 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
 
   if (!isAuthenticated) {
     return (
-      <Button asChild className="bg-netflix-red text-white font-semibold px-5 py-2 rounded-xl">
+      <Button asChild className="bg-netflix-dark-red text-white font-semibold px-5 py-2 rounded-xl">
         <Link href="/signin">Sign In</Link>
       </Button>
     );
@@ -86,7 +86,9 @@ export function CachedUserProfile({ className, onMenuToggle }: CachedUserProfile
             {user?.image ? (
               <AvatarImage src={user.image} alt={userName} />
             ) : (
-              <AvatarFallback className="bg-netflix-red text-white">{userName[0]}</AvatarFallback>
+              <AvatarFallback className="bg-netflix-dark-red text-white">
+                {userName[0]}
+              </AvatarFallback>
             )}
           </Avatar>
           <div className="text-left hidden sm:block leading-tight">
