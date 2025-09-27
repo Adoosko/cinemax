@@ -41,7 +41,7 @@ export function MovieGrid() {
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
           const titleMatch = movie.title.toLowerCase().includes(searchLower);
-          const genreMatch = movie.genre.some((g) => g.toLowerCase().includes(searchLower));
+          const genreMatch = movie.genre.toLowerCase().includes(searchLower);
           const descMatch =
             movie.description && movie.description.toLowerCase().includes(searchLower);
 
@@ -53,7 +53,7 @@ export function MovieGrid() {
         // Genre filter
         if (filterOptions.genre && filterOptions.genre !== 'all') {
           const genreFilter = filterOptions.genre.toLowerCase();
-          if (!movie.genre.some((g) => g.toLowerCase().includes(genreFilter))) {
+          if (!movie.genre.toLowerCase().includes(genreFilter)) {
             return false;
           }
         }

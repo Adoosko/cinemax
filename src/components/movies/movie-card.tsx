@@ -1,10 +1,10 @@
 'use client';
 
-import Link from 'next/link';
-import Image from 'next/image';
-import { Star, Clock, Play } from 'lucide-react';
-import { NetflixCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
+import { NetflixCard } from '@/components/ui/glass-card';
+import { Clock, Play, Star } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
 
 // Use the Movie type from the cached data
 import { type Movie } from '@/lib/data/movies-with-use-cache';
@@ -64,7 +64,7 @@ export function MovieCard({
 
             {/* Movie Info - show on mobile, show on hover for desktop */}
             <div
-              className={`absolute bottom-0 z-20 left-0 right-0 p-4 ${showDetails ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100' : 'opacity-100'} transition-all duration-300 transform translate-y-2 group-hover:translate-y-0`}
+              className={`absolute bottom-0 z-10 left-0 right-0 p-4 ${showDetails ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100' : 'opacity-100'} transition-all duration-300 transform translate-y-2 group-hover:translate-y-0`}
             >
               <h3 className="text-white font-bold text-xs md:text-sm mb-2 drop-shadow-lg">
                 {movie.title}

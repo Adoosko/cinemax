@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
 import {
   Carousel,
   CarouselContent,
@@ -8,6 +7,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useMemo } from 'react';
 import { MovieCard } from './movie-card';
 
 // Use the Movie type from the cached data

@@ -1,9 +1,4 @@
-import {
-  formatDuration,
-  formatGenre,
-  formatMovieRating,
-  formatReleaseYear,
-} from '@/lib/utils/movie-utils';
+import { formatDuration, formatMovieRating, formatReleaseYear } from '@/lib/utils/movie-utils';
 import { PrismaClient } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
@@ -38,7 +33,7 @@ export async function GET() {
       id: movie.id,
       slug: movie.slug,
       title: movie.title,
-      genre: formatGenre(movie.genre),
+      genre: movie.genre,
       duration: formatDuration(movie.duration),
       rating: formatMovieRating(movie.rating),
       releaseDate: formatReleaseYear(movie.releaseDate),
