@@ -119,7 +119,6 @@ export function MovieCard({
                       {new Date(movie.releaseDate).getFullYear()}
                     </span>
                   )}
-                  <span className="text-xs bg-white/20 px-2 py-1 rounded">{movie.genre}</span>
                 </div>
               )}
             </div>

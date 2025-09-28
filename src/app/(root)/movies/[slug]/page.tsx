@@ -1,11 +1,15 @@
 import {
-  CachedMovieData,
-  fetchCachedMovieBySlug,
-  fetchCachedPublicMovies,
-} from '@/components/movies/cached-movie-data';
+  EnhancedCachedMovieData,
+  fetchAllMoviesStatic,
+  fetchStaticMovieData,
+  getMovieCacheTags,
+} from '@/components/movies/enhanced-cached-movie-data';
 import { MovieDetailClient } from '@/components/movies/movie-detail-client';
 import { NetflixBg } from '@/components/ui/netflix-bg';
+import { MovieHeroSkeleton } from '@/components/ui/netflix-skeletons';
+import { ScrollReset } from '@/components/ui/scroll-reset';
 import { PrismaClient } from '@prisma/client';
+import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -16,139 +20,139 @@ import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 // Use the imported type
 type Movie = CachedMovie;
 
+// Import the Movie type for proper typing
+
 // PPR configuration for dynamic movie pages - static parts pre-rendered, dynamic parts on-demand
 export const experimental_ppr = true;
 
-// Generate static params for all active movies
+// Generate static params with caching for all active movies
 export async function generateStaticParams() {
-  const prisma = new PrismaClient();
+  return unstable_cache(
+    async () => {
+      const prisma = new PrismaClient();
 
-  try {
-    const movies = await prisma.movie.findMany({
-      where: { isActive: true },
-      select: { slug: true },
-    });
+      try {
+        const movies = await prisma.movie.findMany({
+          where: { isActive: true },
+          select: { slug: true },
+        });
 
-    return movies.map((movie) => ({
-      slug: movie.slug,
-    }));
-  } catch (error) {
-    console.error('Failed to generate static params for movies:', error);
-    return [];
-  } finally {
-    await prisma.$disconnect();
-  }
+        return movies.map((movie) => ({
+          slug: movie.slug,
+        }));
+      } catch (error) {
+        console.error('Failed to generate static params for movies:', error);
+        return [];
+      } finally {
+        await prisma.$disconnect();
+      }
+    },
+    ['generate-static-params-movies'],
+    {
+      revalidate: 3600, // 1 hour
+      tags: ['movies-all'],
+    }
+  )();
 }
 
-// Generate metadata for SEO - can be pre-rendered
+// Generate metadata for SEO with enhanced caching
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  try {
-    const movie = await fetchCachedMovieBySlug(slug);
+  return unstable_cache(
+    async (movieSlug: string) => {
+      try {
+        const movie = await fetchStaticMovieData(movieSlug, await getMovieCacheTags(movieSlug));
 
-    if (!movie) {
-      return {
-        title: 'Movie Not Found | CinemaX',
-        description: 'The requested movie could not be found.',
-      };
+        if (!movie) {
+          return {
+            title: 'Movie Not Found | CinemaX',
+            description: 'The requested movie could not be found.',
+          };
+        }
+
+        return {
+          title: `${movie.title} | CinemaX`,
+          description: movie.description,
+          openGraph: {
+            title: movie.title,
+            description: movie.description,
+            images: [movie.backdropUrl, movie.posterUrl],
+            type: 'video.movie',
+          },
+          twitter: {
+            card: 'summary_large_image',
+            title: movie.title,
+            description: movie.description,
+            images: [movie.backdropUrl],
+          },
+        };
+      } catch (error) {
+        return {
+          title: 'Movie | CinemaX',
+          description: 'Watch movies online',
+        };
+      }
+    },
+    [`movie-metadata-${slug}`],
+    {
+      revalidate: 3600, // 1 hour for metadata
+      tags: await getMovieCacheTags(slug),
     }
-
-    return {
-      title: `${movie.title} | CinemaX`,
-      description: movie.description,
-      openGraph: {
-        title: movie.title,
-        description: movie.description,
-        images: [movie.backdropUrl, movie.posterUrl],
-        type: 'video.movie',
-      },
-      twitter: {
-        card: 'summary_large_image',
-        title: movie.title,
-        description: movie.description,
-        images: [movie.backdropUrl],
-      },
-    };
-  } catch (error) {
-    return {
-      title: 'Movie | CinemaX',
-      description: 'Watch movies online',
-    };
-  }
+  )(slug);
 }
 
 export default function MovieDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   return (
     <NetflixBg variant="solid" className="min-h-screen">
-      <Suspense fallback={<MovieDetailSkeleton />}>
-        <MovieDetailsContent params={params} />
+      <ScrollReset />
+      {/* Enhanced movie details with PPR splitting - Prevent layout shifts */}
+      <Suspense fallback={<MovieHeroSkeleton />}>
+        <div className="animate-fade-in">
+          <MovieDetailsContent params={params} />
+        </div>
       </Suspense>
     </NetflixBg>
   );
 }
 
-// Separate component for dynamic content
+// Enhanced movie details content with PPR splitting
 async function MovieDetailsContent({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const { movie } = await CachedMovieData({ slug: resolvedParams.slug });
-
-  // Fetch all movies for similar movies recommendations
-  const allMovies = await fetchCachedPublicMovies();
+  const { movie } = await EnhancedCachedMovieData({
+    slug: resolvedParams.slug,
+    includeRelated: false, // We'll get all movies separately
+    includeComments: false,
+  });
 
   if (!movie) {
     notFound();
   }
 
+  // Get all movies for similar recommendations
+  const allMovies = await fetchAllMoviesStatic([]);
+
   // Transform the movie data to match the expected format for MovieDetailClient
   const transformedMovie = {
     ...movie,
-    // Transform showtimes from string[] to the expected Record format if it exists
-    showtimes: transformShowtimes(movie.showtimes),
-  } as DetailMovie;
+    // Add missing fields for compatibility
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    showtimes: transformShowtimes([]), // Use empty array since static data doesn't have showtimes
+  } as unknown as DetailMovie;
 
   // Transform all movies for similar movies recommendations
-  const transformedAllMovies = allMovies.map((m) => ({
+  const transformedAllMovies = allMovies.map((m: CachedMovie) => ({
     ...m,
-    showtimes: transformShowtimes(m.showtimes),
-  })) as DetailMovie[];
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    showtimes: transformShowtimes([]), // Use empty array for consistency
+  })) as unknown as DetailMovie[];
 
   return <MovieDetailClient movie={transformedMovie} allMovies={transformedAllMovies} />;
 }
 
-// Skeleton for movie details
-function MovieDetailSkeleton() {
-  return (
-    <div className="min-h-screen animate-pulse">
-      {/* Hero section skeleton */}
-      <div className="relative h-[70vh] bg-gray-800">
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
-        <div className="absolute bottom-8 left-8 max-w-2xl space-y-4">
-          <div className="h-12 w-96 bg-white/20 rounded"></div>
-          <div className="h-6 w-48 bg-white/20 rounded"></div>
-          <div className="h-20 w-full bg-white/20 rounded"></div>
-          <div className="flex space-x-4">
-            <div className="h-12 w-32 bg-white/20 rounded"></div>
-            <div className="h-12 w-32 bg-white/20 rounded"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Content skeleton */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
-        <div className="h-8 w-64 bg-white/10 rounded"></div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="space-y-2">
-              <div className="aspect-[2/3] rounded-lg bg-white/10"></div>
-              <div className="h-4 w-full bg-white/10 rounded"></div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
+// Enhanced skeleton replaced with Netflix-style skeletons from the dedicated component
 
 // Helper function to transform showtimes from string[] to the expected Record format
 function transformShowtimes(showtimes?: string[]):

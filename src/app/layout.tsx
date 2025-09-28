@@ -28,8 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <MobileHeader />
             <FloatingDock />
           </div>
-          <div className="md:hidden pt-14" />
-          {children}
+          <div className="pb-20">{children}</div>
+
           <Toaster />
         </SubscriptionProvider>
       </body>

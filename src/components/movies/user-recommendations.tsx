@@ -39,7 +39,7 @@ export function UserRecommendations() {
   }
 
   return (
-    <div className="mb-12">
+    <div className="mb-12 pb-24">
       <h2 className="text-2xl font-bold text-white mb-6">Recommended For You</h2>
 
       <Carousel
@@ -51,15 +51,11 @@ export function UserRecommendations() {
       >
         <CarouselContent className="-ml-4">
           {recommendedMovies.map((movie: Movie, index: number) => (
-            <CarouselItem key={movie.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-              <MovieCard
-                movie={movie}
-                index={index}
-                showPlayButton={true}
-                showDetails={true}
-                showStats={true}
-                showDetailsOnMobile={true}
-              />
+            <CarouselItem
+              key={movie.id}
+              className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6"
+            >
+              <MovieCard movie={movie} index={index} showDetails />
             </CarouselItem>
           ))}
         </CarouselContent>

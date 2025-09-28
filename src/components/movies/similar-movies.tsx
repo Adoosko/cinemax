@@ -199,7 +199,7 @@ export function SimilarMovies({
   }
 
   return (
-    <div className="py-12">
+    <div className="py-12 pb-24">
       <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
 
       <Carousel
@@ -211,7 +211,10 @@ export function SimilarMovies({
       >
         <CarouselContent className="-ml-4">
           {similarMovies.map((movie: Movie, index: number) => (
-            <CarouselItem key={movie.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+            <CarouselItem
+              key={movie.id}
+              className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6"
+            >
               <MovieCard
                 movie={movie}
                 index={index}
