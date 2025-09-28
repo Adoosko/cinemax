@@ -1,20 +1,19 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { usePathname } from 'next/navigation';
-import { SearchBar } from '@/components/ui/searchbar';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { CachedUserProfile } from '@/components/auth/cached-user-profile';
-import { useAuth } from '@/lib/hooks/use-auth';
-import { signOut } from '@/lib/auth-client';
-import { Film, Calendar, Search, X, Ticket, Shield, User, Settings, LogOut } from 'lucide-react';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { SearchBar } from '@/components/ui/searchbar';
+import { signOut } from '@/lib/auth-client';
+import { useAuth } from '@/lib/hooks/use-auth';
+import { Search, X } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
 
 import { useSubscription } from '@/lib/hooks/use-subscription';
-import { Badge } from '../ui/badge';
 import { UpgradeModal } from '../modals/upgrade-modal';
+import { Badge } from '../ui/badge';
 
 // Import movie types and context
 interface Movie {
@@ -172,8 +171,8 @@ export function Navbar() {
   }, [pathname]);
 
   const navLinks = [
-    { name: 'Movies', href: '/movies', icon: Film },
-    { name: 'Series', href: '/series', icon: Calendar },
+    { name: 'Movies', href: '/movies', icon: '/movies.png' },
+    { name: 'Series', href: '/series', icon: '/series.png' },
   ];
 
   return (
@@ -185,7 +184,6 @@ export function Navbar() {
             {/* Logo */}
             <Link href="/" className="flex items-center group">
               <div className="flex items-center">
-                <Image src="/logo.png" alt="Logo" width={50} height={50} />
                 <Image className="pt-1" src="/text-logo.png" alt="Logo" width={100} height={80} />
               </div>
             </Link>
@@ -198,7 +196,23 @@ export function Navbar() {
                   href={link.href}
                   className="flex items-center space-x-2 text-white/80 hover:text-white font-medium group relative py-2"
                 >
-                  <link.icon className="w-4 h-4" />
+                  {link.name === 'Series' ? (
+                    <Image
+                      src={link.icon}
+                      alt={link.name}
+                      width={28}
+                      height={28}
+                      className="w-10 h-10"
+                    />
+                  ) : (
+                    <Image
+                      src={link.icon}
+                      alt={link.name}
+                      width={28}
+                      height={28}
+                      className="w-8 h-8"
+                    />
+                  )}
                   <span>{link.name}</span>
                 </Link>
               ))}
@@ -306,7 +320,13 @@ export function Navbar() {
                               </p>
                               <div className="flex items-center space-x-2 mt-1">
                                 {movie.rating && (
-                                  <span className="text-yellow-400 text-xs">★ {movie.rating}</span>
+                                  <span className="text-white text-xs">
+                                    ★ {Number(movie.rating).toFixed(1)} (
+                                    {movie.releaseDate
+                                      ? new Date(movie.releaseDate).getFullYear()
+                                      : 'N/A'}
+                                    )
+                                  </span>
                                 )}
                                 <span className="text-white/40 text-xs">
                                   {Array.isArray(movie.genre)

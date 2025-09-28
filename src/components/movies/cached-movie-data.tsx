@@ -24,7 +24,7 @@ export async function fetchCachedMovieBySlug(slug: string): Promise<Movie | null
 
     const url = `${baseUrl}/api/movies/${slug}`;
     const response = await fetch(url, {
-      next: { revalidate: 300 }, // Cache for 5 minutes
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {
@@ -73,7 +73,7 @@ export async function fetchCachedMovieById(id: string): Promise<Movie | null> {
 
     const url = `${baseUrl}/api/movies/${id}`;
     const response = await fetch(url, {
-      next: { revalidate: 300 }, // Cache for 5 minutes
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {
@@ -167,7 +167,7 @@ export async function fetchCachedMovieVideo(
       : `${baseUrl}/api/movies/${slug}/video`;
 
     const response = await fetch(url, {
-      next: { revalidate: 1800 }, // Cache for 30 minutes for video data
+      next: { revalidate: 60 }, // Cache for 1 minute for video data
     });
 
     if (!response.ok) {

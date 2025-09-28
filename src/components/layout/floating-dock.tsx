@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { SearchBar } from '@/components/ui/searchbar';
 import { cn } from '@/lib/utils';
-import { Calendar, Film, Play, Search, X } from 'lucide-react';
+import { Play, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -32,7 +32,7 @@ interface Movie {
 interface DockItem {
   name: string;
   href: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: string | React.ComponentType<{ className?: string }>;
   isActive: boolean;
   isSearch?: boolean;
 }
@@ -165,9 +165,9 @@ export function FloatingDock() {
   }, [isSearchOpen]);
 
   const dockItems: Omit<DockItem, 'isActive'>[] = [
-    { name: 'Movies', href: '/movies', icon: Film },
-    { name: 'Series', href: '/series', icon: Calendar },
-    { name: 'Search', href: '#', icon: Search, isSearch: true },
+    { name: 'Movies', href: '/movies', icon: '/movies.png' },
+    { name: 'Series', href: '/series', icon: '/series.png' },
+    { name: 'Search', href: '#', icon: '/search.png', isSearch: true },
   ];
 
   const itemsWithActive = dockItems.map((item) => ({
@@ -203,7 +203,17 @@ export function FloatingDock() {
                     )}
                     aria-label={item.name}
                   >
-                    <item.icon className="w-7 h-7" />
+                    {typeof item.icon === 'string' ? (
+                      <Image
+                        src={item.icon}
+                        alt={item.name}
+                        width={28}
+                        height={28}
+                        className="w-7 h-7"
+                      />
+                    ) : (
+                      <item.icon className="w-7 h-7" />
+                    )}
                   </Button>
                 ) : (
                   <Link key={item.name} href={item.href}>
@@ -213,12 +223,22 @@ export function FloatingDock() {
                       className={cn(
                         'w-14 h-14 rounded-xl transition-all duration-200',
                         item.isActive
-                          ? 'bg-netflix-dark-red/80 backdrop-blur-md border border-netflix-dark-red/30 text-white shadow-lg scale-110'
+                          ? 'bg-netflix-dark-red backdrop-blur-md border border-netflix-dark-red/30 text-white shadow-lg '
                           : 'text-white/70 hover:text-white hover:bg-white/10'
                       )}
                       aria-label={item.name}
                     >
-                      <item.icon className="w-7 h-7" />
+                      {typeof item.icon === 'string' ? (
+                        <Image
+                          src={item.icon}
+                          alt={item.name}
+                          width={28}
+                          height={28}
+                          className="w-10 h-10"
+                        />
+                      ) : (
+                        <item.icon className="w-10 h-10" />
+                      )}
                     </Button>
                   </Link>
                 )
@@ -297,7 +317,13 @@ export function FloatingDock() {
                               </p>
                               <div className="flex items-center space-x-2 mt-1">
                                 {movie.rating && (
-                                  <span className="text-yellow-400 text-xs">★ {movie.rating}</span>
+                                  <span className="text-white text-xs">
+                                    ★ {Number(movie.rating).toFixed(1)} (
+                                    {movie.releaseDate
+                                      ? new Date(movie.releaseDate).getFullYear()
+                                      : 'N/A'}
+                                    )
+                                  </span>
                                 )}
                                 <span className="text-white/40 text-xs">
                                   {Array.isArray(movie.genre)
@@ -355,7 +381,13 @@ export function FloatingDock() {
                     {selectedMovie.rating && (
                       <>
                         <span>•</span>
-                        <span className="text-yellow-400">★ {selectedMovie.rating}</span>
+                        <span className="text-white">
+                          ★ {Number(selectedMovie.rating).toFixed(1)} (
+                          {selectedMovie.releaseDate
+                            ? new Date(selectedMovie.releaseDate).getFullYear()
+                            : 'N/A'}
+                          )
+                        </span>
                       </>
                     )}
                   </div>

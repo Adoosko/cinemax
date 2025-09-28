@@ -1,9 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { CircularProgress } from '@/components/ui/circular-progress';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { NetflixCard } from '@/components/ui/glass-card';
-import { Clock, Film, Play, Star } from 'lucide-react';
+import { Clock, Film, Play } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -88,9 +89,15 @@ export function MovieCard({
             )}
 
             {/* Rating badge - always visible */}
-            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
-              <span className="text-white text-xs font-medium">{movie.rating}</span>
+            <div className="absolute top-3 right-3">
+              <CircularProgress
+                value={Number(movie.rating) * 10}
+                size={44}
+                strokeWidth={3}
+                variant="premium"
+                className="border-2 border-white/30 shadow-lg"
+                valueClassName="text-xs font-extrabold drop-shadow-lg"
+              />
             </div>
 
             {/* Movie Info - show on mobile, show on hover for desktop */}
@@ -107,6 +114,11 @@ export function MovieCard({
                     <Clock className="w-4 h-4" />
                     <span>{movie.duration}</span>
                   </div>
+                  {movie.releaseDate && (
+                    <span className="text-xs bg-white/20 px-2 py-1 rounded">
+                      {new Date(movie.releaseDate).getFullYear()}
+                    </span>
+                  )}
                   <span className="text-xs bg-white/20 px-2 py-1 rounded">{movie.genre}</span>
                 </div>
               )}
@@ -137,9 +149,16 @@ export function MovieCard({
                 <div className="flex items-center space-x-3 text-sm text-white/70">
                   <span className="bg-white/10 px-2 py-1 rounded-full">{movie.releaseDate}</span>
                   {movie.rating && (
-                    <span className="bg-white/10 px-2 py-1 rounded-full font-medium">
-                      ★ {movie.rating}
-                    </span>
+                    <div className="flex items-center justify-center">
+                      <CircularProgress
+                        value={Number(movie.rating) * 10}
+                        size={32}
+                        strokeWidth={2}
+                        variant="premium"
+                        className="border border-white/20"
+                        valueClassName="text-[10px] font-bold"
+                      />
+                    </div>
                   )}
                 </div>
                 <p className="text-white/50 text-sm">{movie.director}</p>

@@ -1,17 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Play, Heart, Share, Star, Clock, ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { AiTrailerPlayer } from './ai-trailer-player';
-import { SimilarMovies } from './similar-movies';
+import { CircularProgress } from '@/components/ui/circular-progress';
 import { CreateWatchPartyButton } from '@/components/watch-party/create-watch-party-button';
-import { MovieComments } from './movie-comments';
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
+import { ArrowLeft, Heart, Play, Share } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { AiTrailerPlayer } from './ai-trailer-player';
+import { MovieComments } from './movie-comments';
+import { SimilarMovies } from './similar-movies';
 
 export type Movie = CachedMovie;
 
@@ -92,9 +92,17 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
               {movie.title}
             </h1>
             <div className="flex flex-wrap gap-4 items-center mb-5">
-              <Badge variant="outline">
-                <Star className="w-4 h-4 inline" /> {movie.rating}
-              </Badge>
+              <div className="flex items-center space-x-2">
+                <CircularProgress
+                  value={Number(movie.rating) * 10}
+                  size={32}
+                  strokeWidth={2}
+                  valueClassName="text-xs"
+                />
+                <span className="text-white/80 text-sm">
+                  ({movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 'N/A'})
+                </span>
+              </div>
               <Badge variant="outline">{movie.releaseDate}</Badge>
               <Badge variant="outline" className="bg-netflix-dark-red">
                 {movie.duration}
@@ -108,11 +116,13 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
             <div className="flex gap-3 flex-wrap">
               {/* Watch Movie */}
               {movie.streamingUrl && (
-                <Link href={`/movies/${movie.slug}/watch`}>
-                  <Button size={'sm'} variant={'premium'}>
-                    <Play className="w-4 h-4 mr-2" /> Watch Now
-                  </Button>
-                </Link>
+                <Button
+                  size={'sm'}
+                  variant={'premium'}
+                  onClick={() => router.push(`/movies/${movie.slug}/watch`)}
+                >
+                  <Play className="w-4 h-4 mr-2" /> Watch Now
+                </Button>
               )}
               {/* Trailer */}
               <Button
@@ -187,7 +197,8 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                   Rating:
                 </span>
                 <span className="text-white ml-2 text-xs md:text-sm lg:text-base">
-                  {movie.rating}/10
+                  {Number(movie.rating).toFixed(1)} (
+                  {movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : 'N/A'})/10
                 </span>
               </div>
               {movie.averageReview && (

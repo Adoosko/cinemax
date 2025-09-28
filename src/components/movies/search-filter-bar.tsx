@@ -1,10 +1,15 @@
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
+import { Calendar, ChevronDown, Film, Filter, Star, X } from 'lucide-react';
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Film, Calendar, Star, Filter, ChevronDown, Check, X } from 'lucide-react';
 
 // shadcn/ui imports
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { SearchBar } from '@/components/ui/searchbar';
 import {
   Select,
   SelectContent,
@@ -12,11 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { SearchBar } from '@/components/ui/searchbar';
 
 export interface Genre {
   id: string;
@@ -24,7 +24,7 @@ export interface Genre {
 }
 
 export interface FilterOptions {
-  genre?: string;
+  genres?: string[]; // Changed to array for multiple selection
   years?: number[]; // Changed to array for multiple selection
   rating?: number;
   sortBy?: 'popularity' | 'rating' | 'releaseDate' | 'title';
@@ -86,6 +86,19 @@ export function SearchFilterBar({
     }
 
     handleFilterChange('years', newYears.length > 0 ? newYears : undefined);
+  };
+
+  const handleGenreToggle = (genreId: string, checked: boolean) => {
+    const currentGenres = filters.genres || [];
+    let newGenres: string[];
+
+    if (checked) {
+      newGenres = [...currentGenres, genreId];
+    } else {
+      newGenres = currentGenres.filter((g) => g !== genreId);
+    }
+
+    handleFilterChange('genres', newGenres.length > 0 ? newGenres : undefined);
   };
 
   const clearSearch = () => {
@@ -167,30 +180,42 @@ export function SearchFilterBar({
               <div>
                 <label className="block text-white text-sm font-semibold mb-2 flex items-center">
                   <Film className="w-4 h-4 mr-2 text-netflix-red" />
-                  Genre
+                  Genres
                 </label>
-                <Select
-                  value={filters.genre || 'all-genres'}
-                  onValueChange={(value: string) =>
-                    handleFilterChange('genre', value === 'all-genres' ? undefined : value)
-                  }
-                >
-                  <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
-                    <SelectValue placeholder="All Genres" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-black border border-white/20">
-                    <SelectItem value="all-genres">All Genres</SelectItem>
-                    {genres.map((genre) => (
-                      <SelectItem
-                        key={genre.id}
-                        value={genre.id}
-                        className="text-white hover:bg-white/10"
-                      >
-                        {genre.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full bg-white/5 border border-white/10 text-white justify-between cursor-pointer"
+                    >
+                      {filters.genres && filters.genres.length > 0
+                        ? `${filters.genres.length} genre${filters.genres.length > 1 ? 's' : ''} selected`
+                        : 'All Genres'}
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-64 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-netflix-red scrollbar-track-white/10">
+                    <div className="space-y-2">
+                      {genres.map((genre) => (
+                        <div key={genre.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`genre-${genre.id}`}
+                            checked={filters.genres?.includes(genre.id) || false}
+                            onCheckedChange={(checked: boolean) =>
+                              handleGenreToggle(genre.id, checked as boolean)
+                            }
+                          />
+                          <label
+                            htmlFor={`genre-${genre.id}`}
+                            className="text-white text-sm cursor-pointer flex-1"
+                          >
+                            {genre.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Multi-Year Filter */}
@@ -253,7 +278,7 @@ export function SearchFilterBar({
                   <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
                     <SelectValue placeholder="Any Rating" />
                   </SelectTrigger>
-                  <SelectContent className="bg-black border border-white/20">
+                  <SelectContent className="bg-black border border-white/20 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-netflix-red scrollbar-track-white/10">
                     <SelectItem value="any-rating">Any Rating</SelectItem>
                     {ratings.map((rating) => (
                       <SelectItem
@@ -281,7 +306,7 @@ export function SearchFilterBar({
                   <SelectTrigger className="w-full bg-white/5 border border-white/10 text-white">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-black border border-white/20">
+                  <SelectContent className="bg-black border border-white/20 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-netflix-red scrollbar-track-white/10">
                     {sortOptions.map((option) => (
                       <SelectItem
                         key={option.id}
@@ -305,13 +330,17 @@ export function SearchFilterBar({
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-wrap gap-2 pt-2 border-t border-white/10"
           >
-            {filters.genre && (
+            {filters.genres && filters.genres.length > 0 && (
               <Badge
                 variant="secondary"
                 className="bg-netflix-red/20 border border-netflix-red/30 text-netflix-red hover:bg-netflix-red/30 cursor-pointer"
-                onClick={() => removeFilter('genre')}
+                onClick={() => removeFilter('genres')}
               >
-                <span>{genres.find((g) => g.id === filters.genre)?.name}</span>
+                <span>
+                  {filters.genres.length === 1
+                    ? genres.find((g) => g.id === filters.genres![0])?.name
+                    : `${filters.genres.length} genres`}
+                </span>
                 <X className="w-3 h-3 ml-2" />
               </Badge>
             )}

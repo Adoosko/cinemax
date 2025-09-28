@@ -90,6 +90,8 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
     const [isMouseInactive, setIsMouseInactive] = useState(false);
     const [isMobile, setIsMobile] = useState(false);
     const [showResumePrompt, setShowResumePrompt] = useState(false);
+    const [lastTapTime, setLastTapTime] = useState(0);
+    const [tapCount, setTapCount] = useState(0);
 
     // Available playback speeds
     const speedOptions = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -997,6 +999,83 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       setCurrentTime(newTime);
       resetControlsTimeout();
     };
+
+    // Touch haptics - Double tap to skip
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const handleTouchStart = (e: TouchEvent) => {
+        // Prevent default only for double tap gestures
+        if (tapCount === 1) {
+          e.preventDefault();
+        }
+      };
+
+      const handleTouchEnd = (e: TouchEvent) => {
+        const now = Date.now();
+        const touch = e.changedTouches[0];
+        const rect = container.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const isLeftSide = x < rect.width / 2;
+
+        // Check for double tap (within 300ms)
+        if (now - lastTapTime < 300) {
+          setTapCount((prev) => prev + 1);
+
+          // Double tap detected
+          if (tapCount === 1) {
+            e.preventDefault();
+
+            // WATCH PARTY CONTROL LOCK: Only hosts can skip in watch parties
+            if (isWatchParty && !isHost) {
+              console.log('🔒 Non-host member blocked from skipping - host-only mode');
+              return;
+            }
+
+            // Trigger haptic feedback if available
+            if ('vibrate' in navigator) {
+              navigator.vibrate(50);
+            }
+
+            // Skip based on tap side
+            if (isLeftSide) {
+              console.log('⏪ Double tap left: Skip backward 10s');
+              skip(-10);
+            } else {
+              console.log('⏩ Double tap right: Skip forward 10s');
+              skip(10);
+            }
+
+            // Show visual feedback
+            setShowKeyboardHint(true);
+            setTimeout(() => setShowKeyboardHint(false), 1500);
+
+            setTapCount(0);
+          }
+        } else {
+          setTapCount(1);
+        }
+
+        setLastTapTime(now);
+      };
+
+      // Clear tap count after timeout
+      const clearTapCount = () => {
+        setTapCount(0);
+      };
+
+      const tapTimeout = setTimeout(clearTapCount, 300);
+
+      container.addEventListener('touchstart', handleTouchStart, { passive: false });
+      container.addEventListener('touchend', handleTouchEnd, { passive: false });
+
+      return () => {
+        clearTimeout(tapTimeout);
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchend', handleTouchEnd);
+      };
+    }, [tapCount, lastTapTime, skip, isWatchParty, isHost]);
 
     // Enhanced keyboard controls
     useEffect(() => {

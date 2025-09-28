@@ -41,7 +41,7 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
         ? 'https://cinemx.adrianfinik.sk'
         : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {
@@ -70,7 +70,7 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
         ? 'https://cinemx.adrianfinik.sk'
         : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {
@@ -99,7 +99,7 @@ export async function fetchCachedSeriesBySlug(slug: string): Promise<Series | nu
         ? 'https://cinemx.adrianfinik.sk'
         : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series/${slug}`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {
@@ -208,7 +208,7 @@ export async function fetchCachedEpisode(
     const response = await fetch(
       `${baseUrl}/api/series/${seriesSlug}/seasons/${seasonNumber}/episodes/${episodeNumber}`,
       {
-        next: { revalidate: 1800 }, // Cache for 30 minutes (episodes change less frequently than series)
+        next: { revalidate: 60 }, // Cache for 1 minute
       }
     );
 
@@ -241,7 +241,7 @@ export async function fetchCachedSeasons(seriesSlug: string): Promise<Season[]> 
         ? 'https://cinemx.adrianfinik.sk'
         : 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/series/${seriesSlug}/seasons`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
+      next: { revalidate: 60 }, // Cache for 1 minute
     });
 
     if (!response.ok) {

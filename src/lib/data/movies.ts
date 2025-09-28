@@ -21,7 +21,7 @@ export type Movie = {
   slug?: string;
 };
 
-// Cache the movies fetch for 5 minutes (300 seconds)
+// Cache the movies fetch for 1 minute (60 seconds)
 export const getMovies = unstable_cache(
   async (isAdmin: boolean = false): Promise<Movie[]> => {
     try {
@@ -46,10 +46,10 @@ export const getMovies = unstable_cache(
     }
   },
   ['movies'],
-  { revalidate: 300, tags: ['movies'] }
+  { revalidate: 60, tags: ['movies'] }
 );
 
-// Cache a single movie fetch for 5 minutes
+// Cache a single movie fetch for 1 minute
 export const getMovieById = unstable_cache(
   async (id: string): Promise<Movie | null> => {
     try {
@@ -70,10 +70,10 @@ export const getMovieById = unstable_cache(
     }
   },
   ['movie-by-id'],
-  { revalidate: 300, tags: ['movies'] }
+  { revalidate: 60, tags: ['movies'] }
 );
 
-// Cache a single movie fetch by slug for 5 minutes
+// Cache a single movie fetch by slug for 1 minute
 export const getMovieBySlug = unstable_cache(
   async (slug: string): Promise<Movie | null> => {
     try {
@@ -97,7 +97,7 @@ export const getMovieBySlug = unstable_cache(
     }
   },
   ['movie-by-slug'],
-  { revalidate: 300, tags: ['movies'] }
+  { revalidate: 60, tags: ['movies'] }
 );
 
 // Function to revalidate the movies cache

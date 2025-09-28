@@ -1,8 +1,9 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import { CircularProgress } from '@/components/ui/circular-progress';
 import { NetflixCard } from '@/components/ui/glass-card';
-import { Play, Star } from 'lucide-react';
+import { Play } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 
@@ -55,9 +56,15 @@ export function SeriesCard({
             )}
 
             {/* Rating badge - always visible */}
-            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-sm rounded-full px-2 py-1 flex items-center space-x-1">
-              <Star className="w-3 h-3 text-yellow-500 fill-current" />
-              <span className="text-white text-xs font-medium">{series.rating}</span>
+            <div className="absolute top-3 right-3">
+              <CircularProgress
+                value={Number(series.rating) * 10}
+                size={44}
+                strokeWidth={3}
+                variant="premium"
+                className="border-2 border-white/30 shadow-lg"
+                valueClassName="text-xs font-extrabold drop-shadow-lg"
+              />
             </div>
 
             {/* Series Info - show on mobile, show on hover for desktop */}
