@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
 
 // TMDB API key would normally be in environment variables
 const TMDB_API_KEY = process.env.TMDB_API_KEY || 'YOUR_TMDB_API_KEY_HERE';
@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
       description: movie.overview,
       posterUrl: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : null,
       releaseDate: movie.release_date,
-      rating: movie.vote_average ? `${movie.vote_average}/10` : null,
+      rating: movie.vote_average ? movie.vote_average.toString() : null,
     }));
 
     return NextResponse.json({ movies });
@@ -61,9 +61,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -97,7 +95,7 @@ export async function POST(request: NextRequest) {
       description: movieData.overview,
       duration: movieData.runtime || 120, // Default to 120 minutes if not available
       genre: movieData.genres.map((g: any) => g.name),
-      rating: movieData.vote_average ? `${movieData.vote_average}/10` : 'PG-13',
+      rating: movieData.vote_average ? movieData.vote_average.toString() : '0',
       director: movieData.credits?.crew?.find((p: any) => p.job === 'Director')?.name || '',
       cast: movieData.credits?.cast?.slice(0, 10).map((actor: any) => actor.name) || [],
       posterUrl: movieData.poster_path

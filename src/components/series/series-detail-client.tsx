@@ -3,13 +3,24 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { LazyComponent } from '@/components/ui/lazy-component';
 import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
 import { ArrowLeft, Heart, Play, Share, Star } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { SeriesComments } from './series-comments';
-import { SeriesRecommendations } from './series-recommendations';
+
+// Lazy load heavy components
+const DynamicSeriesComments = dynamic(
+  () => import('./series-comments').then((mod) => ({ default: mod.SeriesComments })),
+  { ssr: false }
+);
+
+const DynamicSeriesRecommendations = dynamic(
+  () => import('./series-recommendations').then((mod) => ({ default: mod.SeriesRecommendations })),
+  { ssr: false }
+);
 
 // Import the Series type from the context
 import { Series } from './series-context';
@@ -50,10 +61,12 @@ export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProp
     <div className="min-h-screen bg-netflix-black">
       {/* Hero */}
       <div className="relative h-[60vh] lg:h-[70vh] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${series.backdropUrl})` }}
-        />
+        {series.backdropUrl && (
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${series.backdropUrl})` }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-netflix-black/80 via-netflix-black/60 to-transparent" />
         {/* Actions */}
         <div className="absolute top-6 left-6 z-20 flex gap-2">
@@ -193,13 +206,40 @@ export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProp
         </div>
       </div>
       {/* Comments Section */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <SeriesComments seriesSlug={series.slug} />
-      </div>
+      <LazyComponent
+        fallback={
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            <div className="h-8 w-32 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-20 bg-white/5 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        }
+      >
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <DynamicSeriesComments seriesSlug={series.slug} />
+        </div>
+      </LazyComponent>
+
       {/* Recommended Series */}
-      <div className="bg-netflix-black pt-4 px-2">
-        <SeriesRecommendations allSeries={allSeries} currentSeriesId={series.id} />
-      </div>
+      <LazyComponent
+        fallback={
+          <div className="bg-netflix-black pt-4 px-2">
+            <div className="h-8 w-40 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[2/3] bg-white/10 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+        }
+      >
+        <div className="bg-netflix-black pt-4 px-2">
+          <DynamicSeriesRecommendations allSeries={allSeries} currentSeriesId={series.id} />
+        </div>
+      </LazyComponent>
     </div>
   );
 }

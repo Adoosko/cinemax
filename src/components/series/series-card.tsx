@@ -3,8 +3,8 @@
 import { Button } from '@/components/ui/button';
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { NetflixCard } from '@/components/ui/glass-card';
+import { ProgressiveImage } from '@/components/ui/progressive-image';
 import { Play } from 'lucide-react';
-import Image from 'next/image';
 import Link from 'next/link';
 
 // Use the Series type from the series context
@@ -34,12 +34,13 @@ export function SeriesCard({
       <div className="cursor-pointer">
         <NetflixCard className="overflow-hidden group relative h-full">
           <div className="relative aspect-[2/3] overflow-hidden h-full">
-            <Image
+            <ProgressiveImage
               src={series.coverUrl || '/placeholder-movie.jpg'}
               alt={series.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
               priority={priority || index < 3}
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300" />

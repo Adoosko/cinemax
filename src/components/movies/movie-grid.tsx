@@ -41,9 +41,15 @@ export function MovieGrid() {
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
           const titleMatch = movie.title.toLowerCase().includes(searchLower);
-          const genreMatch = Array.isArray(movie.genre)
-            ? movie.genre.some((genre) => genre.toLowerCase().includes(searchLower))
-            : movie.genre.toLowerCase().includes(searchLower);
+
+          // Handle genre as both string and array
+          let genreMatch = false;
+          if (Array.isArray(movie.genre)) {
+            genreMatch = movie.genre.some((genre) => genre.toLowerCase().includes(searchLower));
+          } else if (typeof movie.genre === 'string') {
+            genreMatch = movie.genre.toLowerCase().includes(searchLower);
+          }
+
           const descMatch =
             movie.description && movie.description.toLowerCase().includes(searchLower);
 
@@ -52,12 +58,25 @@ export function MovieGrid() {
           }
         }
 
-        // Genre filter
-        if (filterOptions.genre && filterOptions.genre !== 'all') {
-          const genreFilter = filterOptions.genre.toLowerCase();
-          const genreMatch = Array.isArray(movie.genre)
-            ? movie.genre.some((genre) => genre.toLowerCase().includes(genreFilter))
-            : movie.genre.toLowerCase().includes(genreFilter);
+        // Genre filter - handle both string and array genres
+        if (filterOptions.genres && filterOptions.genres.length > 0) {
+          let genreMatch = false;
+
+          if (Array.isArray(movie.genre)) {
+            // Movie genre is an array
+            genreMatch = movie.genre.some((movieGenre) =>
+              filterOptions.genres!.some((filterGenre) =>
+                movieGenre.toLowerCase().includes(filterGenre.toLowerCase())
+              )
+            );
+          } else if (typeof movie.genre === 'string') {
+            // Movie genre is a string
+            const movieGenreString = movie.genre.toLowerCase();
+            genreMatch = filterOptions.genres.some((filterGenre) =>
+              movieGenreString.includes(filterGenre.toLowerCase())
+            );
+          }
+
           if (!genreMatch) {
             return false;
           }

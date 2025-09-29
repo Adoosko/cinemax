@@ -29,9 +29,9 @@ export function SeriesFilters() {
   ];
 
   const handleFilterChange = (filters: SeriesFilterOptions) => {
-    // For now, we'll just handle the basic filters that the context supports
-    if (filters.genre) {
-      setSelectedGenre(filters.genre);
+    // Handle genres array - convert to single genre for context compatibility
+    if (filters.genres && filters.genres.length > 0) {
+      setSelectedGenre(filters.genres[0]); // Use first selected genre for now
     } else {
       setSelectedGenre('all');
     }
@@ -52,7 +52,7 @@ export function SeriesFilters() {
       genres={genres}
       initialSearchTerm={searchQuery}
       initialFilters={{
-        genre: selectedGenre === 'all' ? undefined : selectedGenre,
+        genres: selectedGenre === 'all' ? undefined : [selectedGenre],
         sortBy: sortBy as any,
       }}
     />

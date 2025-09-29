@@ -69,8 +69,8 @@ export interface TMDBMovie {
   description: string;
   posterUrl: string | null;
   releaseDate: string;
-  genre: string[];
-  rating: number;
+  rating?: string | null;
+  genre?: string[];
   director?: string;
   cast?: string[];
   duration?: number;
@@ -110,6 +110,9 @@ function EditMovieModal({
   const [genreInput, setGenreInput] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof MovieFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldStatus, setFieldStatus] = useState<
+    Partial<Record<keyof MovieFormData, 'valid' | 'invalid' | 'empty'>>
+  >({});
 
   // TMDB Search Functions
   const searchTMDB = async (query: string) => {
@@ -147,19 +150,55 @@ function EditMovieModal({
     return () => clearTimeout(debounceTimer);
   }, [tmdbSearchQuery]);
 
-  const populateFromTMDB = (tmdbMovie: TMDBMovie) => {
-    setFormData({
-      ...formData,
-      title: tmdbMovie.title,
-      description: tmdbMovie.description,
-      releaseDate: tmdbMovie.releaseDate,
-      genre: tmdbMovie.genre,
-      rating: tmdbMovie.rating.toString(),
-      director: tmdbMovie.director || '',
-      cast: tmdbMovie.cast || [],
-      posterUrl: tmdbMovie.posterUrl || '',
-      duration: tmdbMovie.duration || 0,
-    });
+  const populateFromTMDB = async (tmdbMovie: TMDBMovie) => {
+    try {
+      // Get full movie details from TMDB API
+      const response = await fetch('/api/admin/movies/search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tmdbId: tmdbMovie.tmdbId }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get movie details');
+      }
+
+      const data = await response.json();
+      const fullMovieData = data.movie;
+
+      setFormData({
+        ...formData,
+        title: fullMovieData.title,
+        description: fullMovieData.description,
+        releaseDate: fullMovieData.releaseDate,
+        genre: fullMovieData.genre,
+        rating: fullMovieData.rating,
+        director: fullMovieData.director,
+        cast: fullMovieData.cast,
+        posterUrl: fullMovieData.posterUrl,
+        backdropUrl: fullMovieData.backdropUrl || '',
+        trailerUrl: fullMovieData.trailerUrl || '',
+        duration: fullMovieData.duration,
+      });
+    } catch (error) {
+      console.error('Error fetching full movie details:', error);
+      // Fallback to basic data if detailed fetch fails
+      setFormData({
+        ...formData,
+        title: tmdbMovie.title,
+        description: tmdbMovie.description,
+        releaseDate: tmdbMovie.releaseDate,
+        genre: tmdbMovie.genre || [],
+        rating: tmdbMovie.rating ? tmdbMovie.rating.toString() : '',
+        director: tmdbMovie.director || '',
+        cast: tmdbMovie.cast || [],
+        posterUrl: tmdbMovie.posterUrl || '',
+        duration: tmdbMovie.duration || 120,
+      });
+    }
+
     setShowTmdbResults(false);
     setTmdbSearchQuery('');
   };
@@ -207,29 +246,34 @@ function EditMovieModal({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    if (errors[name as keyof MovieFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
+    // Real-time validation
+    validateField(name as keyof MovieFormData, value);
   };
 
   const handleNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: parseInt(value) || 0 }));
+    const numValue = parseInt(value) || 0;
+    setFormData((prev) => ({ ...prev, [name]: numValue }));
 
-    if (errors[name as keyof MovieFormData]) {
-      setErrors((prev) => ({ ...prev, [name]: undefined }));
-    }
+    // Real-time validation
+    validateField(name as keyof MovieFormData, numValue);
   };
 
   const addGenre = () => {
     if (genreInput.trim() && !formData.genre.includes(genreInput.trim())) {
-      setFormData((prev) => ({ ...prev, genre: [...prev.genre, genreInput.trim()] }));
+      const newGenres = [...formData.genre, genreInput.trim()];
+      setFormData((prev) => ({ ...prev, genre: newGenres }));
       setGenreInput('');
+      // Validate genre field
+      validateField('genre', newGenres);
     }
   };
 
   const removeGenre = (genre: string) => {
-    setFormData((prev) => ({ ...prev, genre: prev.genre.filter((g) => g !== genre) }));
+    const newGenres = formData.genre.filter((g) => g !== genre);
+    setFormData((prev) => ({ ...prev, genre: newGenres }));
+    // Validate genre field
+    validateField('genre', newGenres);
   };
 
   const addCastMember = () => {
@@ -243,20 +287,110 @@ function EditMovieModal({
     setFormData((prev) => ({ ...prev, cast: prev.cast.filter((c) => c !== castMember) }));
   };
 
-  const validateForm = () => {
-    const newErrors: Partial<Record<keyof MovieFormData, string>> = {};
+  // Real-time field validation
+  const validateField = (
+    fieldName: keyof MovieFormData,
+    value: string | number | boolean | string[]
+  ) => {
+    let isValid = false;
+    let error = '';
 
-    if (!formData.title.trim()) newErrors.title = 'Title is required';
-    if (!formData.description.trim()) newErrors.description = 'Description is required';
-    if (!formData.duration || formData.duration <= 0)
-      newErrors.duration = 'Duration must be greater than 0';
-    if (formData.genre.length === 0) newErrors.genre = 'At least one genre is required';
-    if (!formData.director.trim()) newErrors.director = 'Director is required';
-    if (!formData.releaseDate) newErrors.releaseDate = 'Release date is required';
+    switch (fieldName) {
+      case 'title':
+        if (typeof value === 'string') {
+          isValid = value.trim().length > 0;
+          error = isValid ? '' : 'Title is required';
+        }
+        break;
+      case 'description':
+        if (typeof value === 'string') {
+          isValid = value.trim().length > 0;
+          error = isValid ? '' : 'Description is required';
+        }
+        break;
+      case 'duration':
+        if (typeof value === 'number') {
+          isValid = value > 0;
+          error = isValid ? '' : 'Duration must be greater than 0';
+        }
+        break;
+      case 'genre':
+        if (Array.isArray(value)) {
+          isValid = value.length > 0;
+          error = isValid ? '' : 'At least one genre is required';
+        }
+        break;
+      case 'director':
+        if (typeof value === 'string') {
+          isValid = value.trim().length > 0;
+          error = isValid ? '' : 'Director is required';
+        }
+        break;
+      case 'releaseDate':
+        if (typeof value === 'string') {
+          isValid = value.trim().length > 0;
+          error = isValid ? '' : 'Release date is required';
+        }
+        break;
+      default:
+        isValid = true;
+    }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    setFieldStatus((prev) => ({ ...prev, [fieldName]: isValid ? 'valid' : 'invalid' }));
+    setErrors((prev) => ({ ...prev, [fieldName]: error }));
+
+    return isValid;
   };
+
+  const validateForm = () => {
+    const requiredFields: (keyof MovieFormData)[] = [
+      'title',
+      'description',
+      'duration',
+      'genre',
+      'director',
+      'releaseDate',
+    ];
+    let isFormValid = true;
+
+    requiredFields.forEach((field) => {
+      const fieldValid = validateField(field, formData[field]);
+      if (!fieldValid) isFormValid = false;
+    });
+
+    return isFormValid;
+  };
+
+  // Calculate completion percentage
+  const getCompletionPercentage = () => {
+    const requiredFields: (keyof MovieFormData)[] = [
+      'title',
+      'description',
+      'duration',
+      'genre',
+      'director',
+      'releaseDate',
+    ];
+    const completedFields = requiredFields.filter((field) => {
+      const value = formData[field];
+      switch (field) {
+        case 'title':
+        case 'description':
+        case 'director':
+        case 'releaseDate':
+          return value && String(value).trim().length > 0;
+        case 'duration':
+          return typeof value === 'number' && value > 0;
+        case 'genre':
+          return Array.isArray(value) && value.length > 0;
+        default:
+          return false;
+      }
+    });
+    return Math.round((completedFields.length / requiredFields.length) * 100);
+  };
+
+  const completionPercentage = getCompletionPercentage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,7 +426,7 @@ function EditMovieModal({
               <div className="w-12 h-12 bg-netflix-red rounded-xl flex items-center justify-center">
                 <Film className="w-6 h-6 text-white" />
               </div>
-              <div>
+              <div className="flex-1">
                 <h1 className="text-2xl font-bold text-white">
                   {isNew ? 'Add New Movie' : 'Edit Movie'}
                 </h1>
@@ -304,13 +438,117 @@ function EditMovieModal({
               </div>
             </div>
 
-            <button
-              onClick={onClose}
-              className="p-3 hover:bg-white/10 rounded-xl transition-all duration-200 group"
-            >
-              <X className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
-            </button>
+            <div className="flex items-center space-x-4">
+              {/* Progress Indicator */}
+              {isNew && (
+                <div className="flex items-center space-x-3">
+                  <div className="text-right">
+                    <div className="text-white text-sm font-semibold">
+                      {completionPercentage}% Complete
+                    </div>
+                    <div className="text-white/60 text-xs">Required fields</div>
+                  </div>
+                  <div className="relative w-16 h-16">
+                    <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke="rgba(255,255,255,0.1)"
+                        strokeWidth="8"
+                        fill="none"
+                      />
+                      <circle
+                        cx="32"
+                        cy="32"
+                        r="28"
+                        stroke={completionPercentage === 100 ? '#22c55e' : '#e50914'}
+                        strokeWidth="8"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeDasharray={`${(completionPercentage / 100) * 176} 176`}
+                        className="transition-all duration-500 ease-out"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      {completionPercentage === 100 ? (
+                        <Check className="w-6 h-6 text-green-500" />
+                      ) : (
+                        <span className="text-white text-xs font-bold">
+                          {completionPercentage}%
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={onClose}
+                className="p-3 hover:bg-white/10 rounded-xl transition-all duration-200 group"
+              >
+                <X className="w-6 h-6 text-white/60 group-hover:text-white transition-colors" />
+              </button>
+            </div>
           </div>
+
+          {/* Required Fields Checklist */}
+          {isNew && completionPercentage < 100 && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="px-8 pb-4"
+            >
+              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                <h3 className="text-white font-semibold text-sm mb-3 flex items-center">
+                  <AlertCircle className="w-4 h-4 mr-2 text-netflix-red" />
+                  Complete these required fields to add the movie:
+                </h3>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { field: 'title', label: 'Movie Title' },
+                    { field: 'description', label: 'Description' },
+                    { field: 'duration', label: 'Duration' },
+                    { field: 'director', label: 'Director' },
+                    { field: 'genre', label: 'At least one genre' },
+                    { field: 'releaseDate', label: 'Release Date' },
+                  ].map(({ field, label }) => {
+                    const isComplete = (() => {
+                      const value = formData[field as keyof MovieFormData];
+                      switch (field) {
+                        case 'title':
+                        case 'description':
+                        case 'director':
+                        case 'releaseDate':
+                          return value && String(value).trim().length > 0;
+                        case 'duration':
+                          return value && Number(value) > 0;
+                        case 'genre':
+                          return Array.isArray(value) && value.length > 0;
+                        default:
+                          return false;
+                      }
+                    })();
+
+                    return (
+                      <div key={field} className="flex items-center space-x-2">
+                        {isComplete ? (
+                          <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-white/30 rounded flex-shrink-0" />
+                        )}
+                        <span
+                          className={`text-xs ${isComplete ? 'text-green-400' : 'text-white/60'}`}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Tab Navigation */}
           <div className="flex px-8">
@@ -414,6 +652,8 @@ function EditMovieModal({
                             <Image
                               src={movie.posterUrl}
                               alt={movie.title}
+                              width={48}
+                              height={72}
                               className="w-12 h-18 object-cover rounded"
                             />
                           )}
@@ -422,7 +662,7 @@ function EditMovieModal({
                             <p className="text-white/60 text-sm">{movie.releaseDate}</p>
                             <div className="flex items-center space-x-2 mt-1">
                               <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                              <span className="text-white/60 text-xs">{movie.rating}/10</span>
+                              <span className="text-white/60 text-xs">{movie.rating || 'N/A'}</span>
                             </div>
                           </div>
                           <Download className="w-5 h-5 text-netflix-red" />
@@ -720,6 +960,8 @@ function EditMovieModal({
                   {formData.posterUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
                       <Image
+                        width={200}
+                        height={300}
                         src={formData.posterUrl}
                         alt="Poster preview"
                         className="h-32 object-contain mx-auto rounded-lg"
@@ -748,6 +990,8 @@ function EditMovieModal({
                   {formData.backdropUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
                       <Image
+                        width={400}
+                        height={200}
                         src={formData.backdropUrl}
                         alt="Backdrop preview"
                         className="h-32 w-full object-cover rounded-lg"

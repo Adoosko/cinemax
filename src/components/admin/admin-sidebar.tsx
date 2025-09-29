@@ -1,30 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import { signOut } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
 import { Toggle } from '@/components/ui/toggle';
+import { signOut } from '@/lib/auth-client';
 import {
   Film,
-  Calendar,
-  Ticket,
+  Home,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  LogOut,
-  Home,
-  User,
   Settings,
   Tv,
+  User,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 
 const adminNavItems = [
   { name: 'Movies', href: '/admin/movies', icon: Film, badge: '24' },
   { name: 'TV Series', href: '/admin/series', icon: Tv, badge: 'New' },
-  { name: 'Showtimes', href: '/admin/showtimes', icon: Calendar, badge: '48' },
-  { name: 'Bookings', href: '/admin/bookings', icon: Ticket, badge: '12' },
 ];
 
 interface AdminSidebarProps {

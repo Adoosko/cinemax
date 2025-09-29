@@ -50,7 +50,7 @@ export async function fetchCachedPublicSeries(): Promise<Series[]> {
     }
 
     const data = await response.json();
-    return data;
+    return data.series || data;
   } catch (error) {
     console.error('Error fetching series data:', error);
     return [];
@@ -78,8 +78,9 @@ export async function CachedPublicSeriesData(): Promise<{ series: Series[] }> {
       return { series: [] };
     }
 
-    const series = await response.json();
-    return { series };
+    const data = await response.json();
+    const series = data.series || data;
+    return { series: Array.isArray(series) ? series : [] };
   } catch (error) {
     console.error('Error fetching series data:', error);
     return { series: [] };

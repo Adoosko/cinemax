@@ -7,30 +7,11 @@ import { AlertCircle, ArrowLeft, Loader2, Share } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { VideoPlayerWithResume } from './video-player-with-resume';
+import { MovieData } from './watch-page-server';
 
 interface WatchPageClientProps {
   slug: string;
-}
-
-interface MovieData {
-  id: string;
-  slug: string;
-  title: string;
-  description?: string;
-  streamingUrl: string;
-  poster?: string;
-  backdrop?: string;
-  duration?: number;
-  year?: number;
-  genre?: string[];
-  rating?: number;
-  director?: string;
-  cast?: string[];
-  qualities?: Array<{
-    quality: string;
-    url: string;
-    bitrate: number;
-  }>;
+  initialMovieData?: MovieData;
 }
 
 // Loading skeleton for the entire watch page
@@ -93,15 +74,21 @@ function VideoPlayerSection({ movie }: { movie: MovieData }) {
   );
 }
 
-export function WatchPageClient({ slug }: WatchPageClientProps) {
+export function WatchPageClient({ slug, initialMovieData }: WatchPageClientProps) {
   const router = useRouter();
   const { user, isLoading: sessionLoading, isAuthenticated } = useAuth();
-  const [movie, setMovie] = useState<MovieData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [movie, setMovie] = useState<MovieData | null>(initialMovieData || null);
+  const [loading, setLoading] = useState(!initialMovieData);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch movie data
+  // Fetch movie data only if not prerendered
   useEffect(() => {
+    if (initialMovieData) {
+      setMovie(initialMovieData);
+      setLoading(false);
+      return;
+    }
+
     async function fetchMovie() {
       try {
         const baseUrl =
@@ -137,7 +124,7 @@ export function WatchPageClient({ slug }: WatchPageClientProps) {
     }
 
     fetchMovie();
-  }, [slug]);
+  }, [slug, initialMovieData]);
 
   // Handle authentication
   useEffect(() => {

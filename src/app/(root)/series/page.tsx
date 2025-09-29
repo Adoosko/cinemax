@@ -1,17 +1,16 @@
-import { Suspense } from 'react';
-
-import { NetflixBg } from '@/components/ui/netflix-bg';
-import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
-
-// PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
-export const experimental_ppr = true;
-
 import { ContinueWatchingTray } from '@/components/movies/continue-watching-tray';
+import { PerformanceTracker } from '@/components/performance/performance-tracker';
 import { CachedPublicSeriesData } from '@/components/series/cached-series-data';
 import { SeriesProvider } from '@/components/series/series-context';
 import { SeriesFilters } from '@/components/series/series-filters';
 import { SeriesGrid } from '@/components/series/series-grid';
 import { SeriesRecommendations } from '@/components/series/series-recommendations';
+import { NetflixBg } from '@/components/ui/netflix-bg';
+import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
+import { Suspense } from 'react';
+
+// PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
+export const experimental_ppr = true;
 
 export default function SeriesPage() {
   return (
@@ -32,23 +31,27 @@ async function SeriesPageContent() {
   const cachedData = await CachedPublicSeriesData();
 
   return (
-    <SeriesProvider initialSeries={cachedData.series}>
-      {/* Continue Watching Tray */}
-      <Suspense fallback={null}>
-        <ContinueWatchingTray />
-      </Suspense>
+    <>
+      <PerformanceTracker pageName="series-listing" />
+      <SeriesProvider initialSeries={cachedData.series}>
+        {/* Continue Watching Tray */}
+        <Suspense fallback={null}>
+          <ContinueWatchingTray />
+        </Suspense>
 
-      <Suspense fallback={<RecommendationsSkeleton />}>
-        <SeriesRecommendations />
-      </Suspense>
-      <div className="my-8">
-        <SeriesFilters />
-      </div>
+        <Suspense fallback={<RecommendationsSkeleton />}>
+          <SeriesRecommendations />
+        </Suspense>
 
-      <Suspense fallback={<MovieGridSkeleton />}>
-        <SeriesGrid />
-      </Suspense>
-    </SeriesProvider>
+        <div className="my-8">
+          <SeriesFilters />
+        </div>
+
+        <Suspense fallback={<MovieGridSkeleton />}>
+          <SeriesGrid />
+        </Suspense>
+      </SeriesProvider>
+    </>
   );
 }
 

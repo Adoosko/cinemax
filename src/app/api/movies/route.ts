@@ -10,25 +10,25 @@ export async function GET() {
       where: {
         isActive: true,
       },
-      include: {
-        showtimes: {
-          where: {
-            isActive: true,
-            startTime: {
-              gte: new Date(),
-            },
-          },
-          orderBy: {
-            startTime: 'asc',
-          },
-        },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        genre: true,
+        duration: true,
+        rating: true,
+        releaseDate: true,
+        description: true,
+        posterUrl: true,
+        backdropUrl: true,
+        createdAt: true,
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
 
-    // Transform the data to match the expected format
+    // Transform the data to match the expected format - optimized response
     const transformedMovies = movies.map((movie, index) => ({
       id: movie.id,
       slug: movie.slug,
@@ -38,24 +38,22 @@ export async function GET() {
       rating: formatMovieRating(movie.rating),
       releaseDate: formatReleaseYear(movie.releaseDate),
       description: movie.description || 'An exciting movie experience awaits you.',
-      posterUrl:
-        movie.posterUrl ||
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop',
-      backdropUrl:
-        movie.backdropUrl ||
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
-      showtimes:
-        movie.showtimes?.map((showtime: any) =>
-          new Date(showtime.startTime).toLocaleTimeString('en-US', {
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
-        ) || [],
+      posterUrl: movie.posterUrl || '/placeholder-movie.jpg',
+      backdropUrl: movie.backdropUrl,
       featured: index === 0, // Mark first movie as featured
     }));
 
-    return NextResponse.json(transformedMovies);
+    return NextResponse.json(
+      {
+        movies: transformedMovies,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600', // Cache for 5 minutes
+        },
+      }
+    );
   } catch (error) {
     console.error('Failed to fetch movies:', error);
     return NextResponse.json({ error: 'Failed to fetch movies' }, { status: 500 });

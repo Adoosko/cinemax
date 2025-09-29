@@ -4,6 +4,7 @@ import { MovieFilters } from '@/components/movies/movie-filters';
 import { MovieGrid } from '@/components/movies/movie-grid';
 import { MoviesProvider } from '@/components/movies/movies-context';
 import { UserRecommendations } from '@/components/movies/user-recommendations';
+import { PerformanceTracker } from '@/components/performance/performance-tracker';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
 import { Suspense } from 'react';
@@ -30,23 +31,27 @@ async function MoviesPageContent() {
   const cachedData = await CachedPublicMoviesData();
 
   return (
-    <MoviesProvider initialMovies={cachedData.movies}>
-      {/* Continue Watching Tray */}
-      <Suspense fallback={null}>
-        <ContinueWatchingTray />
-      </Suspense>
+    <>
+      <PerformanceTracker pageName="movies-listing" />
+      <MoviesProvider initialMovies={cachedData.movies}>
+        {/* Continue Watching Tray */}
+        <Suspense fallback={null}>
+          <ContinueWatchingTray />
+        </Suspense>
 
-      <Suspense fallback={<RecommendationsSkeleton />}>
-        <UserRecommendations />
-      </Suspense>
-      <div className="my-8">
-        <MovieFilters />
-      </div>
+        <Suspense fallback={<RecommendationsSkeleton />}>
+          <UserRecommendations />
+        </Suspense>
 
-      <Suspense fallback={<MovieGridSkeleton />}>
-        <MovieGrid />
-      </Suspense>
-    </MoviesProvider>
+        <div className="my-8">
+          <MovieFilters />
+        </div>
+
+        <Suspense fallback={<MovieGridSkeleton />}>
+          <MovieGrid />
+        </Suspense>
+      </MoviesProvider>
+    </>
   );
 }
 

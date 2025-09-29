@@ -1,26 +1,15 @@
-import { WatchPageClient } from '@/components/movies/watch-page-client';
-import { Metadata } from 'next';
+import WatchPageServer from '@/components/movies/watch-page-server';
 
-// Force dynamic rendering for watch pages
-export const dynamic = 'force-dynamic';
+// PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
+export const experimental_ppr = true;
 
 interface WatchPageProps {
   params: Promise<{ slug: string }>;
 }
 
 export default async function WatchPage({ params }: WatchPageProps) {
-  const { slug } = await params;
-
-  // Render immediately - all data fetching and auth happens client-side
-  return <WatchPageClient slug={slug} />;
+  return <WatchPageServer params={params} />;
 }
 
-// Basic metadata - will be updated client-side if needed
-export async function generateMetadata({ params }: WatchPageProps): Promise<Metadata> {
-  const { slug } = await params;
-
-  return {
-    title: 'Watch Movie | CINEMX',
-    description: 'Stream movies in high quality on CINEMX.',
-  };
-}
+// Re-export metadata generation from server component
+export { generateMetadata } from '@/components/movies/watch-page-server';

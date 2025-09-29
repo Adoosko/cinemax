@@ -122,11 +122,11 @@ export async function fetchCachedPublicMovies(): Promise<Movie[]> {
 
     const data = await response.json();
 
-    // The API returns an array directly, not an object with a movies property
-    if (Array.isArray(data)) {
-      return data;
-    } else if (data.movies && Array.isArray(data.movies)) {
+    // Handle both new and old API response formats
+    if (data.movies && Array.isArray(data.movies)) {
       return data.movies;
+    } else if (Array.isArray(data)) {
+      return data;
     }
 
     return [];

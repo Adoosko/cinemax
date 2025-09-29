@@ -5,13 +5,12 @@ import {
   AdminMoviesProvider,
   useAdminMoviesContext,
 } from '@/components/admin/admin-movies-context';
-import { VideoUpload } from '@/components/admin/video-upload';
-import { addMovie, deleteMovie, getMovies, updateMovie, type Movie } from '@/lib/data/movies';
-import { AnimatePresence } from 'framer-motion';
+import { DynamicEditMovieModal, DynamicVideoUpload } from '@/components/modals/dynamic-modals';
+import { ProgressiveImage } from '@/components/ui/progressive-image';
+import { deleteMovie, getMovies, updateMovie, type Movie } from '@/lib/data/movies';
 import { AlertCircle, Clock, Edit, Eye, Film, Mic, Plus, Star, Trash2, Upload } from 'lucide-react';
-import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import EditMovieModal from './edit-movie-modal';
+import { toast } from 'sonner';
 interface MoviesAdminContentProps {
   initialMovies?: Movie[];
 }
@@ -56,9 +55,9 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
     .filter((movie) => {
       const matchesSearch = movie.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesGenre =
-        !filterOptions.genre ||
-        filterOptions.genre === 'all' ||
-        movie.genre.includes(filterOptions.genre);
+        !filterOptions.genres ||
+        filterOptions.genres.length === 0 ||
+        filterOptions.genres.some((genre) => movie.genre.includes(genre));
       return matchesSearch && matchesGenre;
     })
     .sort((a, b) => {
@@ -87,9 +86,14 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
       const success = await deleteMovie(movieId);
       if (success) {
         setMovies((prev) => prev.filter((movie) => movie.id !== movieId));
+        toast.success('Movie deleted successfully');
+      } else {
+        toast.error('Failed to delete movie');
       }
     } catch (error) {
       console.error('Failed to delete movie:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to delete movie';
+      toast.error(errorMessage);
     }
   };
 
@@ -139,9 +143,14 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
         setMovies((prev) => prev.map((m) => (m.id === updatedMovie.id ? updatedMovie : m)));
         setShowEditModal(false);
         setSelectedMovieForEdit(null);
+        toast.success('Movie updated successfully');
+      } else {
+        toast.error('Failed to update movie');
       }
     } catch (error) {
       console.error('Failed to update movie:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update movie';
+      toast.error(errorMessage);
     }
   };
 
@@ -293,7 +302,7 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                   <div className="bg-black/50 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden hover:border-netflix-red/50 transition-all duration-300 hover:shadow-lg hover:shadow-black/50">
                     {/* Movie Image */}
                     <div className="relative aspect-video overflow-hidden">
-                      <Image
+                      <ProgressiveImage
                         src={
                           movie.backdropUrl ||
                           movie.posterUrl ||
@@ -303,6 +312,8 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                         width={500}
                         height={300}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        quality={75}
                       />
 
                       {/* Gradient Overlay */}
@@ -324,12 +335,13 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
                       {/* Poster Thumbnail */}
                       {movie.posterUrl && (
                         <div className="absolute left-4 top-4 w-16 h-24 shadow-xl rounded-lg overflow-hidden opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-y-2 group-hover:translate-y-0">
-                          <Image
+                          <ProgressiveImage
                             src={movie.posterUrl}
                             alt={movie.title + ' poster'}
                             width={64}
                             height={96}
                             className="w-full h-full object-cover"
+                            quality={60}
                           />
                         </div>
                       )}
@@ -437,64 +449,72 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
       )}
 
       {/* Video Upload Modal */}
-      <AnimatePresence>
-        {showVideoUpload && selectedMovieForUpload && (
-          <VideoUpload
-            movieId={selectedMovieForUpload}
-            movieTitle={selectedMovieTitleForUpload || undefined}
-            onUploadComplete={(videoUrl) => {
-              console.log('Video uploaded:', videoUrl);
-              setShowVideoUpload(false);
-              setSelectedMovieForUpload(null);
-              setSelectedMovieTitleForUpload(null);
-              fetchMovies(); // Refresh the list
-            }}
-            onClose={() => {
-              setShowVideoUpload(false);
-              setSelectedMovieForUpload(null);
-              setSelectedMovieTitleForUpload(null);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {showVideoUpload && selectedMovieForUpload && (
+        <DynamicVideoUpload
+          movieId={selectedMovieForUpload}
+          movieTitle={selectedMovieTitleForUpload || undefined}
+          onUploadComplete={(videoUrl) => {
+            console.log('Video uploaded:', videoUrl);
+            setShowVideoUpload(false);
+            setSelectedMovieForUpload(null);
+            setSelectedMovieTitleForUpload(null);
+            fetchMovies(); // Refresh the list
+          }}
+          onClose={() => {
+            setShowVideoUpload(false);
+            setSelectedMovieForUpload(null);
+            setSelectedMovieTitleForUpload(null);
+          }}
+        />
+      )}
 
       {/* Edit Movie Modal */}
-      <AnimatePresence>
-        {showEditModal && selectedMovieForEdit && (
-          <EditMovieModal
-            isOpen={showEditModal}
-            movie={selectedMovieForEdit}
-            onUpdateMovie={handleUpdateMovie}
-            onClose={() => {
-              setShowEditModal(false);
-              setSelectedMovieForEdit(null);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      {showEditModal && selectedMovieForEdit && (
+        <DynamicEditMovieModal
+          isOpen={showEditModal}
+          movie={selectedMovieForEdit}
+          onUpdateMovie={handleUpdateMovie}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedMovieForEdit(null);
+          }}
+        />
+      )}
 
       {/* Add Movie Modal */}
-      <AnimatePresence>
-        {showAddMovieModal && (
-          <EditMovieModal
-            isOpen={showAddMovieModal}
-            isNew={true}
-            onUpdateMovie={async (movieData) => {
-              try {
-                const newMovie = await addMovie(movieData);
+      {showAddMovieModal && (
+        <DynamicEditMovieModal
+          isOpen={showAddMovieModal}
+          isNew={true}
+          onUpdateMovie={async (movieData) => {
+            try {
+              const response = await fetch('/api/admin/movies', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(movieData),
+              });
 
-                if (newMovie) {
-                  setMovies((prev) => [newMovie, ...prev]);
-                  setShowAddMovieModal(false);
-                }
-              } catch (error) {
-                console.error('Failed to add movie:', error);
+              const data = await response.json();
+
+              if (response.ok) {
+                setMovies((prev) => [data.movie, ...prev]);
+                setShowAddMovieModal(false);
+                toast.success('Movie added successfully');
+                fetchMovies(); // Refresh the list
+              } else {
+                toast.error(data.error || 'Failed to add movie');
               }
-            }}
-            onClose={() => setShowAddMovieModal(false)}
-          />
-        )}
-      </AnimatePresence>
+            } catch (error) {
+              console.error('Failed to add movie:', error);
+              const errorMessage = error instanceof Error ? error.message : 'Failed to add movie';
+              toast.error(errorMessage);
+            }
+          }}
+          onClose={() => setShowAddMovieModal(false)}
+        />
+      )}
     </div>
   );
 }

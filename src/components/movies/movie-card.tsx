@@ -4,8 +4,8 @@ import { Button } from '@/components/ui/button';
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { NetflixCard } from '@/components/ui/glass-card';
+import { ProgressiveImage } from '@/components/ui/progressive-image';
 import { Clock, Film, Play } from 'lucide-react';
-import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -62,12 +62,13 @@ export function MovieCard({
       <div onClick={handleCardClick} className="cursor-pointer">
         <NetflixCard className="overflow-hidden group relative h-full">
           <div className="relative aspect-[2/3] overflow-hidden h-full">
-            <Image
+            <ProgressiveImage
               src={movie.posterUrl || '/placeholder-movie.jpg'}
               alt={movie.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
               priority={priority || index < 3}
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300" />
@@ -134,12 +135,13 @@ export function MovieCard({
             <div className="flex space-x-4">
               <div className="w-24 h-36 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 shadow-2xl">
                 {movie.posterUrl && (
-                  <Image
+                  <ProgressiveImage
                     src={movie.posterUrl}
                     alt={movie.title}
                     width={96}
                     height={144}
                     className="w-full h-full object-cover"
+                    quality={60}
                   />
                 )}
               </div>

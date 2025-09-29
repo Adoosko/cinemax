@@ -1,13 +1,7 @@
-import {
-  EnhancedCachedMovieData,
-  fetchStaticMovieData,
-  getMovieCacheTags,
-} from '@/components/movies/enhanced-cached-movie-data';
 import { MovieDetailClient } from '@/components/movies/movie-detail-client';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { ScrollReset } from '@/components/ui/scroll-reset';
 import { PrismaClient } from '@prisma/client';
-import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
@@ -15,175 +9,153 @@ import { Suspense } from 'react';
 import { type Movie as DetailMovie } from '@/components/movies/movie-detail-client';
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 
-// Use the imported type
-type Movie = CachedMovie;
-
-// Import the Movie type for proper typing
-
 // PPR configuration for dynamic movie pages - static parts pre-rendered, dynamic parts on-demand
 export const experimental_ppr = true;
 
-// Generate static params with caching for all active movies
+// Generate static params for all active movies
 export async function generateStaticParams() {
-  return unstable_cache(
-    async () => {
-      const prisma = new PrismaClient();
+  const prisma = new PrismaClient();
 
-      try {
-        const movies = await prisma.movie.findMany({
-          where: { isActive: true },
-          select: { slug: true },
-        });
+  try {
+    const movies = await prisma.movie.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+      take: 50, // Limit to most important movies for initial build
+    });
 
-        return movies.map((movie) => ({
-          slug: movie.slug,
-        }));
-      } catch (error) {
-        console.error('Failed to generate static params for movies:', error);
-        return [];
-      } finally {
-        await prisma.$disconnect();
-      }
-    },
-    ['generate-static-params-movies'],
-    {
-      revalidate: 3600, // 1 hour
-      tags: ['movies-all'],
-    }
-  )();
+    return movies.map((movie) => ({
+      slug: movie.slug,
+    }));
+  } catch (error) {
+    console.error('Failed to generate static params for movies:', error);
+    return [];
+  } finally {
+    await prisma.$disconnect();
+  }
 }
 
-// Generate metadata for SEO with enhanced caching
+// Fetch movie data server-side
+async function getMovie(slug: string): Promise<DetailMovie | null> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/movies/${slug}/basic`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const movieData = await response.json();
+
+    return {
+      ...movieData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      showtimes: transformShowtimes([]),
+    } as unknown as DetailMovie;
+  } catch (error) {
+    console.error('Error fetching movie:', error);
+    return null;
+  }
+}
+
+// Fetch related movies server-side
+async function getRelatedMovies(slug: string): Promise<DetailMovie[]> {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/movies/${slug}/related?limit=12`, {
+      next: { revalidate: 3600 }, // Cache for 1 hour
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const relatedData = await response.json();
+
+    if (relatedData?.movies) {
+      return relatedData.movies.map((m: CachedMovie) => ({
+        ...m,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        showtimes: transformShowtimes([]),
+      })) as DetailMovie[];
+    }
+
+    return [];
+  } catch (error) {
+    console.error('Error fetching related movies:', error);
+    return [];
+  }
+}
+
+// Generate metadata for SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+  const movie = await getMovie((await params).slug);
 
-  return unstable_cache(
-    async (movieSlug: string) => {
-      try {
-        const movie = await fetchStaticMovieData(movieSlug, await getMovieCacheTags(movieSlug));
+  if (!movie) {
+    return {
+      title: 'Movie Not Found | CINEMX',
+      description: 'The requested movie could not be found.',
+    };
+  }
 
-        if (!movie) {
-          return {
-            title: 'Movie Not Found | CINEMX',
-            description: 'The requested movie could not be found.',
-          };
-        }
-
-        return {
-          title: `${movie.title} | CINEMX`,
-          description: movie.description,
-          openGraph: {
-            title: movie.title,
-            description: movie.description,
-            images: [movie.backdropUrl, movie.posterUrl],
-            type: 'video.movie',
-          },
-          twitter: {
-            card: 'summary_large_image',
-            title: movie.title,
-            description: movie.description,
-            images: [movie.backdropUrl],
-          },
-        };
-      } catch (error) {
-        return {
-          title: 'Movie | CINEMX',
-          description: 'Watch movies online',
-        };
-      }
+  return {
+    title: `${movie.title} | CINEMX`,
+    description: movie.description,
+    openGraph: {
+      title: movie.title,
+      description: movie.description,
+      images: [movie.backdropUrl, movie.posterUrl],
+      type: 'video.movie',
     },
-    [`movie-metadata-${slug}`],
-    {
-      revalidate: 3600, // 1 hour for metadata
-      tags: await getMovieCacheTags(slug),
-    }
-  )(slug);
+    twitter: {
+      card: 'summary_large_image',
+      title: movie.title,
+      description: movie.description,
+      images: [movie.backdropUrl],
+    },
+  };
 }
 
-export default function MovieDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
-  return (
-    <NetflixBg variant="solid" className="min-h-screen">
-      <ScrollReset />
-      {/* Static hero loads instantly, dynamic content loads separately */}
-      <StaticMovieHero params={params} />
-      {/* Dynamic content loads separately without blocking hero */}
-      <Suspense
-        fallback={
-          <div className="p-6">
-            <div className="animate-pulse bg-white/10 h-48 rounded-xl" />
-          </div>
-        }
-      >
-        <DynamicMovieContent params={params} />
-      </Suspense>
-    </NetflixBg>
-  );
-}
-
-// Static movie hero - loads instantly with cached data
-async function StaticMovieHero({ params }: { params: Promise<{ slug: string }> }) {
+export default async function MovieDetailsPage({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
-  const { movie } = await EnhancedCachedMovieData({
-    slug: resolvedParams.slug,
-    includeRelated: false, // Skip dynamic data for instant loading
-    includeComments: false,
-  });
+  const movie = await getMovie(resolvedParams.slug);
 
   if (!movie) {
     notFound();
   }
 
-  // Transform just the basic movie data for the hero section
-  const transformedMovie = {
-    ...movie,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    showtimes: transformShowtimes([]),
-  } as unknown as DetailMovie;
+  // Fetch related movies in parallel (doesn't block main content)
+  const relatedMoviesPromise = getRelatedMovies(resolvedParams.slug);
 
-  // Only render the hero section - no similar movies or comments
-  return <MovieDetailClient movie={transformedMovie} allMovies={[]} showOnlyHero={true} />;
-}
-
-// Dynamic content - loads separately without blocking hero
-async function DynamicMovieContent({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = await params;
-  const { movie, relatedMovies } = await EnhancedCachedMovieData({
-    slug: resolvedParams.slug,
-    includeRelated: true, // Get related movies
-    includeComments: false,
-  });
-
-  if (!movie) {
-    return null;
-  }
-
-  // Transform movie and related movies
-  const transformedMovie = {
-    ...movie,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    showtimes: transformShowtimes([]),
-  } as unknown as DetailMovie;
-
-  const transformedRelatedMovies = relatedMovies.map((m: CachedMovie) => ({
-    ...m,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    showtimes: transformShowtimes([]),
-  })) as unknown as DetailMovie[];
-
-  // Only render dynamic content - similar movies and comments
   return (
-    <MovieDetailClient
-      movie={transformedMovie}
-      allMovies={transformedRelatedMovies}
-      showOnlyDynamic={true}
-    />
+    <NetflixBg variant="solid" className="min-h-screen">
+      <ScrollReset />
+      {/* Main movie content loads immediately */}
+      <MovieDetailClient movie={movie} allMovies={[]} />
+
+      {/* Related movies load asynchronously */}
+      <Suspense fallback={null}>
+        <RelatedMoviesLoader relatedMoviesPromise={relatedMoviesPromise} />
+      </Suspense>
+    </NetflixBg>
   );
 }
 
-// Enhanced skeleton replaced with Netflix-style skeletons from the dedicated component
+// Component to handle async loading of related movies
+async function RelatedMoviesLoader({
+  relatedMoviesPromise,
+}: {
+  relatedMoviesPromise: Promise<DetailMovie[]>;
+}) {
+  const relatedMovies = await relatedMoviesPromise;
+
+  // This could trigger a re-render of the SimilarMovies component
+  // For now, we'll let the client handle related movies loading
+  return null;
+}
 
 // Helper function to transform showtimes from string[] to the expected Record format
 function transformShowtimes(showtimes?: string[]):

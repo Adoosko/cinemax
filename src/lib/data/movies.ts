@@ -25,12 +25,9 @@ export type Movie = {
 export const getMovies = unstable_cache(
   async (isAdmin: boolean = false): Promise<Movie[]> => {
     try {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
       const endpoint = isAdmin ? '/api/admin/movies' : '/api/movies';
-      const url = new URL(
-        endpoint,
-        process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-      );
-      const response = await fetch(url, {
+      const response = await fetch(`${baseUrl}${endpoint}`, {
         next: { tags: ['movies'] },
       });
 
@@ -77,11 +74,8 @@ export const getMovieById = unstable_cache(
 export const getMovieBySlug = unstable_cache(
   async (slug: string): Promise<Movie | null> => {
     try {
-      const url = new URL(
-        `/api/movies/slug/${slug}`,
-        process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-      );
-      const response = await fetch(url, {
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const response = await fetch(`${baseUrl}/api/movies/slug/${slug}`, {
         next: { tags: [`movie-${slug}`] },
       });
 
@@ -103,11 +97,8 @@ export const getMovieBySlug = unstable_cache(
 // Function to revalidate the movies cache
 export async function revalidateMoviesCache() {
   try {
-    const revalidateUrl = new URL(
-      '/api/revalidate?tag=movies',
-      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-    );
-    const revalidateResponse = await fetch(revalidateUrl, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const revalidateResponse = await fetch(`${baseUrl}/api/revalidate?tag=movies`, {
       method: 'POST',
     });
 
@@ -125,11 +116,9 @@ export async function revalidateMoviesCache() {
 // Add a movie and revalidate the cache
 export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL(
-      '/api/admin/movies',
-      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-    );
-    const response = await fetch(url, {
+    // Use full URL to ensure correct routing
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/admin/movies`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

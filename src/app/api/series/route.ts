@@ -50,18 +50,34 @@ export async function GET(request: Request) {
 
     const series = await prisma.series.findMany({
       where: whereClause,
-      include: {
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        genres: true,
+        releaseYear: true,
+        description: true,
+        coverUrl: true,
+        backdropUrl: true,
+        cast: true,
+        director: true,
+        rating: true,
+        createdAt: true,
+        _count: {
+          select: {
+            seasons: true,
+          },
+        },
         seasons: {
           where: {
             isActive: true,
           },
-          include: {
-            episodes: {
-              where: {
-                isActive: true,
-              },
-              orderBy: {
-                number: 'asc',
+          select: {
+            id: true,
+            number: true,
+            _count: {
+              select: {
+                episodes: true,
               },
             },
           },
@@ -69,16 +85,11 @@ export async function GET(request: Request) {
             number: 'asc',
           },
         },
-        _count: {
-          select: {
-            seasons: true,
-          },
-        },
       },
       orderBy,
     });
 
-    // Transform the data to match the expected format
+    // Transform the data to match the expected format - optimized response
     const transformedSeries = series.map((seriesItem, index) => ({
       id: seriesItem.id,
       slug: seriesItem.slug,
@@ -86,15 +97,11 @@ export async function GET(request: Request) {
       genre: formatGenre(seriesItem.genres),
       releaseYear: seriesItem.releaseYear?.toString() || '2024',
       description: seriesItem.description || 'An exciting TV series awaits you.',
-      coverUrl:
-        seriesItem.coverUrl ||
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=400&h=600&fit=crop',
-      backdropUrl:
-        seriesItem.backdropUrl ||
-        'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
+      coverUrl: seriesItem.coverUrl || '/placeholder-series.jpg',
+      backdropUrl: seriesItem.backdropUrl,
       seasonsCount: seriesItem.seasons.length,
       totalEpisodes: seriesItem.seasons.reduce(
-        (total, season) => total + season.episodes.length,
+        (total, season) => total + season._count.episodes,
         0
       ),
       rating: seriesItem.rating || 'TV-14',
@@ -103,7 +110,17 @@ export async function GET(request: Request) {
       featured: index === 0, // Mark first series as featured
     }));
 
-    return NextResponse.json(transformedSeries);
+    return NextResponse.json(
+      {
+        series: transformedSeries,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600', // Cache for 5 minutes
+        },
+      }
+    );
   } catch (error) {
     console.error('Failed to fetch series:', error);
     return NextResponse.json({ error: 'Failed to fetch series' }, { status: 500 });

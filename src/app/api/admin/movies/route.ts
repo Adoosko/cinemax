@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { slugify } from '@/lib/utils';
 import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -9,9 +10,7 @@ const prisma = new PrismaClient();
 export async function POST(request: NextRequest) {
   try {
     // Check authentication and admin role
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -28,6 +27,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Validate rating - should be a number as string from TMDB API
+    let movieRating = data.rating;
+    if (movieRating && isNaN(parseFloat(movieRating))) {
+      movieRating = null; // Not a valid number
+    }
+
     // Create movie
     const movie = await prisma.movie.create({
       data: {
@@ -36,10 +41,11 @@ export async function POST(request: NextRequest) {
         description: data.description,
         duration: data.duration,
         genre: data.genre,
-        rating: data.rating,
+        rating: movieRating,
         director: data.director,
         cast: data.cast || [],
         posterUrl: data.posterUrl || null,
+        backdropUrl: data.backdropUrl || null,
         trailerUrl: data.trailerUrl || null,
         releaseDate: data.releaseDate ? new Date(data.releaseDate) : undefined,
         isActive: true,

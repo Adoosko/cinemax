@@ -4,30 +4,46 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CircularProgress } from '@/components/ui/circular-progress';
-import { CreateWatchPartyButton } from '@/components/watch-party/create-watch-party-button';
+import { LazyComponent } from '@/components/ui/lazy-component';
+import { ProgressiveImage } from '@/components/ui/progressive-image';
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 import { ArrowLeft, Heart, Play, Share } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { AiTrailerPlayer } from './ai-trailer-player';
-import { MovieComments } from './movie-comments';
-import { SimilarMovies } from './similar-movies';
+
+// Lazy load heavy components
+const DynamicCreateWatchPartyButton = dynamic(
+  () =>
+    import('@/components/watch-party/create-watch-party-button').then((mod) => ({
+      default: mod.CreateWatchPartyButton,
+    })),
+  { ssr: false }
+);
+
+const DynamicAiTrailerPlayer = dynamic(
+  () => import('./ai-trailer-player').then((mod) => ({ default: mod.AiTrailerPlayer })),
+  { ssr: false }
+);
+
+const DynamicMovieComments = dynamic(
+  () => import('./movie-comments').then((mod) => ({ default: mod.MovieComments })),
+  { ssr: false }
+);
+
+const DynamicSimilarMovies = dynamic(
+  () => import('./similar-movies').then((mod) => ({ default: mod.SimilarMovies })),
+  { ssr: false }
+);
 
 export type Movie = CachedMovie;
 
 interface MovieDetailClientProps {
   movie: Movie;
   allMovies?: Movie[];
-  showOnlyHero?: boolean;
-  showOnlyDynamic?: boolean;
 }
 
-export function MovieDetailClient({
-  movie,
-  allMovies = [],
-  showOnlyHero = false,
-  showOnlyDynamic = false,
-}: MovieDetailClientProps) {
+export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientProps) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -50,30 +66,21 @@ export function MovieDetailClient({
 
   const toggleFavorite = () => setIsFavorite((prev) => !prev);
 
-  // If showing only dynamic content, skip the hero section
-  if (showOnlyDynamic) {
-    return (
-      <div className="bg-netflix-black">
-        {/* Comments Section */}
-        <div className="max-w-4xl mx-auto px-6 py-12">
-          <MovieComments movieSlug={movie.slug || ''} />
-        </div>
-        {/* Recommended Movies */}
-        <div className="bg-netflix-black pt-4 px-2">
-          <SimilarMovies currentMovie={movie} allMovies={allMovies} />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-netflix-black">
       {/* Hero */}
       <div className="relative h-[60vh] lg:h-[70vh] overflow-hidden">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${movie.backdropUrl})` }}
-        />
+        {movie.backdropUrl && (
+          <ProgressiveImage
+            src={movie.backdropUrl}
+            alt={`${movie.title} backdrop`}
+            fill
+            className="object-cover"
+            priority
+            sizes="100vw"
+            quality={85}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-netflix-black/80 via-netflix-black/60 to-transparent" />
         {/* Actions */}
         <div className="absolute top-6 left-6 z-20 flex gap-2">
@@ -105,11 +112,13 @@ export function MovieDetailClient({
         <div className="absolute bottom-0 left-0 right-0 px-6 py-8">
           <div className="max-w-3xl">
             {movie.streamingUrl && (
-              <CreateWatchPartyButton
-                movieId={movie.id}
-                movieTitle={movie.title}
-                className="mb-4"
-              />
+              <LazyComponent>
+                <DynamicCreateWatchPartyButton
+                  movieId={movie.id}
+                  movieTitle={movie.title}
+                  className="mb-4"
+                />
+              </LazyComponent>
             )}
             <h1 className="text-2xl mt-5 md:text-4xl lg:text-5xl font-bold text-white mb-3">
               {movie.title}
@@ -164,7 +173,9 @@ export function MovieDetailClient({
                 <Play className="w-4 h-4 mr-2" /> Watch Trailer
               </Button>
               {/* AI Trailer */}
-              <AiTrailerPlayer movieSlug={movie.slug || ''} className="min-w-[120px]" />
+              <LazyComponent>
+                <DynamicAiTrailerPlayer movieSlug={movie.slug || ''} className="min-w-[120px]" />
+              </LazyComponent>
               {/* Watch Party */}
             </div>
           </div>
@@ -236,19 +247,41 @@ export function MovieDetailClient({
           </Card>
         </div>
       </div>
-      {/* Only show dynamic content if not hero-only mode */}
-      {!showOnlyHero && (
-        <>
-          {/* Comments Section */}
+      {/* Comments Section */}
+      <LazyComponent
+        fallback={
           <div className="max-w-4xl mx-auto px-6 py-12">
-            <MovieComments movieSlug={movie.slug || ''} />
+            <div className="h-8 w-32 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-20 bg-white/5 rounded animate-pulse"></div>
+              ))}
+            </div>
           </div>
-          {/* Recommended Movies */}
+        }
+      >
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <DynamicMovieComments movieSlug={movie.slug || ''} />
+        </div>
+      </LazyComponent>
+
+      {/* Recommended Movies */}
+      <LazyComponent
+        fallback={
           <div className="bg-netflix-black pt-4 px-2">
-            <SimilarMovies currentMovie={movie} allMovies={allMovies} />
+            <div className="h-8 w-40 bg-white/10 rounded mb-4 animate-pulse"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[2/3] bg-white/10 rounded animate-pulse"></div>
+              ))}
+            </div>
           </div>
-        </>
-      )}
+        }
+      >
+        <div className="bg-netflix-black pt-4 px-2">
+          <DynamicSimilarMovies currentMovie={movie} allMovies={allMovies} />
+        </div>
+      </LazyComponent>
     </div>
   );
 }
