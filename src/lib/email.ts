@@ -20,7 +20,7 @@ export async function sendMagicLinkEmail({
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Sign in to CinemaX</title>
+          <title>Sign in to CINEMX</title>
         </head>
         <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif; background: #000000; min-height: 100vh;">
 
@@ -52,7 +52,7 @@ export async function sendMagicLinkEmail({
                 <!-- Message -->
                 <div style="text-align: center; margin-bottom: 30px;">
                   <p style="color: #cccccc; font-size: 16px; line-height: 1.5; margin: 0;">
-                    Click the button below to sign in to your CinemaX account instantly. No password required.
+                    Click the button below to sign in to your CINEMX account instantly. No password required.
                   </p>
                 </div>
 
@@ -105,7 +105,7 @@ export async function sendMagicLinkEmail({
             <!-- Footer -->
             <div style="text-align: center; margin-top: 30px; padding: 0 20px;">
               <p style="color: #666666; font-size: 12px; margin: 0; line-height: 1.5;">
-                © 2025 CinemaX. All rights reserved.
+                © 2025 CINEMX. All rights reserved.
               </p>
             </div>
           </div>

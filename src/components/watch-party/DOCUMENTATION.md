@@ -1,4 +1,4 @@
-# CinemaX Watch Party Documentation
+# CINEMX Watch Party Documentation
 
 ## Overview
 

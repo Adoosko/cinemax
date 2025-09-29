@@ -21,7 +21,7 @@ export function MobileHeader() {
         <div className="flex items-center justify-between h-14 px-4">
           <Link href="/" className="flex items-center group">
             <div className="flex items-center">
-              <Image className="ml-2" src="/text-logo.png" alt="CinemaX" width={80} height={44} />
+              <Image className="ml-2" src="/text-logo.png" alt="CINEMX" width={80} height={44} />
             </div>
           </Link>
 

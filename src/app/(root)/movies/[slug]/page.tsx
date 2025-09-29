@@ -66,13 +66,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
         if (!movie) {
           return {
-            title: 'Movie Not Found | CinemaX',
+            title: 'Movie Not Found | CINEMX',
             description: 'The requested movie could not be found.',
           };
         }
 
         return {
-          title: `${movie.title} | CinemaX`,
+          title: `${movie.title} | CINEMX`,
           description: movie.description,
           openGraph: {
             title: movie.title,
@@ -89,7 +89,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         };
       } catch (error) {
         return {
-          title: 'Movie | CinemaX',
+          title: 'Movie | CINEMX',
           description: 'Watch movies online',
         };
       }
@@ -186,7 +186,7 @@ function transformShowtimes(showtimes?: string[]):
       startTime: time,
       endTime: calculateEndTime(time, 120), // Assuming 2 hour movies
       theater: 'Main Theater',
-      cinema: 'CinemaX',
+      cinema: 'CINEMX',
       price: 12.99,
       available: 50,
     })),

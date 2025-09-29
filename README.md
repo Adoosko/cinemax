@@ -94,7 +94,7 @@ Create a `.env` file in the root directory:
 
 ```env
 # Database
-DATABASE_URL="postgresql://username:password@localhost:5432/cinemax"
+DATABASE_URL="postgresql://username:password@localhost:5432/CINEMX"
 
 # Authentication
 BETTER_AUTH_SECRET="your-secret-key"

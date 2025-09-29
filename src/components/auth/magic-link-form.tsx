@@ -63,7 +63,7 @@ export function MagicLinkForm() {
                 </div>
                 <div>
                   <h3 className="text-white font-semibold text-sm mb-1">Check Your Inbox</h3>
-                  <p className="text-white/60 text-xs">Look for an email from CinemaX</p>
+                  <p className="text-white/60 text-xs">Look for an email from CINEMX</p>
                 </div>
               </div>
 
@@ -111,7 +111,7 @@ export function MagicLinkForm() {
         {/* Header */}
         <div className="px-6 pt-6 pb-4 text-center">
           <h1 className="text-2xl font-bold text-white mb-2">
-            {isSignUp ? 'Join CinemaX' : 'Welcome Back'}
+            {isSignUp ? 'Join CINEMX' : 'Welcome Back'}
           </h1>
           <p className="text-white/60 text-sm">
             {isSignUp
@@ -209,7 +209,7 @@ export function MagicLinkForm() {
             >
               {isSignUp
                 ? 'Already have an account? Sign in instead'
-                : 'New to CinemaX? Create an account'}
+                : 'New to CINEMX? Create an account'}
             </button>
           </div>
         </form>

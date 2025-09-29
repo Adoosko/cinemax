@@ -86,7 +86,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       console.log(`No videos found for movie ${movie.slug}, using fallback logic`);
       // Fallback for specific movies (like The Beekeeper)
       if (movie.slug === 'the-beekeeper') {
-        streamingUrl = `${process.env.BUNNY_CDN_URL || 'https://cinemax.b-cdn.net'}/beekeeper-2024/playlist.m3u8`;
+        streamingUrl = `${process.env.BUNNY_CDN_URL || 'https://CINEMX.b-cdn.net'}/beekeeper-2024/playlist.m3u8`;
       }
     }
 

@@ -47,13 +47,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
   if (!series) {
     return {
-      title: 'Series Not Found | CinemaX',
+      title: 'Series Not Found | CINEMX',
       description: 'The requested series could not be found.',
     };
   }
 
   return {
-    title: `${series.title} | CinemaX`,
+    title: `${series.title} | CINEMX`,
     description: series.description,
     openGraph: {
       title: series.title,

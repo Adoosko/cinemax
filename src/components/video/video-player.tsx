@@ -1809,7 +1809,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
         </AnimatePresence>
 
-        {/* Watermark - CinemaX Logo in top right */}
+        {/* Watermark - CINEMX Logo in top right */}
         <AnimatePresence>
           {isPlaying && !videoError && (
             <motion.div
@@ -1821,7 +1821,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
             >
               <Image
                 src="/text-logo.png"
-                alt="CinemaX"
+                alt="CINEMX"
                 width={isMobile ? 60 : 80}
                 height={isMobile ? 12 : 16}
                 className="opacity-80"

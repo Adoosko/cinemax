@@ -1,8 +1,8 @@
 'use client';
 
+import { Check, Film, Play, Plus, Star } from 'lucide-react';
 import React from 'react';
 import { Button } from './button';
-import { Film, Star, Play, Plus, Check } from 'lucide-react';
 
 export function ButtonDemo() {
   const [loading, setLoading] = React.useState(false);
@@ -14,7 +14,7 @@ export function ButtonDemo() {
 
   return (
     <div className="p-8 space-y-8 bg-black/95 min-h-screen">
-      <h1 className="text-2xl font-bold text-white mb-6">CinemaX Button Component</h1>
+      <h1 className="text-2xl font-bold text-white mb-6">CINEMX Button Component</h1>
 
       {/* Button Variants */}
       <div className="space-y-4">

@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: SeasonPageProps) {
 
     if (!response.ok) {
       return {
-        title: 'Season Not Found | CinemaX',
+        title: 'Season Not Found | CINEMX',
         description: 'The requested season could not be found.',
       };
     }
@@ -68,13 +68,13 @@ export async function generateMetadata({ params }: SeasonPageProps) {
     const season = await response.json();
 
     return {
-      title: `${season.series.title} - ${season.title} | CinemaX`,
+      title: `${season.series.title} - ${season.title} | CINEMX`,
       description:
         season.description || `Watch all episodes of ${season.title} from ${season.series.title}`,
     };
   } catch (error) {
     return {
-      title: 'Season | CinemaX',
+      title: 'Season | CINEMX',
       description: 'Watch TV series seasons online',
     };
   }

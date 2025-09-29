@@ -180,7 +180,7 @@ export function WatchPageClient({ slug }: WatchPageClientProps) {
       try {
         await navigator.share({
           title: movie.title,
-          text: `Watch ${movie.title} on CinemaX`,
+          text: `Watch ${movie.title} on CINEMX`,
           url: window.location.href,
         });
       } catch {

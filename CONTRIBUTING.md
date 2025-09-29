@@ -1,4 +1,4 @@
-# Contributing to CinemaX
+# Contributing to CINEMX
 
 Thank you for considering contributing to CinemX! We appreciate your interest in helping us improve this project.
 

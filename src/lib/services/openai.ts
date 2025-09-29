@@ -35,12 +35,12 @@ Instructions:
 - If appropriate to the genre, add environment sound tags ([thunder], [crowd cheering], [cafe ambient], etc) to boost immersion.
 - Include expressive emotion tags (ex: [mysterious], [excited], [commanding], [sob break], [reflective], [adrenaline], [confident]) for narrator or dialogue lines.
 - For ensemble movies, use multi-speaker tags ([character:Name] ...), and natural dialogue to simulate a high-quality cast interaction.
-- End with a memorable, emotionally tagged call to action (ex: [excited][projecting] “Streaming soon on CinemaX!”).
+- End with a memorable, emotionally tagged call to action (ex: [excited][projecting] “Streaming soon on CINEMX!”).
 - Structure your script in short, cinematic lines or sentences, marking dramatic pauses with [PAUSE].
 - Only return the script text, not commentary.
 
 Example:
-[dark ambient][PAUSE] When shadows fall over the city, only one legend rises. [thunder] [mysterious][PAUSE] Who can you trust when everyone wears a mask? [laughing] “You can run, but you’ll never hide.” [adrenaline][explosion] Starring Jane Doe and John Smith. [playful banter] “Just another day at the office.” [PAUSE][excited][triumphant] Streaming soon on CinemaX!
+[dark ambient][PAUSE] When shadows fall over the city, only one legend rises. [thunder] [mysterious][PAUSE] Who can you trust when everyone wears a mask? [laughing] “You can run, but you’ll never hide.” [adrenaline][explosion] Starring Jane Doe and John Smith. [playful banter] “Just another day at the office.” [PAUSE][excited][triumphant] Streaming soon on CINEMX!
 
 Here is the movie:
 Title: ${title}

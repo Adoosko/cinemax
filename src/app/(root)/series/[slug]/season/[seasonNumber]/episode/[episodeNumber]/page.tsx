@@ -71,7 +71,7 @@ export async function generateMetadata({ params }: EpisodePageProps) {
 
     if (!response.ok) {
       return {
-        title: 'Episode Not Found | CinemaX',
+        title: 'Episode Not Found | CINEMX',
         description: 'The requested episode could not be found.',
       };
     }
@@ -79,12 +79,12 @@ export async function generateMetadata({ params }: EpisodePageProps) {
     const episode = await response.json();
 
     return {
-      title: `${episode.series.title} - ${episode.season.title} Episode ${episode.number} | CinemaX`,
+      title: `${episode.series.title} - ${episode.season.title} Episode ${episode.number} | CINEMX`,
       description: episode.description || `Watch ${episode.title} from ${episode.series.title}`,
     };
   } catch (error) {
     return {
-      title: 'Episode | CinemaX',
+      title: 'Episode | CINEMX',
       description: 'Watch TV series episodes online',
     };
   }

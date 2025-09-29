@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: WatchPageProps): Promise<Meta
   const { slug } = await params;
 
   return {
-    title: 'Watch Movie | CinemaX',
-    description: 'Stream movies in high quality on CinemaX.',
+    title: 'Watch Movie | CINEMX',
+    description: 'Stream movies in high quality on CINEMX.',
   };
 }
