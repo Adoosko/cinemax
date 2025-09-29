@@ -7,6 +7,7 @@ import { CircularProgress } from '@/components/ui/circular-progress';
 import { LazyComponent } from '@/components/ui/lazy-component';
 import { ProgressiveImage } from '@/components/ui/progressive-image';
 import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
+import { useWatchHistory } from '@/lib/hooks/use-watch-history';
 import { ArrowLeft, Heart, Play, Share } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
@@ -46,6 +47,46 @@ interface MovieDetailClientProps {
 export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientProps) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
+  const { watchHistory } = useWatchHistory();
+
+  // Find if user has progress in this movie
+  const movieProgress = watchHistory.find((item) => item.movieId === movie.id);
+
+  // Function to convert progress percentage to readable time format
+  const formatProgressTime = (progress: number, totalDurationMinutes: number = 120) => {
+    const watchedMinutes = Math.floor(progress * totalDurationMinutes);
+    const minutes = watchedMinutes % 60;
+    const hours = Math.floor(watchedMinutes / 60);
+
+    if (hours > 0) {
+      return `${hours}:${minutes.toString().padStart(2, '0')}`;
+    }
+    return `${minutes}:00`;
+  };
+
+  // Parse duration to get total minutes (handles both string and number types)
+  const getTotalDurationMinutes = (duration: string | number): number => {
+    if (!duration) return 120; // Default fallback
+
+    // If duration is already a number, return it directly (assuming it's in minutes)
+    if (typeof duration === 'number') {
+      return duration;
+    }
+
+    // Handle string formats like "2h 30min" or "120 min"
+    const hourMatch = duration.match(/(\d+)h/);
+    const minuteMatch = duration.match(/(\d+)\s*min/);
+
+    let totalMinutes = 0;
+    if (hourMatch) {
+      totalMinutes += parseInt(hourMatch[1]) * 60;
+    }
+    if (minuteMatch) {
+      totalMinutes += parseInt(minuteMatch[1]);
+    }
+
+    return totalMinutes || 120; // Default to 120 minutes if parsing fails
+  };
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -153,7 +194,20 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                   variant={'premium'}
                   onClick={() => router.push(`/movies/${movie.slug}/watch`)}
                 >
-                  <Play className="w-4 h-4 mr-2" /> Watch Now
+                  <Play className="w-4 h-4 mr-2" />
+                  {movieProgress &&
+                  movieProgress.progress > 0.05 &&
+                  movieProgress.progress < 0.95 ? (
+                    <>
+                      Resume watching at{' '}
+                      {formatProgressTime(
+                        movieProgress.progress,
+                        getTotalDurationMinutes(movie.duration)
+                      )}
+                    </>
+                  ) : (
+                    'Watch Now'
+                  )}
                 </Button>
               )}
               {/* Trailer */}

@@ -3,11 +3,9 @@ import { NetflixBg } from '@/components/ui/netflix-bg';
 import { ScrollReset } from '@/components/ui/scroll-reset';
 import { PrismaClient } from '@prisma/client';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 
 // Import the Movie types from both sources
 import { type Movie as DetailMovie } from '@/components/movies/movie-detail-client';
-import { type Movie as CachedMovie } from '@/lib/data/movies-with-use-cache';
 
 // PPR configuration for dynamic movie pages - static parts pre-rendered, dynamic parts on-demand
 export const experimental_ppr = true;
@@ -61,34 +59,34 @@ async function getMovie(slug: string): Promise<DetailMovie | null> {
 }
 
 // Fetch related movies server-side
-async function getRelatedMovies(slug: string): Promise<DetailMovie[]> {
-  try {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const response = await fetch(`${baseUrl}/api/movies/${slug}/related?limit=12`, {
-      next: { revalidate: 3600 }, // Cache for 1 hour
-    });
+// async function getRelatedMovies(slug: string): Promise<DetailMovie[]> {
+//   try {
+//     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+//     const response = await fetch(`${baseUrl}/api/movies/${slug}/related?limit=12`, {
+//       next: { revalidate: 3600 }, // Cache for 1 hour
+//     });
 
-    if (!response.ok) {
-      return [];
-    }
+//     if (!response.ok) {
+//       return [];
+//     }
 
-    const relatedData = await response.json();
+//     const relatedData = await response.json();
 
-    if (relatedData?.movies) {
-      return relatedData.movies.map((m: CachedMovie) => ({
-        ...m,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        showtimes: transformShowtimes([]),
-      })) as DetailMovie[];
-    }
+//     if (relatedData?.movies) {
+//       return relatedData.movies.map((m: CachedMovie) => ({
+//         ...m,
+//         createdAt: new Date().toISOString(),
+//         updatedAt: new Date().toISOString(),
+//         showtimes: transformShowtimes([]),
+//       })) as DetailMovie[];
+//     }
 
-    return [];
-  } catch (error) {
-    console.error('Error fetching related movies:', error);
-    return [];
-  }
-}
+//     return [];
+//   } catch (error) {
+//     console.error('Error fetching related movies:', error);
+//     return [];
+//   }
+// }
 
 // Generate metadata for SEO
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
@@ -128,7 +126,7 @@ export default async function MovieDetailsPage({ params }: { params: Promise<{ s
   }
 
   // Fetch related movies in parallel (doesn't block main content)
-  const relatedMoviesPromise = getRelatedMovies(resolvedParams.slug);
+  // const relatedMoviesPromise = getRelatedMovies(resolvedParams.slug);
 
   return (
     <NetflixBg variant="solid" className="min-h-screen">
@@ -137,25 +135,25 @@ export default async function MovieDetailsPage({ params }: { params: Promise<{ s
       <MovieDetailClient movie={movie} allMovies={[]} />
 
       {/* Related movies load asynchronously */}
-      <Suspense fallback={null}>
+      {/* <Suspense fallback={null}>
         <RelatedMoviesLoader relatedMoviesPromise={relatedMoviesPromise} />
-      </Suspense>
+      </Suspense> */}
     </NetflixBg>
   );
 }
 
 // Component to handle async loading of related movies
-async function RelatedMoviesLoader({
-  relatedMoviesPromise,
-}: {
-  relatedMoviesPromise: Promise<DetailMovie[]>;
-}) {
-  const relatedMovies = await relatedMoviesPromise;
+// async function RelatedMoviesLoader({
+//   relatedMoviesPromise,
+// }: {
+//   relatedMoviesPromise: Promise<DetailMovie[]>;
+// }) {
+//   const relatedMovies = await relatedMoviesPromise;
 
-  // This could trigger a re-render of the SimilarMovies component
-  // For now, we'll let the client handle related movies loading
-  return null;
-}
+//   // This could trigger a re-render of the SimilarMovies component
+//   // For now, we'll let the client handle related movies loading
+//   return null;
+// }
 
 // Helper function to transform showtimes from string[] to the expected Record format
 function transformShowtimes(showtimes?: string[]):

@@ -102,8 +102,7 @@ export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProp
             </h1>
             <div className="flex flex-wrap gap-4 items-center mb-5">
               <Badge variant="outline">
-                <Star className="w-4 h-4 inline" /> {Number(series.rating).toFixed(1)} (
-                {series.releaseYear})
+                <Star className="w-4 h-4 inline" /> {Number(series.rating).toFixed(1)}
               </Badge>
               <Badge variant="outline">{series.releaseYear}</Badge>
               <Badge variant="outline" className="bg-netflix-dark-red">
@@ -198,7 +197,7 @@ export function SeriesDetailClient({ series, allSeries }: SeriesDetailClientProp
                   Rating:
                 </span>
                 <span className="text-white ml-2 text-xs md:text-sm lg:text-base">
-                  {Number(series.rating).toFixed(1)} ({series.releaseYear})/10
+                  {Number(series.rating).toFixed(1)}/10
                 </span>
               </div>
             </div>

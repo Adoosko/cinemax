@@ -1,3 +1,4 @@
+import { VideoService } from '@/lib/services/video-service';
 import {
   formatDuration,
   formatGenre,
@@ -48,6 +49,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
       return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
+    // Check if videos exist for this movie using S3 discovery
+    let streamingUrl = movie.streamingUrl; // Use database streamingUrl as fallback
+    try {
+      const availableQualities = await VideoService.discoverVideoQualities(movie.slug);
+      if (availableQualities && availableQualities.length > 0) {
+        // Use the highest quality video as the streaming URL
+        const bestQuality = availableQualities[0];
+        streamingUrl = bestQuality.url;
+      }
+    } catch (error) {
+      console.log(`No videos found for movie ${movie.slug}, checking fallback logic`);
+      // Fallback for specific movies (like The Beekeeper)
+      if (movie.slug === 'the-beekeeper') {
+        streamingUrl = `${process.env.BUNNY_CDN_URL || 'https://CINEMX.b-cdn.net'}/beekeeper-2024/playlist.m3u8`;
+      }
+    }
+
     // Minimal transformation for instant loading
     const transformedMovie = {
       id: movie.id,
@@ -70,7 +88,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
         movie.backdropUrl ||
         'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=1920&h=1080&fit=crop',
       trailerUrl: movie.trailerUrl || null,
-      streamingUrl: movie.streamingUrl, // Use existing streamingUrl for now
+      streamingUrl, // Use discovered streamingUrl or fallback
 
       // Empty data for instant loading - these will be loaded separately
       showtimes: {},
