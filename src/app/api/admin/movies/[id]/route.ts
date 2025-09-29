@@ -1,7 +1,6 @@
 import { auth } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
-import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
@@ -13,7 +12,7 @@ export async function DELETE(
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
-      headers: await headers(),
+      headers: request.headers,
     });
 
     if (!session) {
@@ -36,7 +35,20 @@ export async function DELETE(
       return NextResponse.json({ error: 'Movie not found' }, { status: 404 });
     }
 
-    // Delete the movie
+    // Delete related data that doesn't have cascade delete
+    // Delete reviews first (they don't have onDelete: Cascade)
+    await prisma.review.deleteMany({
+      where: { movieId },
+    });
+
+    // Delete movie comments (they use movieSlug, not movieId)
+    if (existingMovie.slug) {
+      await prisma.movieComment.deleteMany({
+        where: { movieSlug: existingMovie.slug },
+      });
+    }
+
+    // Delete the movie (other relations like WatchHistory, Showtime, WatchParty, AiTrailer will cascade)
     await prisma.movie.delete({
       where: { id: movieId },
     });
@@ -55,7 +67,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   try {
     // Check authentication and admin role
     const session = await auth.api.getSession({
-      headers: await headers(),
+      headers: request.headers,
     });
 
     if (!session) {

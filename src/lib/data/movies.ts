@@ -176,16 +176,20 @@ export async function updateMovie(id: string, movieData: Partial<Movie>): Promis
 // Delete a movie and revalidate the cache
 export async function deleteMovie(id: string): Promise<boolean> {
   try {
-    const url = new URL(
-      `/api/admin/movies/${id}`,
-      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-    );
-    const response = await fetch(url, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/admin/movies/${id}`, {
       method: 'DELETE',
+      credentials: 'include', // Include cookies for authentication
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to delete movie: ${response.status}`);
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      throw new Error(
+        `Failed to delete movie: ${response.status} - ${errorData.error || response.statusText}`
+      );
     }
 
     // Revalidate the cache

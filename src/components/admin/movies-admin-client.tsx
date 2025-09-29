@@ -7,7 +7,7 @@ import {
 } from '@/components/admin/admin-movies-context';
 import { DynamicEditMovieModal, DynamicVideoUpload } from '@/components/modals/dynamic-modals';
 import { ProgressiveImage } from '@/components/ui/progressive-image';
-import { deleteMovie, getMovies, updateMovie, type Movie } from '@/lib/data/movies';
+import { getMovies, updateMovie, type Movie } from '@/lib/data/movies';
 import { AlertCircle, Clock, Edit, Eye, Film, Mic, Plus, Star, Trash2, Upload } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -83,13 +83,26 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
     if (!confirm('Are you sure you want to delete this movie?')) return;
 
     try {
-      const success = await deleteMovie(movieId);
-      if (success) {
-        setMovies((prev) => prev.filter((movie) => movie.id !== movieId));
-        toast.success('Movie deleted successfully');
-      } else {
-        toast.error('Failed to delete movie');
+      // Make direct client-side request with proper credentials
+      const response = await fetch(`/api/admin/movies/${movieId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
       }
+
+      // Update local state
+      setMovies((prev) => prev.filter((movie) => movie.id !== movieId));
+      toast.success('Movie deleted successfully');
+
+      // Refresh the movies list to ensure consistency
+      await fetchMovies();
     } catch (error) {
       console.error('Failed to delete movie:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete movie';
@@ -166,7 +179,7 @@ function MoviesAdminContent({ initialMovies = [] }: MoviesAdminContentProps) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 px-5">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
