@@ -801,6 +801,8 @@ function EditSeriesModal({
                         >
                           {series.coverUrl && (
                             <Image
+                              width={480}
+                              height={270}
                               src={series.coverUrl}
                               alt={series.title}
                               className="w-12 h-18 object-cover rounded"
@@ -1059,6 +1061,8 @@ function EditSeriesModal({
                   {formData.coverUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
                       <Image
+                        width={200}
+                        height={300}
                         src={formData.coverUrl}
                         alt="Cover preview"
                         className="h-32 object-contain mx-auto rounded-lg"
@@ -1087,6 +1091,8 @@ function EditSeriesModal({
                   {formData.backdropUrl && (
                     <div className="mt-3 p-4 bg-white/5 rounded-lg border border-white/10">
                       <Image
+                        width={400}
+                        height={200}
                         src={formData.backdropUrl}
                         alt="Backdrop preview"
                         className="h-32 w-full object-cover rounded-lg"
@@ -1375,6 +1381,8 @@ function EditSeriesModal({
                                                         >
                                                           {tmdbEpisode.still_path && (
                                                             <Image
+                                                              width={92}
+                                                              height={64}
                                                               src={`https://image.tmdb.org/t/p/w92${tmdbEpisode.still_path}`}
                                                               alt={tmdbEpisode.name}
                                                               className="w-12 h-8 object-cover rounded"

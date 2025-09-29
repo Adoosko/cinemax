@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 

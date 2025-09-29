@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { PrismaClient } from '@prisma/client';
+import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -66,11 +67,11 @@ export async function POST(request: NextRequest) {
         slug: data.slug,
         description: data.description,
         genres: data.genres || [],
-        releaseYear: data.releaseYear,
+        releaseYear: data.releaseYear ? parseInt(data.releaseYear) : null,
         coverUrl: data.coverUrl,
         backdropUrl: data.backdropUrl,
         cast: data.cast || [],
-        rating: data.rating,
+        rating: data.rating ? String(data.rating) : null,
         isActive: true,
         isPublished: data.isPublished || false,
       },
