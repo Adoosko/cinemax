@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, ReactNode, useContext, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // Define the Series type
 export interface Series {
@@ -26,6 +26,7 @@ interface SeriesContextType {
   searchQuery: string;
   selectedGenre: string;
   sortBy: string;
+  isLoading: boolean;
   setSearchQuery: (query: string) => void;
   setSelectedGenre: (genre: string) => void;
   setSortBy: (sort: string) => void;
@@ -39,35 +40,41 @@ interface SeriesProviderProps {
 }
 
 export function SeriesProvider({ children, initialSeries }: SeriesProviderProps) {
-  const [series] = useState<Series[]>(initialSeries);
+  const [series, setSeries] = useState<Series[]>(initialSeries);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('all');
   const [sortBy, setSortBy] = useState('title');
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Filter and sort series
-  const filteredSeries = series
-    .filter((s) => {
-      const matchesSearch =
-        s.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGenre =
-        !selectedGenre ||
-        selectedGenre === 'all' ||
-        s.genre.toLowerCase().includes(selectedGenre.toLowerCase());
-      return matchesSearch && matchesGenre;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case 'title':
-          return a.title.localeCompare(b.title);
-        case 'releaseYear':
-          return parseInt(b.releaseYear) - parseInt(a.releaseYear);
-        case 'rating':
-          return b.rating.localeCompare(a.rating);
-        default:
-          return 0;
+  // Fetch filtered series from API when filters change
+  useEffect(() => {
+    const fetchFilteredSeries = async () => {
+      setIsLoading(true);
+      try {
+        const params = new URLSearchParams();
+        if (searchQuery) params.append('search', searchQuery);
+        if (selectedGenre && selectedGenre !== 'all') params.append('genre', selectedGenre);
+        if (sortBy) params.append('sortBy', sortBy);
+
+        const response = await fetch(`/api/series?${params.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSeries(Array.isArray(data) ? data : data.series || []);
+        }
+      } catch (error) {
+        console.error('Error fetching filtered series:', error);
+      } finally {
+        setIsLoading(false);
       }
-    });
+    };
+
+    // Debounce API calls for search
+    const timeoutId = setTimeout(fetchFilteredSeries, 300);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, selectedGenre, sortBy]);
+
+  // For now, filteredSeries is the same as series since filtering is done server-side
+  const filteredSeries = series;
 
   return (
     <SeriesContext.Provider
@@ -77,6 +84,7 @@ export function SeriesProvider({ children, initialSeries }: SeriesProviderProps)
         searchQuery,
         selectedGenre,
         sortBy,
+        isLoading,
         setSearchQuery,
         setSelectedGenre,
         setSortBy,

@@ -18,9 +18,16 @@ export type Movie = CachedMovie;
 interface MovieDetailClientProps {
   movie: Movie;
   allMovies?: Movie[];
+  showOnlyHero?: boolean;
+  showOnlyDynamic?: boolean;
 }
 
-export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientProps) {
+export function MovieDetailClient({
+  movie,
+  allMovies = [],
+  showOnlyHero = false,
+  showOnlyDynamic = false,
+}: MovieDetailClientProps) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -42,6 +49,22 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
   };
 
   const toggleFavorite = () => setIsFavorite((prev) => !prev);
+
+  // If showing only dynamic content, skip the hero section
+  if (showOnlyDynamic) {
+    return (
+      <div className="bg-netflix-black">
+        {/* Comments Section */}
+        <div className="max-w-4xl mx-auto px-6 py-12">
+          <MovieComments movieSlug={movie.slug || ''} />
+        </div>
+        {/* Recommended Movies */}
+        <div className="bg-netflix-black pt-4 px-2">
+          <SimilarMovies currentMovie={movie} allMovies={allMovies} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-netflix-black">
@@ -213,14 +236,19 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
           </Card>
         </div>
       </div>
-      {/* Comments Section */}
-      <div className="max-w-4xl mx-auto px-6 py-12">
-        <MovieComments movieSlug={movie.slug || ''} />
-      </div>
-      {/* Recommended Movies */}
-      <div className="bg-netflix-black pt-4 px-2">
-        <SimilarMovies currentMovie={movie} allMovies={allMovies} />
-      </div>
+      {/* Only show dynamic content if not hero-only mode */}
+      {!showOnlyHero && (
+        <>
+          {/* Comments Section */}
+          <div className="max-w-4xl mx-auto px-6 py-12">
+            <MovieComments movieSlug={movie.slug || ''} />
+          </div>
+          {/* Recommended Movies */}
+          <div className="bg-netflix-black pt-4 px-2">
+            <SimilarMovies currentMovie={movie} allMovies={allMovies} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

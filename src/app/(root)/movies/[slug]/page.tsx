@@ -1,12 +1,10 @@
 import {
   EnhancedCachedMovieData,
-  fetchAllMoviesStatic,
   fetchStaticMovieData,
   getMovieCacheTags,
 } from '@/components/movies/enhanced-cached-movie-data';
 import { MovieDetailClient } from '@/components/movies/movie-detail-client';
 import { NetflixBg } from '@/components/ui/netflix-bg';
-import { MovieHeroSkeleton } from '@/components/ui/netflix-skeletons';
 import { ScrollReset } from '@/components/ui/scroll-reset';
 import { PrismaClient } from '@prisma/client';
 import { unstable_cache } from 'next/cache';
@@ -106,22 +104,28 @@ export default function MovieDetailsPage({ params }: { params: Promise<{ slug: s
   return (
     <NetflixBg variant="solid" className="min-h-screen">
       <ScrollReset />
-      {/* Enhanced movie details with PPR splitting - Prevent layout shifts */}
-      <Suspense fallback={<MovieHeroSkeleton />}>
-        <div className="animate-fade-in">
-          <MovieDetailsContent params={params} />
-        </div>
+      {/* Static hero loads instantly, dynamic content loads separately */}
+      <StaticMovieHero params={params} />
+      {/* Dynamic content loads separately without blocking hero */}
+      <Suspense
+        fallback={
+          <div className="p-6">
+            <div className="animate-pulse bg-white/10 h-48 rounded-xl" />
+          </div>
+        }
+      >
+        <DynamicMovieContent params={params} />
       </Suspense>
     </NetflixBg>
   );
 }
 
-// Enhanced movie details content with PPR splitting
-async function MovieDetailsContent({ params }: { params: Promise<{ slug: string }> }) {
+// Static movie hero - loads instantly with cached data
+async function StaticMovieHero({ params }: { params: Promise<{ slug: string }> }) {
   const resolvedParams = await params;
   const { movie } = await EnhancedCachedMovieData({
     slug: resolvedParams.slug,
-    includeRelated: false, // We'll get all movies separately
+    includeRelated: false, // Skip dynamic data for instant loading
     includeComments: false,
   });
 
@@ -129,27 +133,54 @@ async function MovieDetailsContent({ params }: { params: Promise<{ slug: string 
     notFound();
   }
 
-  // Get all movies for similar recommendations
-  const allMovies = await fetchAllMoviesStatic([]);
-
-  // Transform the movie data to match the expected format for MovieDetailClient
+  // Transform just the basic movie data for the hero section
   const transformedMovie = {
     ...movie,
-    // Add missing fields for compatibility
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    showtimes: transformShowtimes([]), // Use empty array since static data doesn't have showtimes
+    showtimes: transformShowtimes([]),
   } as unknown as DetailMovie;
 
-  // Transform all movies for similar movies recommendations
-  const transformedAllMovies = allMovies.map((m: CachedMovie) => ({
+  // Only render the hero section - no similar movies or comments
+  return <MovieDetailClient movie={transformedMovie} allMovies={[]} showOnlyHero={true} />;
+}
+
+// Dynamic content - loads separately without blocking hero
+async function DynamicMovieContent({ params }: { params: Promise<{ slug: string }> }) {
+  const resolvedParams = await params;
+  const { movie, relatedMovies } = await EnhancedCachedMovieData({
+    slug: resolvedParams.slug,
+    includeRelated: true, // Get related movies
+    includeComments: false,
+  });
+
+  if (!movie) {
+    return null;
+  }
+
+  // Transform movie and related movies
+  const transformedMovie = {
+    ...movie,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    showtimes: transformShowtimes([]),
+  } as unknown as DetailMovie;
+
+  const transformedRelatedMovies = relatedMovies.map((m: CachedMovie) => ({
     ...m,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
-    showtimes: transformShowtimes([]), // Use empty array for consistency
+    showtimes: transformShowtimes([]),
   })) as unknown as DetailMovie[];
 
-  return <MovieDetailClient movie={transformedMovie} allMovies={transformedAllMovies} />;
+  // Only render dynamic content - similar movies and comments
+  return (
+    <MovieDetailClient
+      movie={transformedMovie}
+      allMovies={transformedRelatedMovies}
+      showOnlyDynamic={true}
+    />
+  );
 }
 
 // Enhanced skeleton replaced with Netflix-style skeletons from the dedicated component
