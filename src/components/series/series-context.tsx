@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 // Define the Series type
 export interface Series {
@@ -22,7 +22,6 @@ export interface Series {
 
 interface SeriesContextType {
   series: Series[];
-  filteredSeries: Series[];
   searchQuery: string;
   selectedGenre: string;
   sortBy: string;
@@ -55,44 +54,36 @@ export function SeriesProvider({ children, initialSeries }: SeriesProviderProps)
         if (searchQuery) params.append('search', searchQuery);
         if (selectedGenre && selectedGenre !== 'all') params.append('genre', selectedGenre);
         if (sortBy) params.append('sortBy', sortBy);
-
-        const response = await fetch(`/api/series?${params.toString()}`);
-        if (response.ok) {
-          const data = await response.json();
+        const resp = await fetch(`/api/series?${params.toString()}`);
+        if (resp.ok) {
+          const data = await resp.json();
           setSeries(Array.isArray(data) ? data : data.series || []);
         }
-      } catch (error) {
-        console.error('Error fetching filtered series:', error);
+      } catch (err) {
+        console.error('Error fetching filtered series:', err);
       } finally {
         setIsLoading(false);
       }
     };
-
-    // Debounce API calls for search
-    const timeoutId = setTimeout(fetchFilteredSeries, 300);
+    const timeoutId = setTimeout(fetchFilteredSeries, 300); // debounce fetch
     return () => clearTimeout(timeoutId);
   }, [searchQuery, selectedGenre, sortBy]);
 
-  // For now, filteredSeries is the same as series since filtering is done server-side
-  const filteredSeries = series;
-
-  return (
-    <SeriesContext.Provider
-      value={{
-        series,
-        filteredSeries,
-        searchQuery,
-        selectedGenre,
-        sortBy,
-        isLoading,
-        setSearchQuery,
-        setSelectedGenre,
-        setSortBy,
-      }}
-    >
-      {children}
-    </SeriesContext.Provider>
+  const contextValue = useMemo(
+    () => ({
+      series,
+      searchQuery,
+      selectedGenre,
+      sortBy,
+      isLoading,
+      setSearchQuery,
+      setSelectedGenre,
+      setSortBy,
+    }),
+    [series, searchQuery, selectedGenre, sortBy, isLoading]
   );
+
+  return <SeriesContext.Provider value={contextValue}>{children}</SeriesContext.Provider>;
 }
 
 export function useSeries() {

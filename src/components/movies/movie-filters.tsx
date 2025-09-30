@@ -1,11 +1,12 @@
 'use client';
 
-import { SearchFilterBar, Genre, FilterOptions } from '@/components/movies/search-filter-bar';
 import { useMoviesContext } from './movies-context';
+import { Genre, SearchFilterBar } from './search-filter-bar';
 
-export function MovieFilters() {
+export default function MovieFilters() {
   const { searchTerm, setSearchTerm, filterOptions, setFilterOptions } = useMoviesContext();
 
+  // Genres list—customize as needed
   const genres: Genre[] = [
     { id: 'all', name: 'All Movies' },
     { id: 'action', name: 'Action' },

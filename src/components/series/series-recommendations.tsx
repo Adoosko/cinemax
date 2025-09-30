@@ -17,48 +17,33 @@ interface SeriesRecommendationsProps {
   currentSeriesId?: string;
 }
 
-export function SeriesRecommendations({
+export default function SeriesRecommendations({
   allSeries = [],
   currentSeriesId,
 }: SeriesRecommendationsProps) {
   const { continueWatching: seriesContinueWatching } = useSeriesContinueWatching();
 
-  // Create recommendations by taking a random subset of unwatched series, excluding current series
+  // Filter and shuffle recommendations
   const recommendedSeries = useMemo(() => {
     if (!allSeries || allSeries.length === 0) return [];
-
-    // Get IDs of series currently being watched
     const watchingSeriesIds = new Set(seriesContinueWatching.map((item: any) => item.seriesId));
-
-    // Filter out current series and series currently being watched
-    const filteredSeries = allSeries.filter(
+    const filtered = allSeries.filter(
       (series) =>
         (!currentSeriesId || series.id !== currentSeriesId) && !watchingSeriesIds.has(series.id)
     );
-
-    // Create a copy of the filtered series array and shuffle it
-    return [...filteredSeries].sort(() => 0.5 - Math.random()).slice(0, 8);
+    return [...filtered].sort(() => 0.5 - Math.random()).slice(0, 8);
   }, [allSeries, currentSeriesId, seriesContinueWatching]);
 
-  if (recommendedSeries.length === 0) {
-    return null;
-  }
+  if (recommendedSeries.length === 0) return null;
 
   return (
     <div className="mb-12">
       <h2 className="text-2xl font-bold text-white mb-6">
         More Shows to Binge (You Will Thank Us)
       </h2>
-
-      <Carousel
-        opts={{
-          align: 'start',
-          loop: true,
-        }}
-        className="w-full"
-      >
+      <Carousel opts={{ align: 'start', loop: true }} className="w-full">
         <CarouselContent className="-ml-4">
-          {recommendedSeries.map((series, index: number) => (
+          {recommendedSeries.map((series, index) => (
             <CarouselItem key={series.id} className="pl-4 md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
               <SeriesCard series={series} index={index} priority={index < 4} />
             </CarouselItem>

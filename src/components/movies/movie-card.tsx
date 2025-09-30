@@ -1,15 +1,15 @@
 'use client';
-
 import { Button } from '@/components/ui/button';
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { NetflixCard } from '@/components/ui/glass-card';
 import { ProgressiveImage } from '@/components/ui/progressive-image';
+import { type Movie } from '@/lib/data/movies-with-use-cache';
 import { Clock, Film, Play } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-// Lazy load drawer components to reduce initial bundle size
+// Drawer/drawer content loaded only on mobile for best code splitting
 const Drawer = dynamic(() => import('@/components/ui/drawer').then((mod) => mod.Drawer), {
   ssr: false,
 });
@@ -17,9 +17,6 @@ const DrawerContent = dynamic(
   () => import('@/components/ui/drawer').then((mod) => mod.DrawerContent),
   { ssr: false }
 );
-
-// Use the Movie type from the cached data
-import { type Movie } from '@/lib/data/movies-with-use-cache';
 
 interface MovieCardProps {
   movie: Movie;
@@ -36,15 +33,16 @@ export function MovieCard({
   movie,
   index,
   showPlayButton = false,
-  showShowtimes = false,
+
   showDetails = false,
   showStats = true,
-  showDetailsOnMobile = false,
+
   priority = false,
 }: MovieCardProps) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
 
+  // Card click: Drawer for mobile, page for desktop
   const handleCardClick = () => {
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     if (isMobile) {
@@ -54,6 +52,7 @@ export function MovieCard({
     }
   };
 
+  // Play movie
   const handlePlayMovie = () => {
     setIsDrawerOpen(false);
     router.push(`/movies/${movie.slug}/watch`);
@@ -69,14 +68,15 @@ export function MovieCard({
               alt={movie.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
-              priority={priority || index < 4}
-              fetchPriority={index < 4 ? 'high' : 'auto'}
+              priority={priority || index < 4} // Above the fold images
+              fetchPriority={priority || index < 4 ? 'high' : 'auto'}
               sizes="(max-width: 640px) 45vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
 
+            {/* Gradient overlay for hover effect */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300" />
 
-            {/* Play button - show on mobile, show on hover for desktop */}
+            {/* Play button (mobile always, desktop on hover) */}
             {showPlayButton && (
               <div className="absolute inset-0 flex items-center justify-center opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300 z-20">
                 <Button
@@ -92,26 +92,27 @@ export function MovieCard({
               </div>
             )}
 
-            {/* Rating badge - always visible */}
-            <div className="absolute top-3 right-3">
-              <CircularProgress
-                value={Number(movie.rating) * 10}
-                size={44}
-                strokeWidth={3}
-                variant="premium"
-                className="border-2 border-white/30 shadow-lg"
-                valueClassName="text-xs font-extrabold drop-shadow-lg"
-              />
-            </div>
+            {/* Rating badge */}
+            {movie.rating && (
+              <div className="absolute top-3 right-3">
+                <CircularProgress
+                  value={Number(movie.rating) * 10}
+                  size={44}
+                  strokeWidth={3}
+                  variant="premium"
+                  className="border-2 border-white/30 shadow-lg"
+                  valueClassName="text-xs font-extrabold drop-shadow-lg"
+                />
+              </div>
+            )}
 
-            {/* Movie Info - show on mobile, show on hover for desktop */}
+            {/* Info overlay (visible on hover desktop, always on mobile) */}
             <div
               className={`absolute bottom-0 z-10 left-0 right-0 p-4 ${showDetails ? 'opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100' : 'opacity-100'} transition-all duration-300 transform translate-y-2 group-hover:translate-y-0`}
             >
-              <h3 className="text-white font-bold text-xs md:text-sm mb-2 drop-shadow-lg">
+              <h3 className="text-white font-bold text-xs md:text-sm mb-2 drop-shadow-lg truncate">
                 {movie.title}
               </h3>
-
               {showStats && (
                 <div className="flex items-center space-x-3 text-sm text-white/90 mb-3">
                   <div className="flex items-center space-x-1">
@@ -130,11 +131,11 @@ export function MovieCard({
         </NetflixCard>
       </div>
 
-      {/* Movie Info Drawer - Mobile Only */}
+      {/* Drawer for mobile movie details */}
       <Drawer open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <DrawerContent className="bg-black/95 backdrop-blur-xl border-t border-white/10 max-h-[80vh]">
           <div className="px-6 py-6 space-y-6">
-            {/* Poster and basic info */}
+            {/* Poster and info */}
             <div className="flex space-x-4">
               <div className="w-24 h-36 flex-shrink-0 rounded-xl overflow-hidden bg-white/10 shadow-2xl">
                 {movie.posterUrl && (
@@ -165,13 +166,13 @@ export function MovieCard({
                     </div>
                   )}
                 </div>
+                {/* Director */}
                 <p className="text-white/50 text-sm">{movie.director}</p>
-
                 {/* Genres */}
                 {movie.genre && (
                   <div className="flex flex-wrap gap-1.5">
                     {Array.isArray(movie.genre) ? (
-                      (movie.genre as string[]).slice(0, 2).map((genre: string, idx: number) => (
+                      (movie.genre as string[]).slice(0, 2).map((genre, idx) => (
                         <span
                           key={idx}
                           className="bg-white/10 text-netflix-white text-xs px-3 py-1 rounded-full font-medium"
@@ -188,11 +189,9 @@ export function MovieCard({
                 )}
               </div>
             </div>
-
             {/* Description */}
             <p className="text-white/80 text-sm leading-relaxed">{movie.description}</p>
-
-            {/* Action Buttons */}
+            {/* Actions */}
             <div className="flex space-x-4 pt-2">
               <Button
                 onClick={handlePlayMovie}
@@ -204,8 +203,7 @@ export function MovieCard({
               <Button
                 onClick={() => {
                   setIsDrawerOpen(false);
-                  // For now, just close drawer. Trailer functionality can be added later
-                  console.log('Play trailer for:', movie.title);
+                  // Add trailer play logic here as needed
                 }}
                 variant="outline"
                 className="flex-1 border-white/30 text-white hover:bg-white/10 py-3 rounded-xl"

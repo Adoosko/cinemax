@@ -1,109 +1,74 @@
 'use client';
-
 import { useEffect, useMemo, useState } from 'react';
 import { MovieCard } from './movie-card';
-
-// Use the Movie type from the cached data
-
 import { useMoviesContext } from './movies-context';
 
-export function MovieGrid() {
+export default function MovieGrid() {
+  // Pagination state if you choose to support infinite scroll
   const [loadingMore, setLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  const { searchTerm, filterOptions, movies, isLoading } = useMoviesContext();
 
+  const { searchTerm, filterOptions, movies, isLoading } = useMoviesContext();
   const MOVIES_PER_PAGE = 10;
 
+  // Reset pagination if filters/search change
   useEffect(() => {
-    // Reset pagination when filters change
     setPage(1);
     setHasMore(true);
   }, [searchTerm, filterOptions]);
 
-  // We're now using the movies from context, so we don't need to fetch them here
-  // This is just a placeholder for pagination if needed in the future
-  const loadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    // We would fetch more movies here if needed
-  };
-
-  // Filter movies based on search term and filter options
+  // Filter + sort logic. Move to Web Worker for very large datasets (>500 items).
   const filteredMovies = useMemo(() => {
-    if (!movies || movies.length === 0) {
-      return [];
-    }
+    if (!movies || movies.length === 0) return [];
 
     return movies
       .filter((movie) => {
-        // Search term filter
+        // Search filter
         if (searchTerm) {
           const searchLower = searchTerm.toLowerCase();
           const titleMatch = movie.title.toLowerCase().includes(searchLower);
-
-          // Handle genre as both string and array
           let genreMatch = false;
           if (Array.isArray(movie.genre)) {
-            genreMatch = movie.genre.some((genre) => genre.toLowerCase().includes(searchLower));
+            genreMatch = movie.genre.some((g) => g.toLowerCase().includes(searchLower));
           } else if (typeof movie.genre === 'string') {
             genreMatch = movie.genre.toLowerCase().includes(searchLower);
           }
+          const descMatch = movie.description?.toLowerCase().includes(searchLower);
 
-          const descMatch =
-            movie.description && movie.description.toLowerCase().includes(searchLower);
-
-          if (!titleMatch && !genreMatch && !descMatch) {
-            return false;
-          }
+          if (!titleMatch && !genreMatch && !descMatch) return false;
         }
-
-        // Genre filter - handle both string and array genres
+        // Genre filter
         if (filterOptions.genres && filterOptions.genres.length > 0) {
           let genreMatch = false;
-
           if (Array.isArray(movie.genre)) {
-            // Movie genre is an array
-            genreMatch = movie.genre.some((movieGenre) =>
-              filterOptions.genres!.some((filterGenre) =>
-                movieGenre.toLowerCase().includes(filterGenre.toLowerCase())
+            genreMatch = movie.genre.some((mGenre) =>
+              filterOptions.genres!.some((fGenre) =>
+                mGenre.toLowerCase().includes(fGenre.toLowerCase())
               )
             );
           } else if (typeof movie.genre === 'string') {
-            // Movie genre is a string
             const movieGenreString = movie.genre.toLowerCase();
-            genreMatch = filterOptions.genres.some((filterGenre) =>
-              movieGenreString.includes(filterGenre.toLowerCase())
+            genreMatch = filterOptions.genres.some((fGenre) =>
+              movieGenreString.includes(fGenre.toLowerCase())
             );
           }
-
-          if (!genreMatch) {
-            return false;
-          }
+          if (!genreMatch) return false;
         }
-
-        // Year filter (using years array from filterOptions)
+        // Year filter
         if (filterOptions.years && filterOptions.years.length > 0 && movie.releaseDate) {
           const movieYear = new Date(movie.releaseDate).getFullYear();
-          if (!filterOptions.years.includes(movieYear)) {
-            return false;
-          }
+          if (!filterOptions.years.includes(movieYear)) return false;
         }
-
         // Rating filter
         if (filterOptions.rating && movie.rating) {
           const movieRating =
             typeof movie.rating === 'string' ? parseFloat(movie.rating) : movie.rating;
-
-          if (movieRating < filterOptions.rating) {
-            return false;
-          }
+          if (movieRating < filterOptions.rating) return false;
         }
-
         return true;
       })
       .sort((a, b) => {
-        // Sort based on sort option
         if (filterOptions.sortBy === 'title') {
           return a.title.localeCompare(b.title);
         } else if (filterOptions.sortBy === 'rating') {
@@ -113,9 +78,7 @@ export function MovieGrid() {
         } else if (filterOptions.sortBy === 'releaseDate' && a.releaseDate && b.releaseDate) {
           return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
         }
-
-        // Default sort (popularity or no sort)
-        return 0;
+        return 0; // default (unsorted)
       });
   }, [movies, searchTerm, filterOptions]);
 
@@ -130,7 +93,6 @@ export function MovieGrid() {
   return (
     <div className="mt-8">
       <h2 className="text-2xl font-bold text-white mb-6">All Movies</h2>
-
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
         {filteredMovies.length === 0 ? (
           <div className="col-span-full text-center py-12">
@@ -148,12 +110,11 @@ export function MovieGrid() {
               showDetails={true}
               showStats={false}
               showDetailsOnMobile={false}
+              priority={index < 6} // Ensures above-the-fold images use 'priority'
             />
           ))
         )}
       </div>
-
-      {/* Loading more indicator */}
       {loadingMore && (
         <div className="flex justify-center py-8">
           <div className="flex items-center space-x-2 text-white">
@@ -162,8 +123,6 @@ export function MovieGrid() {
           </div>
         </div>
       )}
-
-      {/* End of results indicator */}
       {!hasMore && filteredMovies.length > 0 && (
         <div className="text-center py-8">
           <p className="text-netflix-text-gray">You have seen all available movies!</p>

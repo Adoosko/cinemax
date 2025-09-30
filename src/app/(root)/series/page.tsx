@@ -2,12 +2,11 @@ import {
   ContinueWatchingSkeletonTray,
   ContinueWatchingTray,
 } from '@/components/movies/continue-watching-tray';
-import { PerformanceTracker } from '@/components/performance/performance-tracker';
 import { CachedPublicSeriesData } from '@/components/series/cached-series-data';
 import { SeriesProvider } from '@/components/series/series-context';
-import { SeriesFilters } from '@/components/series/series-filters';
-import { SeriesGrid } from '@/components/series/series-grid';
-import { SeriesRecommendations } from '@/components/series/series-recommendations';
+import SeriesFilters from '@/components/series/series-filters';
+import SeriesGrid from '@/components/series/series-grid';
+import SeriesRecommendations from '@/components/series/series-recommendations';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
 import { Permanent_Marker } from 'next/font/google';
@@ -16,7 +15,7 @@ import { Suspense } from 'react';
 const permanentMarker = Permanent_Marker({
   weight: '400',
   subsets: ['latin'],
-  display: 'optional', // Prevent render blocking on mobile
+  display: 'swap',
 });
 
 // PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
@@ -60,7 +59,6 @@ async function SeriesPageContent() {
 
   return (
     <>
-      <PerformanceTracker pageName="series-listing" />
       <SeriesProvider initialSeries={cachedData.series}>
         {/* Continue Watching Tray */}
         <Suspense fallback={<ContinueWatchingSkeletonTray />}>

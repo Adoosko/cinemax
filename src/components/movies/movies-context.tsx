@@ -1,8 +1,8 @@
 'use client';
 
-import { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { type Movie } from '@/lib/data/movies-with-use-cache';
 import { FilterOptions } from '@/components/movies/search-filter-bar';
+import { type Movie } from '@/lib/data/movies-with-use-cache'; // Update path as needed
+import { createContext, ReactNode, useContext, useEffect, useMemo, useState } from 'react';
 
 interface MoviesContextType {
   searchTerm: string;
@@ -26,44 +26,43 @@ export function MoviesProvider({ children, initialMovies = [] }: MoviesProviderP
   const [movies, setMovies] = useState<Movie[]>(initialMovies);
   const [isLoading, setIsLoading] = useState(initialMovies.length === 0);
 
-  // Fetch movies if no initial movies were provided
+  // Only fetch if no initial movies provided (streaming SSR gives initial data)
   useEffect(() => {
+    let ignore = false;
     if (initialMovies.length === 0) {
-      // Fetch movies from API
-      const fetchMovies = async () => {
-        try {
-          const response = await fetch('/api/movies');
-          if (response.ok) {
-            const data = await response.json();
-            setMovies(data.movies || []);
-          }
-        } catch (error) {
-          console.error('Error fetching movies:', error);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-
-      fetchMovies();
+      setIsLoading(true);
+      fetch('/api/movies')
+        .then((res) => (res.ok ? res.json() : Promise.reject()))
+        .then((data) => {
+          if (!ignore) setMovies(data.movies || []);
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (!ignore) setIsLoading(false);
+        });
     }
+    return () => {
+      ignore = true;
+    };
   }, [initialMovies]);
 
-  return (
-    <MoviesContext.Provider
-      value={{
-        searchTerm,
-        setSearchTerm,
-        filterOptions,
-        setFilterOptions,
-        movies,
-        isLoading,
-      }}
-    >
-      {children}
-    </MoviesContext.Provider>
+  // Performance optimization: context value is memoized for minimal re-renders
+  const contextValue = useMemo(
+    () => ({
+      searchTerm,
+      setSearchTerm,
+      filterOptions,
+      setFilterOptions,
+      movies,
+      isLoading,
+    }),
+    [searchTerm, filterOptions, movies, isLoading]
   );
+
+  return <MoviesContext.Provider value={contextValue}>{children}</MoviesContext.Provider>;
 }
 
+// Hook to access movies
 export function useMoviesContext() {
   const context = useContext(MoviesContext);
   if (context === undefined) {

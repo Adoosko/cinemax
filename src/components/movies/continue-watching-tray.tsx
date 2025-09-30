@@ -7,8 +7,9 @@ import { useWatchHistory } from '@/lib/hooks/use-watch-history';
 import { ChevronUp, Film, Play, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
+// Filter type prop—can be 'movie', 'series', or both
 interface ContinueWatchingTrayProps {
   filterType?: 'movie' | 'series';
 }
@@ -27,15 +28,16 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
     error: seriesError,
     removeFromContinueWatching,
   } = useSeriesContinueWatching();
-  const [removingId, setRemovingId] = useState<string | null>(null);
-  const [hasWatchHistory, setHasWatchHistory] = useState<boolean>(false);
-  const [isStickyVisible, setIsStickyVisible] = useState<boolean>(false);
-  const sectionRef = useRef<HTMLDivElement>(null);
 
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [isStickyVisible, setIsStickyVisible] = useState<boolean>(false);
+
+  // Loading and error handling
   const isLoading = isAuthenticated && (moviesLoading || seriesLoading);
   const error = moviesError || seriesError;
 
-  // Combine movies and series continue watching
+  // Combine watch history and series, filtered by prop
   const combinedContinueWatching = [
     ...watchHistory.map((item) => ({ ...item, type: 'movie' as const })),
     ...seriesContinueWatching.map((item) => ({ ...item, type: 'series' as const })),
@@ -47,56 +49,27 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
       return new Date(bDate).getTime() - new Date(aDate).getTime();
     });
 
-  // Track if we've ever had watch history to determine if we should show skeleton
-  useEffect(() => {
-    if (!isLoading && combinedContinueWatching && combinedContinueWatching.length > 0) {
-      setHasWatchHistory(true);
-    }
-  }, [isLoading, combinedContinueWatching]);
-
-  // Intersection Observer for sticky bar
+  // IntersectionObserver for sticky bar visibility
   useEffect(() => {
     if (!sectionRef.current || combinedContinueWatching.length === 0) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsStickyVisible(!entry.isIntersecting);
-      },
+    const observer = new window.IntersectionObserver(
+      ([entry]) => setIsStickyVisible(!entry.isIntersecting),
       { threshold: 0, rootMargin: '-80px 0px 0px 0px' }
     );
-
     observer.observe(sectionRef.current);
-
     return () => observer.disconnect();
   }, [combinedContinueWatching.length]);
 
-  // Don't show anything for unauthenticated users
-  if (!isAuthenticated) {
-    return null;
-  }
+  // Early return if not authenticated, loading, or errored
+  if (!isAuthenticated) return null;
+  if (isLoading) return <ContinueWatchingSkeletonTray />;
+  if (error) return <div className="text-red-500">Error: {error}</div>;
+  if (combinedContinueWatching.length === 0) return null;
 
-  // Show skeleton during loading to prevent layout shift
-  if (isLoading) {
-    return <ContinueWatchingSkeletonTray />;
-  }
-
-  if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
-  }
-
-  if (!combinedContinueWatching || combinedContinueWatching.length === 0) {
-    return null; // Don't show the tray if there's nothing to continue watching
-  }
-
-  // Update hasWatchHistory when we get data
-  if (!hasWatchHistory && combinedContinueWatching.length > 0) {
-    setHasWatchHistory(true);
-  }
-
+  // Remove item handler
   const handleRemove = async (id: string, type: 'movie' | 'series', e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
     setRemovingId(id);
     if (type === 'movie') {
       await removeFromWatchHistory(id);
@@ -108,9 +81,15 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
 
   return (
     <>
-      {/* Sticky continue watching bar */}
+      {/* Sticky bar with reserved height for CLS avoidance */}
+      <div
+        aria-hidden
+        className="sticky-placeholder"
+        style={{ height: isStickyVisible ? 72 : 0 }}
+      />
+
       {isStickyVisible && combinedContinueWatching.length > 0 && (
-        <div className="fixed top-16 left-0 right-0 z-20 bg-black/90 backdrop-blur-lg border-b border-white/20 animate-in slide-in-from-top duration-300 shadow-lg">
+        <nav className="fixed top-16 left-0 right-0 z-20 bg-black/90 backdrop-blur-lg border-b border-white/20 animate-in slide-in-from-top duration-300 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 py-2 md:py-4 flex items-center justify-between">
             <button
               onClick={() => sectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
@@ -133,30 +112,33 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
               </div>
             </button>
             <div className="flex items-center space-x-1 md:space-x-2">
-              {combinedContinueWatching.slice(0, 2).map((item, index) => {
+              {combinedContinueWatching.slice(0, 2).map((item) => {
                 const imageUrl = item.type === 'movie' ? item.movie.posterUrl : item.seriesCover;
                 const title = item.type === 'movie' ? item.movie.title : item.seriesTitle;
                 return (
                   <button
                     key={`${item.type}-${item.id}`}
-                    onClick={() => {
-                      const element = document.getElementById(`continue-${item.type}-${item.id}`);
-                      element?.scrollIntoView({ behavior: 'smooth' });
-                    }}
+                    onClick={() =>
+                      document
+                        .getElementById(`continue-${item.type}-${item.id}`)
+                        ?.scrollIntoView({ behavior: 'smooth' })
+                    }
                     className="relative"
+                    aria-label={`Jump to ${title}`}
                   >
                     <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg overflow-hidden border-2 border-white/30 hover:border-netflix-red transition-colors">
                       {imageUrl ? (
                         <Image
                           src={imageUrl}
                           alt={title}
-                          width={32}
-                          height={48}
-                          className="w-full h-full object-cover"
+                          width={48}
+                          height={72}
+                          className="object-cover w-full h-full"
+                          priority
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                          <div className="w-3 h-3 md:w-4 md:h-4 bg-white/50 rounded-sm"></div>
+                          <Film className="w-3 h-3 md:w-4 md:h-4 bg-white/50 rounded-sm" />
                         </div>
                       )}
                     </div>
@@ -165,9 +147,9 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
               })}
             </div>
           </div>
-        </div>
+        </nav>
       )}
-
+      {/* Watch history tray */}
       <div ref={sectionRef} className="py-8">
         <h2 className="text-2xl font-bold text-white mb-4">
           {filterType === 'movie'
@@ -197,13 +179,14 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
                 id={`continue-${item.type}-${item.id}`}
                 key={`${item.type}-${item.id}`}
                 className="group relative overflow-hidden rounded-lg transition-all duration-300 flex-shrink-0 w-48"
+                aria-label={`Continue watching ${title}`}
               >
                 <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-gray-800">
                   {imageUrl ? (
                     <Image
                       src={imageUrl}
                       alt={title}
-                      fill
+                      fill // Responsive image fill for best grid performance
                       className="object-cover"
                       sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 12vw"
                     />
@@ -214,7 +197,7 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
                   )}
 
                   {/* Progress bar */}
-                  <div className="absolute bottom-0 left-0 right-0 h-1 ">
+                  <div className="absolute bottom-0 left-0 right-0 h-1">
                     <div
                       className="h-full bg-netflix-red"
                       style={{ width: `${item.progress * 100}%` }}
@@ -226,6 +209,11 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
                     <Button
                       className="rounded-full bg-white text-black hover:bg-white/90 p-3"
                       aria-label="Play"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = href;
+                      }}
                     >
                       <Play className="w-5 h-5 fill-current" />
                     </Button>
@@ -238,7 +226,7 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
                     }
                     disabled={removingId === (item.type === 'movie' ? item.id : item.seriesId)}
                     className="absolute top-2 right-2 rounded-full p-1.5 bg-black/70 hover:bg-black text-white opacity-0 group-hover:opacity-100 transition-all duration-300"
-                    aria-label="Remove from continue watching"
+                    aria-label={`Remove ${title} from continue watching`}
                   >
                     <X className="w-4 h-4" />
                   </Button>
@@ -256,6 +244,7 @@ export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps =
   );
 }
 
+// Accessible skeleton tray—matches card sizes!
 export function ContinueWatchingSkeletonTray() {
   return (
     <div className="py-8">
@@ -266,31 +255,9 @@ export function ContinueWatchingSkeletonTray() {
             key={i}
             className="group relative overflow-hidden rounded-lg animate-pulse flex-shrink-0 w-48"
           >
-            <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-white/10 ">
-              {/* Poster placeholder with Netflix-style dark gradient */}
-              <div className="absolute inset-0 "></div>
-
-              {/* Progress bar skeleton */}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/10">
-                <div className="h-full bg-netflix-red w-1/3"></div>
-              </div>
-
-              {/* Overlay with play button skeleton - Netflix style */}
-              <div className="absolute inset-0 bg-black/0 flex items-center justify-center opacity-0">
-                <div className="rounded-full bg-black/60 border border-white/20 p-3 backdrop-blur-sm">
-                  <div className="w-5 h-5 bg-white rounded-sm"></div>
-                </div>
-              </div>
-
-              {/* Remove button skeleton - Netflix style */}
-              <div className="absolute top-2 right-2 rounded-full p-1.5 bg-black/80 backdrop-blur-sm opacity-0">
-                <div className="w-4 h-4 bg-white/80 rounded"></div>
-              </div>
-            </div>
-            <div className="mt-2 space-y-1">
-              <div className="h-4 w-full bg-white/10 rounded"></div>
-              <div className="h-3 w-1/2 bg-white/10 rounded"></div>
-            </div>
+            <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-white/10" />
+            <div className="h-4 w-full bg-white/10 rounded mt-2" />
+            <div className="h-3 w-1/2 bg-white/10 rounded" />
           </div>
         ))}
       </div>

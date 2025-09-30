@@ -3,31 +3,24 @@
 import { SeriesCard } from './series-card';
 import { useSeries } from './series-context';
 
-export function SeriesGrid() {
+export default function SeriesGrid() {
   const { series, searchQuery, selectedGenre, isLoading } = useSeries();
 
-  // Client-side filtering since series context doesn't handle complex filtering
-  const filteredSeries = series.filter((seriesItem) => {
-    // Search filter
+  // Client-side filtering for extra flexibility
+  const filteredSeries = series.filter((serie) => {
     if (searchQuery) {
       const searchLower = searchQuery.toLowerCase();
-      const titleMatch = seriesItem.title.toLowerCase().includes(searchLower);
-      const genreMatch = seriesItem.genre.toLowerCase().includes(searchLower);
-      const descMatch = seriesItem.description?.toLowerCase().includes(searchLower);
-
-      if (!titleMatch && !genreMatch && !descMatch) {
+      if (
+        !serie.title.toLowerCase().includes(searchLower) &&
+        !serie.genre.toLowerCase().includes(searchLower) &&
+        !(serie.description && serie.description.toLowerCase().includes(searchLower))
+      ) {
         return false;
       }
     }
-
-    // Genre filter
     if (selectedGenre && selectedGenre !== 'all') {
-      const genreMatch = seriesItem.genre.toLowerCase().includes(selectedGenre.toLowerCase());
-      if (!genreMatch) {
-        return false;
-      }
+      return serie.genre.toLowerCase().includes(selectedGenre.toLowerCase());
     }
-
     return true;
   });
 
@@ -39,7 +32,6 @@ export function SeriesGrid() {
       </div>
     );
   }
-
   if (filteredSeries.length === 0) {
     return (
       <div className="text-center py-12">
@@ -48,17 +40,19 @@ export function SeriesGrid() {
       </div>
     );
   }
-
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
-      {filteredSeries.map((seriesItem, index) => (
-        <SeriesCard
-          key={seriesItem.id}
-          series={seriesItem}
-          index={index}
-          priority={index < 8} // Increased for aggressive optimization - covers 2 rows on mobile
-        />
-      ))}
+    <div className="mt-8">
+      <h2 className="text-2xl font-bold text-white mb-6">All Series</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
+        {filteredSeries.map((serie, index) => (
+          <SeriesCard
+            key={serie.id}
+            series={serie}
+            index={index}
+            priority={index < 8} // Top 8 for LCP optimization
+          />
+        ))}
+      </div>
     </div>
   );
 }

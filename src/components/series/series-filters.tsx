@@ -7,7 +7,7 @@ import {
   SeriesSearchFilterBar,
 } from './series-search-filter-bar';
 
-export function SeriesFilters() {
+export default function SeriesFilters() {
   const { searchQuery, setSearchQuery, selectedGenre, setSelectedGenre, sortBy, setSortBy } =
     useSeries();
 
@@ -29,20 +29,14 @@ export function SeriesFilters() {
   ];
 
   const handleFilterChange = (filters: SeriesFilterOptions) => {
-    // Handle genres array - convert to single genre for context compatibility
     if (filters.genres && filters.genres.length > 0) {
-      setSelectedGenre(filters.genres[0]); // Use first selected genre for now
+      setSelectedGenre(filters.genres[0]);
     } else {
       setSelectedGenre('all');
     }
-
-    if (filters.sortBy) {
-      setSortBy(filters.sortBy);
-    } else {
-      setSortBy('title');
-    }
-
-    // TODO: Handle years and rating filters when context is updated
+    if (filters.sortBy) setSortBy(filters.sortBy);
+    else setSortBy('title');
+    // TODO: Integrate years/rating filter
   };
 
   return (

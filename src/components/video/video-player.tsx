@@ -341,7 +341,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       [title]
     );
 
-    //  auto-hide controls - FIXED
+    //  auto-hide controls - FIXED with better mobile timing
     const resetControlsTimeout = useCallback(() => {
       // Clear existing timeouts
       if (controlsTimeoutRef.current) {
@@ -359,23 +359,21 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       // Only hide controls if video is playing and no menus are open
       if (isPlaying && !showQualityMenu && !showSpeedMenu && !videoError && !isLoading) {
-        console.log('⏰ Setting auto-hide timeout for controls (', isMobile ? 4000 : 3000, 'ms )');
+        // Mobile gets longer timeout for easier control access
+        const hideDelay = isMobile ? 5000 : 3000;
+        const inactiveDelay = isMobile ? 4000 : 2000;
 
-        controlsTimeoutRef.current = setTimeout(
-          () => {
-            console.log('👁️ Auto-hiding controls');
-            setShowControls(false);
-          },
-          isMobile ? 4000 : 3000
-        );
+        console.log('⏰ Setting auto-hide timeout for controls (', hideDelay, 'ms )');
 
-        mouseActivityRef.current = setTimeout(
-          () => {
-            console.log('🐭 Setting mouse inactive');
-            setIsMouseInactive(true);
-          },
-          isMobile ? 3000 : 2000
-        );
+        controlsTimeoutRef.current = setTimeout(() => {
+          console.log('👁️ Auto-hiding controls');
+          setShowControls(false);
+        }, hideDelay);
+
+        mouseActivityRef.current = setTimeout(() => {
+          console.log('🐭 Setting mouse inactive');
+          setIsMouseInactive(true);
+        }, inactiveDelay);
       } else {
         console.log('❌ Not setting auto-hide timeout - conditions not met');
       }
@@ -389,7 +387,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       isMobile,
     ]);
 
-    // Enhanced mouse controls - FIXED
+    // Enhanced mouse and touch controls - FIXED
     useEffect(() => {
       const container = containerRef.current;
       const video = videoRef.current;
@@ -397,6 +395,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
 
       let lastX = 0;
       let lastY = 0;
+      let lastTouchY = 0;
 
       const handleMouseMove = (e: MouseEvent) => {
         const movementThreshold = isMobile ? 10 : 5;
@@ -427,14 +426,47 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
         }
       };
 
+      // Touch handlers for mobile control visibility
+      const handleTouchMove = (e: TouchEvent) => {
+        if (e.touches.length === 0) return;
+
+        const touch = e.touches[0];
+        const movementThreshold = 15;
+
+        if (Math.abs(touch.clientY - lastTouchY) > movementThreshold) {
+          lastTouchY = touch.clientY;
+
+          // Show controls on swipe
+          if (!showQualityMenu && !showSpeedMenu) {
+            console.log('Touch moved, showing controls');
+            resetControlsTimeout();
+          }
+        }
+      };
+
+      const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length === 0) return;
+        lastTouchY = e.touches[0].clientY;
+
+        // Show controls on any touch
+        if (!showQualityMenu && !showSpeedMenu) {
+          console.log('Touch started, showing controls');
+          resetControlsTimeout();
+        }
+      };
+
       container.addEventListener('mousemove', handleMouseMove);
       container.addEventListener('mouseenter', handleMouseEnter);
       container.addEventListener('mouseleave', handleMouseLeave);
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
+      container.addEventListener('touchmove', handleTouchMove, { passive: true });
 
       return () => {
         container.removeEventListener('mousemove', handleMouseMove);
         container.removeEventListener('mouseenter', handleMouseEnter);
         container.removeEventListener('mouseleave', handleMouseLeave);
+        container.removeEventListener('touchstart', handleTouchStart);
+        container.removeEventListener('touchmove', handleTouchMove);
       };
     }, [
       resetControlsTimeout,
@@ -1000,82 +1032,147 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
       resetControlsTimeout();
     };
 
-    // Touch haptics - Double tap to skip
+    // Touch gesture handling - Improved single tap vs double tap detection
     useEffect(() => {
       const container = containerRef.current;
       if (!container) return;
 
+      let singleTapTimer: NodeJS.Timeout | null = null;
+      let touchStartTime = 0;
+      let touchStartX = 0;
+      let touchStartY = 0;
+
       const handleTouchStart = (e: TouchEvent) => {
-        // Prevent default only for double tap gestures
-        if (tapCount === 1) {
-          e.preventDefault();
-        }
+        if (e.touches.length === 0) return;
+
+        const touch = e.touches[0];
+        touchStartTime = Date.now();
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
       };
 
       const handleTouchEnd = (e: TouchEvent) => {
-        const now = Date.now();
+        if (e.changedTouches.length === 0) return;
+
         const touch = e.changedTouches[0];
-        const rect = container.getBoundingClientRect();
-        const x = touch.clientX - rect.left;
-        const isLeftSide = x < rect.width / 2;
+        const now = Date.now();
+        const touchDuration = now - touchStartTime;
+        const touchMoveX = Math.abs(touch.clientX - touchStartX);
+        const touchMoveY = Math.abs(touch.clientY - touchStartY);
 
-        // Check for double tap (within 300ms)
-        if (now - lastTapTime < 300) {
-          setTapCount((prev) => prev + 1);
+        // Check if this was a tap (not a swipe)
+        const isTap = touchDuration < 300 && touchMoveX < 10 && touchMoveY < 10;
 
-          // Double tap detected
-          if (tapCount === 1) {
-            e.preventDefault();
-
-            // WATCH PARTY CONTROL LOCK: Only hosts can skip in watch parties
-            if (isWatchParty && !isHost) {
-              console.log('🔒 Non-host member blocked from skipping - host-only mode');
-              return;
-            }
-
-            // Trigger haptic feedback if available
-            if ('vibrate' in navigator) {
-              navigator.vibrate(50);
-            }
-
-            // Skip based on tap side
-            if (isLeftSide) {
-              console.log('⏪ Double tap left: Skip backward 10s');
-              skip(-10);
-            } else {
-              console.log('⏩ Double tap right: Skip forward 10s');
-              skip(10);
-            }
-
-            // Show visual feedback
-            setShowKeyboardHint(true);
-            setTimeout(() => setShowKeyboardHint(false), 1500);
-
-            setTapCount(0);
-          }
-        } else {
-          setTapCount(1);
+        if (!isTap) {
+          // Not a tap, just show controls
+          resetControlsTimeout();
+          return;
         }
 
-        setLastTapTime(now);
+        const rect = container.getBoundingClientRect();
+        const x = touch.clientX - rect.left;
+        const y = touch.clientY - rect.top;
+
+        // Check if tap is in the control area (bottom 20% of screen)
+        const isControlArea = y > rect.height * 0.8;
+
+        // If tap is on controls, let the button handle it
+        if (isControlArea) {
+          return;
+        }
+
+        const isLeftSide = x < rect.width / 2;
+        const timeSinceLastTap = now - lastTapTime;
+
+        // Check for double tap (within 400ms for better mobile UX)
+        if (timeSinceLastTap < 400 && tapCount === 1) {
+          // Double tap detected!
+          e.preventDefault();
+
+          if (singleTapTimer) {
+            clearTimeout(singleTapTimer);
+            singleTapTimer = null;
+          }
+
+          // WATCH PARTY CONTROL LOCK: Only hosts can skip in watch parties
+          if (isWatchParty && !isHost) {
+            console.log('🔒 Non-host member blocked from skipping - host-only mode');
+            setTapCount(0);
+            return;
+          }
+
+          // Trigger haptic feedback if available
+          if ('vibrate' in navigator) {
+            navigator.vibrate(50);
+          }
+
+          // Skip based on tap side
+          if (isLeftSide) {
+            console.log('⏪ Double tap left: Skip backward 10s');
+            skip(-10);
+          } else {
+            console.log('⏩ Double tap right: Skip forward 10s');
+            skip(10);
+          }
+
+          // Show visual feedback
+          setShowKeyboardHint(true);
+          setTimeout(() => setShowKeyboardHint(false), 1500);
+
+          setTapCount(0);
+          setLastTapTime(0);
+        } else {
+          // First tap - wait to see if there's a second tap
+          setTapCount(1);
+          setLastTapTime(now);
+
+          // Set timer to handle single tap (show controls)
+          if (singleTapTimer) {
+            clearTimeout(singleTapTimer);
+          }
+
+          singleTapTimer = setTimeout(() => {
+            // Single tap confirmed - toggle controls
+            console.log('👆 Single tap: Toggling controls');
+
+            if (showControls) {
+              // If controls are shown, single tap can also toggle play/pause
+              if (!showQualityMenu && !showSpeedMenu) {
+                togglePlay();
+              }
+            } else {
+              // If controls are hidden, show them
+              resetControlsTimeout();
+            }
+
+            setTapCount(0);
+            singleTapTimer = null;
+          }, 400); // Wait 400ms to distinguish from double tap
+        }
       };
 
-      // Clear tap count after timeout
-      const clearTapCount = () => {
-        setTapCount(0);
-      };
-
-      const tapTimeout = setTimeout(clearTapCount, 300);
-
-      container.addEventListener('touchstart', handleTouchStart, { passive: false });
+      container.addEventListener('touchstart', handleTouchStart, { passive: true });
       container.addEventListener('touchend', handleTouchEnd, { passive: false });
 
       return () => {
-        clearTimeout(tapTimeout);
+        if (singleTapTimer) {
+          clearTimeout(singleTapTimer);
+        }
         container.removeEventListener('touchstart', handleTouchStart);
         container.removeEventListener('touchend', handleTouchEnd);
       };
-    }, [tapCount, lastTapTime, skip, isWatchParty, isHost]);
+    }, [
+      tapCount,
+      lastTapTime,
+      skip,
+      isWatchParty,
+      isHost,
+      showControls,
+      showQualityMenu,
+      showSpeedMenu,
+      togglePlay,
+      resetControlsTimeout,
+    ]);
 
     // Enhanced keyboard controls
     useEffect(() => {
@@ -1754,12 +1851,28 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(
           )}
         </AnimatePresence>
 
-        {/* Click overlay for play/pause when controls are hidden */}
+        {/* Click/Touch overlay when controls are hidden - Mobile optimized */}
         {!showControls && !videoError && !isLoading && (
           <div
             className="absolute inset-0 cursor-pointer z-5"
-            onClick={togglePlay}
-            onDoubleClick={toggleFullscreen}
+            onClick={(e) => {
+              e.stopPropagation();
+              // On desktop click, just show controls
+              if (!isMobile) {
+                console.log('🖱️ Overlay clicked: Showing controls');
+                resetControlsTimeout();
+              }
+            }}
+            onDoubleClick={(e) => {
+              e.stopPropagation();
+              toggleFullscreen();
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              // On mobile touch, show controls - gesture handler will take care of play/pause and skip
+              console.log('👆 Overlay touched: Showing controls');
+              resetControlsTimeout();
+            }}
           />
         )}
 

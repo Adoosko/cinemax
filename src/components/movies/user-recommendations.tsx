@@ -1,3 +1,4 @@
+// components/movies/UserRecommendations.tsx
 'use client';
 
 import {
@@ -8,25 +9,23 @@ import {
   CarouselPrevious,
 } from '@/components/ui/carousel';
 import { useMemo } from 'react';
-import { MovieCard } from './movie-card';
 
-// Use the Movie type from the cached data
 import { type Movie } from '@/lib/data/movies-with-use-cache';
-
 import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
 import { useWatchHistory } from '@/lib/hooks/use-watch-history';
+import { MovieCard } from './movie-card';
 import { useMoviesContext } from './movies-context';
 
-export function UserRecommendations() {
+export default function UserRecommendations() {
   const { movies, isLoading } = useMoviesContext();
   const { watchHistory } = useWatchHistory();
   const { continueWatching: seriesContinueWatching } = useSeriesContinueWatching();
 
-  // Create recommendations by taking a random subset of unwatched movies
+  // Memoized logic: filter out watched/currently watching and shuffle
   const recommendedMovies = useMemo(() => {
     if (!movies || movies.length === 0) return [];
 
-    // Get IDs of watched movies and movies currently being watched
+    // IDs of watched and in-progress movies
     const watchedMovieIds = new Set(watchHistory.map((item) => item.movieId));
     const watchingMovieIds = new Set(
       watchHistory
@@ -34,12 +33,12 @@ export function UserRecommendations() {
         .map((item) => item.movieId)
     );
 
-    // Filter out watched and currently watching movies
+    // Movies the user hasn't started yet
     const unwatchedMovies = movies.filter(
       (movie) => !watchedMovieIds.has(movie.id) && !watchingMovieIds.has(movie.id)
     );
 
-    // Create a copy of the unwatched movies array and shuffle it
+    // Shuffle and limit recommendations
     return [...unwatchedMovies].sort(() => 0.5 - Math.random()).slice(0, 8);
   }, [movies, watchHistory]);
 
@@ -58,7 +57,6 @@ export function UserRecommendations() {
   return (
     <div className="mb-12 pb-24">
       <h2 className="text-2xl font-bold text-white mb-6">What to Watch Next (Trust Me)</h2>
-
       <Carousel
         opts={{
           align: 'start',
@@ -72,7 +70,8 @@ export function UserRecommendations() {
               key={movie.id}
               className="pl-4 basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6"
             >
-              <MovieCard movie={movie} index={index} showDetails />
+              <MovieCard movie={movie} index={index} showDetails priority={index < 3} />
+              {/* priority={index < 3}: Above-the-fold images are fast for LCP */}
             </CarouselItem>
           ))}
         </CarouselContent>

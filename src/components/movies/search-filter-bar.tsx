@@ -1,10 +1,5 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { Calendar, ChevronDown, Film, Filter, Star, X } from 'lucide-react';
-import { useState } from 'react';
-
-// shadcn/ui imports
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -17,15 +12,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Calendar, ChevronDown, Film, Filter, Star, X } from 'lucide-react';
+import { useState } from 'react';
 
 export interface Genre {
   id: string;
   name: string;
 }
-
 export interface FilterOptions {
-  genres?: string[]; // Changed to array for multiple selection
-  years?: number[]; // Changed to array for multiple selection
+  genres?: string[];
+  years?: number[];
   rating?: number;
   sortBy?: 'popularity' | 'rating' | 'releaseDate' | 'title';
 }
@@ -50,10 +47,8 @@ export function SearchFilterBar({
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [isYearPopoverOpen, setIsYearPopoverOpen] = useState(false);
 
-  // Generate years from current year down to 1980
   const currentYear = new Date().getFullYear();
-  const years = Array.from({ length: currentYear - 1979 }, (_, i) => currentYear - i);
-
+  const years = Array.from({ length: currentYear - 1899 }, (_, i) => currentYear - i);
   const ratings = [9, 8, 7, 6, 5, 4];
 
   const sortOptions = [
@@ -63,6 +58,7 @@ export function SearchFilterBar({
     { id: 'title', name: 'A-Z' },
   ];
 
+  // Update search and filters handlers
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchTerm(value);
@@ -78,26 +74,14 @@ export function SearchFilterBar({
   const handleYearToggle = (year: number, checked: boolean) => {
     const currentYears = filters.years || [];
     let newYears: number[];
-
-    if (checked) {
-      newYears = [...currentYears, year];
-    } else {
-      newYears = currentYears.filter((y) => y !== year);
-    }
-
+    newYears = checked ? [...currentYears, year] : currentYears.filter((y) => y !== year);
     handleFilterChange('years', newYears.length > 0 ? newYears : undefined);
   };
 
   const handleGenreToggle = (genreId: string, checked: boolean) => {
     const currentGenres = filters.genres || [];
     let newGenres: string[];
-
-    if (checked) {
-      newGenres = [...currentGenres, genreId];
-    } else {
-      newGenres = currentGenres.filter((g) => g !== genreId);
-    }
-
+    newGenres = checked ? [...currentGenres, genreId] : currentGenres.filter((g) => g !== genreId);
     handleFilterChange('genres', newGenres.length > 0 ? newGenres : undefined);
   };
 
@@ -105,7 +89,6 @@ export function SearchFilterBar({
     setSearchTerm('');
     onSearch('');
   };
-
   const clearAllFilters = () => {
     setFilters({});
     onFilterChange({});
@@ -135,7 +118,7 @@ export function SearchFilterBar({
           onClear={clearSearch}
         />
 
-        {/* Filter Controls - Using AnimatePresence instead of DropdownMenu */}
+        {/* Filter Controls */}
         <div className="flex items-center justify-between">
           <Button
             onClick={() => setIsFilterOpen(!isFilterOpen)}
@@ -153,7 +136,6 @@ export function SearchFilterBar({
               <ChevronDown className="w-4 h-4" />
             </motion.div>
           </Button>
-
           {activeFiltersCount > 0 && (
             <motion.button
               initial={{ opacity: 0, x: 20 }}
@@ -178,7 +160,7 @@ export function SearchFilterBar({
             >
               {/* Genre Filter */}
               <div>
-                <label className="block text-white text-sm font-semibold mb-2 flex items-center">
+                <label className=" text-white text-sm font-semibold mb-2 flex items-center">
                   <Film className="w-4 h-4 mr-2 text-netflix-red" />
                   Genres
                 </label>
@@ -218,9 +200,9 @@ export function SearchFilterBar({
                 </Popover>
               </div>
 
-              {/* Multi-Year Filter */}
+              {/* Year Filter */}
               <div>
-                <label className=" text-white text-sm font-semibold mb-2 flex items-center">
+                <label className="text-white text-sm font-semibold mb-2 flex items-center">
                   <Calendar className="w-4 h-4 mr-2 text-netflix-red" />
                   Years
                 </label>
@@ -238,7 +220,7 @@ export function SearchFilterBar({
                   </PopoverTrigger>
                   <PopoverContent className="w-64 max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-netflix-red scrollbar-track-white/10">
                     <div className="space-y-2">
-                      {years.slice(0, 15).map((year) => (
+                      {years.slice(0, 100).map((year) => (
                         <div key={year} className="flex items-center space-x-2">
                           <Checkbox
                             id={`year-${year}`}
@@ -262,7 +244,7 @@ export function SearchFilterBar({
 
               {/* Rating Filter */}
               <div>
-                <label className="block text-white text-sm font-semibold mb-2 flex items-center">
+                <label className=" text-white text-sm font-semibold mb-2 flex items-center">
                   <Star className="w-4 h-4 mr-2 text-netflix-red" />
                   Min Rating
                 </label>
@@ -295,7 +277,7 @@ export function SearchFilterBar({
 
               {/* Sort Filter */}
               <div>
-                <label className="block text-white text-sm font-semibold mb-2 flex items-center">
+                <label className=" text-white text-sm font-semibold mb-2 flex items-center">
                   <Filter className="w-4 h-4 mr-2 text-netflix-red" />
                   Sort By
                 </label>
@@ -323,7 +305,7 @@ export function SearchFilterBar({
           )}
         </AnimatePresence>
 
-        {/* Active Filters Display */}
+        {/* Active Filters */}
         {activeFiltersCount > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
