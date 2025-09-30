@@ -9,7 +9,11 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 
-export function ContinueWatchingTray() {
+interface ContinueWatchingTrayProps {
+  filterType?: 'movie' | 'series';
+}
+
+export function ContinueWatchingTray({ filterType }: ContinueWatchingTrayProps = {}) {
   const { isAuthenticated } = useAuth();
   const {
     watchHistory,
@@ -35,11 +39,13 @@ export function ContinueWatchingTray() {
   const combinedContinueWatching = [
     ...watchHistory.map((item) => ({ ...item, type: 'movie' as const })),
     ...seriesContinueWatching.map((item) => ({ ...item, type: 'series' as const })),
-  ].sort((a, b) => {
-    const aDate = a.type === 'movie' ? a.updatedAt : a.lastActive;
-    const bDate = b.type === 'movie' ? b.updatedAt : b.lastActive;
-    return new Date(bDate).getTime() - new Date(aDate).getTime();
-  });
+  ]
+    .filter((item) => !filterType || item.type === filterType)
+    .sort((a, b) => {
+      const aDate = a.type === 'movie' ? a.updatedAt : a.lastActive;
+      const bDate = b.type === 'movie' ? b.updatedAt : b.lastActive;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
 
   // Track if we've ever had watch history to determine if we should show skeleton
   useEffect(() => {
@@ -105,23 +111,29 @@ export function ContinueWatchingTray() {
       {/* Sticky continue watching bar */}
       {isStickyVisible && combinedContinueWatching.length > 0 && (
         <div className="fixed top-16 left-0 right-0 z-20 bg-black/90 backdrop-blur-lg border-b border-white/20 animate-in slide-in-from-top duration-300 shadow-lg">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="max-w-7xl mx-auto px-4 py-2 md:py-4 flex items-center justify-between">
             <button
               onClick={() => sectionRef.current?.scrollIntoView({ behavior: 'smooth' })}
-              className="flex items-center space-x-3 text-white hover:text-netflix-red transition-colors"
+              className="flex items-center space-x-2 md:space-x-3 text-white hover:text-netflix-red transition-colors"
             >
-              <div className="p-2 rounded-full bg-white/10">
-                <ChevronUp className="w-5 h-5" />
+              <div className="p-1.5 md:p-2 rounded-full bg-white/10">
+                <ChevronUp className="w-4 h-4 md:w-5 md:h-5" />
               </div>
               <div className="text-left">
-                <span className="text-base font-semibold block">Continue Watching</span>
+                <span className="text-sm md:text-base font-semibold block">
+                  {filterType === 'movie'
+                    ? 'Movie Night Revival'
+                    : filterType === 'series'
+                      ? 'Binge Watch Checkpoint'
+                      : 'Continue Watching'}
+                </span>
                 <span className="text-xs text-gray-300">
                   {combinedContinueWatching.length} items
                 </span>
               </div>
             </button>
-            <div className="flex items-center space-x-2">
-              {combinedContinueWatching.slice(0, 4).map((item, index) => {
+            <div className="flex items-center space-x-1 md:space-x-2">
+              {combinedContinueWatching.slice(0, 2).map((item, index) => {
                 const imageUrl = item.type === 'movie' ? item.movie.posterUrl : item.seriesCover;
                 const title = item.type === 'movie' ? item.movie.title : item.seriesTitle;
                 return (
@@ -133,18 +145,18 @@ export function ContinueWatchingTray() {
                     }}
                     className="relative"
                   >
-                    <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white/30 hover:border-netflix-red transition-colors">
+                    <div className="w-8 h-8 md:w-12 md:h-12 rounded-lg overflow-hidden border-2 border-white/30 hover:border-netflix-red transition-colors">
                       {imageUrl ? (
                         <Image
                           src={imageUrl}
                           alt={title}
-                          width={48}
-                          height={72}
+                          width={32}
+                          height={48}
                           className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full bg-gray-700 flex items-center justify-center">
-                          <div className="w-4 h-4 bg-white/50 rounded-sm"></div>
+                          <div className="w-3 h-3 md:w-4 md:h-4 bg-white/50 rounded-sm"></div>
                         </div>
                       )}
                     </div>
@@ -157,8 +169,14 @@ export function ContinueWatchingTray() {
       )}
 
       <div ref={sectionRef} className="py-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Continue Watching</h2>
-        <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 md:gap-4 md:overflow-x-visible">
+        <h2 className="text-2xl font-bold text-white mb-4">
+          {filterType === 'movie'
+            ? 'Movie Night Revival'
+            : filterType === 'series'
+              ? 'Binge Watch Checkpoint'
+              : 'Continue Watching'}
+        </h2>
+        <div className="flex gap-4 overflow-x-auto pb-2">
           {combinedContinueWatching.map((item) => {
             const href =
               item.type === 'movie'
@@ -178,7 +196,7 @@ export function ContinueWatchingTray() {
                 href={href}
                 id={`continue-${item.type}-${item.id}`}
                 key={`${item.type}-${item.id}`}
-                className="group relative overflow-hidden rounded-lg transition-all duration-300 flex-shrink-0 w-32 sm:w-auto"
+                className="group relative overflow-hidden rounded-lg transition-all duration-300 flex-shrink-0 w-48"
               >
                 <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-gray-800">
                   {imageUrl ? (
@@ -238,15 +256,15 @@ export function ContinueWatchingTray() {
   );
 }
 
-function ContinueWatchingSkeletonTray() {
+export function ContinueWatchingSkeletonTray() {
   return (
     <div className="py-8">
       <div className="h-8 w-64 bg-white/10 rounded mb-4 animate-pulse"></div>
-      <div className="flex gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 md:gap-4 md:overflow-x-visible">
+      <div className="flex gap-4 overflow-x-auto pb-2">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="group relative overflow-hidden rounded-lg animate-pulse flex-shrink-0 w-32 sm:w-auto"
+            className="group relative overflow-hidden rounded-lg animate-pulse flex-shrink-0 w-48"
           >
             <div className="aspect-[2/3] relative overflow-hidden rounded-lg bg-white/10 ">
               {/* Poster placeholder with Netflix-style dark gradient */}

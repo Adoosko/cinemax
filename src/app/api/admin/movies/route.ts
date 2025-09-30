@@ -54,6 +54,8 @@ export async function POST(request: NextRequest) {
 
     // Revalidate the movies list page to show new content immediately
     revalidatePath('/movies');
+    revalidatePath('/admin/movies');
+    revalidatePath(`/movies/${movie.slug}`);
 
     return NextResponse.json({ movie }, { status: 201 });
   } catch (error) {

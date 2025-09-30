@@ -1,4 +1,7 @@
-import { ContinueWatchingTray } from '@/components/movies/continue-watching-tray';
+import {
+  ContinueWatchingSkeletonTray,
+  ContinueWatchingTray,
+} from '@/components/movies/continue-watching-tray';
 import { PerformanceTracker } from '@/components/performance/performance-tracker';
 import { CachedPublicSeriesData } from '@/components/series/cached-series-data';
 import { SeriesProvider } from '@/components/series/series-context';
@@ -7,7 +10,14 @@ import { SeriesGrid } from '@/components/series/series-grid';
 import { SeriesRecommendations } from '@/components/series/series-recommendations';
 import { NetflixBg } from '@/components/ui/netflix-bg';
 import { MovieGridSkeleton, RecommendationsSkeleton } from '@/components/ui/skeletons';
+import { Permanent_Marker } from 'next/font/google';
 import { Suspense } from 'react';
+
+const permanentMarker = Permanent_Marker({
+  weight: '400',
+  subsets: ['latin'],
+  display: 'swap',
+});
 
 // PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
 export const experimental_ppr = true;
@@ -15,9 +25,29 @@ export const experimental_ppr = true;
 export default function SeriesPage() {
   return (
     <NetflixBg variant="solid" className="min-h-screen">
-      {/* Static header - pre-rendered */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Dynamic content with Suspense */}
+      {/* Page Header */}
+      <div className="relative pt-20 md:pt-12 py-16 md:py-24 bg-black overflow-hidden">
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40 animate-pulse"
+          style={{ animationDuration: '10s' }}
+        ></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1
+            className={`text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 tracking-tight drop-shadow-2xl ${permanentMarker.className}`}
+          >
+            SERIES
+          </h1>
+          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
+            Explore classic series from the public domain
+          </p>
+          <div className="mt-8 flex justify-center">
+            <div className="w-24 h-1 bg-netflix-red rounded-full"></div>
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic content with Suspense */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         <Suspense fallback={<SeriesPageSkeleton />}>
           <SeriesPageContent />
         </Suspense>
@@ -35,8 +65,8 @@ async function SeriesPageContent() {
       <PerformanceTracker pageName="series-listing" />
       <SeriesProvider initialSeries={cachedData.series}>
         {/* Continue Watching Tray */}
-        <Suspense fallback={null}>
-          <ContinueWatchingTray />
+        <Suspense fallback={<ContinueWatchingSkeletonTray />}>
+          <ContinueWatchingTray filterType="series" />
         </Suspense>
 
         <Suspense fallback={<RecommendationsSkeleton />}>

@@ -7,6 +7,7 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from '@/components/ui/carousel';
+import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
 import { useMemo } from 'react';
 import { SeriesCard } from './series-card';
 import { Series } from './series-context';
@@ -20,18 +21,24 @@ export function SeriesRecommendations({
   allSeries = [],
   currentSeriesId,
 }: SeriesRecommendationsProps) {
-  // Create recommendations by taking a random subset of series, excluding current series
+  const { continueWatching: seriesContinueWatching } = useSeriesContinueWatching();
+
+  // Create recommendations by taking a random subset of unwatched series, excluding current series
   const recommendedSeries = useMemo(() => {
     if (!allSeries || allSeries.length === 0) return [];
 
-    // Filter out current series and take a random subset
-    const filteredSeries = currentSeriesId
-      ? allSeries.filter((series) => series.id !== currentSeriesId)
-      : allSeries;
+    // Get IDs of series currently being watched
+    const watchingSeriesIds = new Set(seriesContinueWatching.map((item: any) => item.seriesId));
 
-    // Create a copy of the series array and shuffle it
+    // Filter out current series and series currently being watched
+    const filteredSeries = allSeries.filter(
+      (series) =>
+        (!currentSeriesId || series.id !== currentSeriesId) && !watchingSeriesIds.has(series.id)
+    );
+
+    // Create a copy of the filtered series array and shuffle it
     return [...filteredSeries].sort(() => 0.5 - Math.random()).slice(0, 8);
-  }, [allSeries, currentSeriesId]);
+  }, [allSeries, currentSeriesId, seriesContinueWatching]);
 
   if (recommendedSeries.length === 0) {
     return null;
@@ -39,7 +46,9 @@ export function SeriesRecommendations({
 
   return (
     <div className="mb-12">
-      <h2 className="text-2xl font-bold text-white mb-6">Recommended Series</h2>
+      <h2 className="text-2xl font-bold text-white mb-6">
+        More Shows to Binge (You Will Thank Us)
+      </h2>
 
       <Carousel
         opts={{

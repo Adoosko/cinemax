@@ -13,18 +13,35 @@ import { MovieCard } from './movie-card';
 // Use the Movie type from the cached data
 import { type Movie } from '@/lib/data/movies-with-use-cache';
 
+import { useSeriesContinueWatching } from '@/lib/hooks/use-series-continue-watching';
+import { useWatchHistory } from '@/lib/hooks/use-watch-history';
 import { useMoviesContext } from './movies-context';
 
 export function UserRecommendations() {
   const { movies, isLoading } = useMoviesContext();
+  const { watchHistory } = useWatchHistory();
+  const { continueWatching: seriesContinueWatching } = useSeriesContinueWatching();
 
-  // Create recommendations by taking a random subset of movies
+  // Create recommendations by taking a random subset of unwatched movies
   const recommendedMovies = useMemo(() => {
     if (!movies || movies.length === 0) return [];
 
-    // Create a copy of the movies array and shuffle it
-    return [...movies].sort(() => 0.5 - Math.random()).slice(0, 8);
-  }, [movies]);
+    // Get IDs of watched movies and movies currently being watched
+    const watchedMovieIds = new Set(watchHistory.map((item) => item.movieId));
+    const watchingMovieIds = new Set(
+      watchHistory
+        .filter((item) => item.progress > 0 && item.progress < 1)
+        .map((item) => item.movieId)
+    );
+
+    // Filter out watched and currently watching movies
+    const unwatchedMovies = movies.filter(
+      (movie) => !watchedMovieIds.has(movie.id) && !watchingMovieIds.has(movie.id)
+    );
+
+    // Create a copy of the unwatched movies array and shuffle it
+    return [...unwatchedMovies].sort(() => 0.5 - Math.random()).slice(0, 8);
+  }, [movies, watchHistory]);
 
   if (isLoading) {
     return (
@@ -40,7 +57,7 @@ export function UserRecommendations() {
 
   return (
     <div className="mb-12 pb-24">
-      <h2 className="text-2xl font-bold text-white mb-6">Recommended For You</h2>
+      <h2 className="text-2xl font-bold text-white mb-6">What to Watch Next (Trust Me)</h2>
 
       <Carousel
         opts={{

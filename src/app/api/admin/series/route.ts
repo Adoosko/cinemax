@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
 
     // Revalidate the series list page to show new content immediately
     revalidatePath('/series');
+    revalidatePath('/admin/series');
+    revalidatePath(`/series/${series.slug}`);
 
     return NextResponse.json({ success: true, series });
   } catch (error) {

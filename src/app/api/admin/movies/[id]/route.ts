@@ -55,6 +55,8 @@ export async function DELETE(
 
     // Revalidate the movies list page
     revalidatePath('/movies');
+    revalidatePath('/admin/movies');
+    revalidatePath(`/movies/${existingMovie.slug}`);
 
     return NextResponse.json({ message: 'Movie deleted successfully' });
   } catch (error) {
@@ -113,6 +115,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Revalidate the movies list and specific movie page
     revalidatePath('/movies');
     revalidatePath(`/movies/${updatedMovie.slug}`);
+    revalidatePath('/admin/movies');
 
     return NextResponse.json({ movie: updatedMovie });
   } catch (error) {

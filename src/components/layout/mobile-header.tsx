@@ -18,10 +18,10 @@ export function MobileHeader() {
   return (
     <>
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 bg-black/95 backdrop-blur-xl border-b border-white/10">
-        <div className="flex items-center justify-between h-14 px-4">
+        <div className="flex items-center justify-between h-16 px-4">
           <Link href="/" className="flex items-center group">
             <div className="flex items-center">
-              <Image className="ml-2" src="/text-logo.png" alt="CINEMX" width={80} height={44} />
+              <Image className="ml-2" src="/text-logo.png" alt="CINEMX" width={120} height={44} />
             </div>
           </Link>
 

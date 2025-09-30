@@ -116,6 +116,11 @@ export async function DELETE(
     }
 
     const { id } = await params;
+    const data = await request.json();
+
+    const slug = data.slug;
+
+    // Delete the series
 
     await prisma.series.delete({
       where: { id },
@@ -123,6 +128,8 @@ export async function DELETE(
 
     // Revalidate the series list page
     revalidatePath('/series');
+    revalidatePath('/admin/series');
+    revalidatePath(`/series/${slug}`);
 
     return NextResponse.json({ success: true });
   } catch (error) {
