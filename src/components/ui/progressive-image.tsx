@@ -1,7 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ProgressiveImageProps {
   src: string;
@@ -15,6 +15,7 @@ interface ProgressiveImageProps {
   sizes?: string;
   blurDataURL?: string;
   placeholder?: 'blur' | 'empty';
+  fetchPriority?: 'high' | 'low' | 'auto';
 }
 
 export function ProgressiveImage({
@@ -25,14 +26,27 @@ export function ProgressiveImage({
   fill = false,
   className = '',
   priority = false,
-  quality = 75,
+  quality,
   sizes,
   blurDataURL,
   placeholder = 'blur',
+  fetchPriority,
   ...props
 }: ProgressiveImageProps) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Mobile-aware quality: lower quality on mobile to reduce bandwidth
+  const imageQuality = quality !== undefined ? quality : isMobile ? 60 : 75;
 
   // Generate a simple blur placeholder if none provided
   const defaultBlurDataURL =
@@ -69,12 +83,13 @@ export function ProgressiveImage({
           isLoaded ? 'opacity-100' : 'opacity-0'
         }`}
         priority={priority}
-        quality={quality}
+        quality={imageQuality}
         sizes={sizes}
         placeholder={placeholder}
         blurDataURL={defaultBlurDataURL}
         onLoad={() => setIsLoaded(true)}
         onError={() => setHasError(true)}
+        fetchPriority={fetchPriority}
         {...props}
       />
 

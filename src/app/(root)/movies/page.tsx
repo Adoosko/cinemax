@@ -16,7 +16,7 @@ import { Suspense } from 'react';
 const permanentMarker = Permanent_Marker({
   weight: '400',
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional',
 });
 
 // PPR configuration - static parts pre-rendered at build time, dynamic parts on-demand
@@ -25,24 +25,26 @@ export const experimental_ppr = true;
 export default function MoviesPage() {
   return (
     <NetflixBg variant="solid" className="min-h-screen">
-      {/* Page Header */}
-      <div className="relative pt-20 md:pt-12 py-16 md:py-24 bg-black overflow-hidden">
+      {/* Page Header - Mobile Optimized */}
+      <div className="relative pt-20 md:pt-12 py-12 md:py-24 bg-black overflow-hidden">
+        {/* Mobile: Static gradient, Desktop: Animated */}
         <div
-          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 via-black/60 to-gray-800/80 animate-pulse"
+          className="absolute inset-0 bg-gradient-to-br from-gray-900/80 to-gray-800/80 md:animate-pulse"
           style={{ animationDuration: '8s' }}
         ></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-black/20 to-black/40"></div>
+        {/* Single gradient layer */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/40"></div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h1
-            className={`text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 tracking-tight drop-shadow-2xl ${permanentMarker.className}`}
+            className={`text-4xl md:text-7xl lg:text-8xl font-black text-white mb-4 md:mb-6 tracking-tight ${permanentMarker.className}`}
           >
             MOVIES{' '}
           </h1>
-          <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
+          <p className="text-lg md:text-2xl text-gray-200 max-w-2xl mx-auto leading-relaxed">
             Explore classic movies from archive
           </p>
-          <div className="mt-8 flex justify-center">
-            <div className="w-24 h-1 bg-netflix-red rounded-full"></div>
+          <div className="mt-4 md:mt-8 flex justify-center">
+            <div className="w-16 md:w-24 h-1 bg-netflix-red rounded-full"></div>
           </div>
         </div>
       </div>

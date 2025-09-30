@@ -16,7 +16,18 @@ const nextConfig: NextConfig = {
       static: 300,
     },
     // Optimize bundle splitting
-    optimizePackageImports: ['lucide-react', '@radix-ui/react-avatar', '@radix-ui/react-button'],
+    optimizePackageImports: [
+      'lucide-react',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-button',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-scroll-area',
+      '@radix-ui/react-popover',
+      '@radix-ui/react-select',
+      'framer-motion',
+      'vaul',
+    ],
     // Server-side optimization
     serverMinification: true,
   },
@@ -36,9 +47,9 @@ const nextConfig: NextConfig = {
     minimumCacheTTL: 3600, // 1 hour cache
     dangerouslyAllowSVG: true,
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
-    // Optimize for different screen sizes
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // Optimize for different screen sizes - mobile-first
+    deviceSizes: [375, 640, 750, 828, 1080, 1200, 1920, 2048],
+    imageSizes: [16, 32, 48, 64, 96, 128, 192, 256, 384],
   },
 
   // Compiler optimizations

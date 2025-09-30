@@ -39,8 +39,10 @@ export function SeriesCard({
               alt={series.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
-              priority={priority || index < 3}
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+              priority={priority || index < 6}
+              fetchPriority={index < 6 ? 'high' : 'auto'}
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, (max-width: 1280px) 20vw, 16vw"
+              quality={50}
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300" />

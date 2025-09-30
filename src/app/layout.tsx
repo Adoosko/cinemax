@@ -1,4 +1,5 @@
 import { FloatingDock } from '@/components/layout/floating-dock';
+import { Footer } from '@/components/layout/footer';
 import { MobileHeader } from '@/components/layout/mobile-header';
 import { Navbar } from '@/components/layout/navbar';
 import { SubscriptionProvider } from '@/lib/contexts/subscription-context';
@@ -29,6 +30,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <FloatingDock />
           </div>
           <div className="pb-20">{children}</div>
+          <div className="hidden md:block">
+            <Footer />
+          </div>
 
           <Toaster />
         </SubscriptionProvider>

@@ -2,12 +2,21 @@
 
 import { Button } from '@/components/ui/button';
 import { CircularProgress } from '@/components/ui/circular-progress';
-import { Drawer, DrawerContent } from '@/components/ui/drawer';
 import { NetflixCard } from '@/components/ui/glass-card';
 import { ProgressiveImage } from '@/components/ui/progressive-image';
 import { Clock, Film, Play } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+
+// Lazy load drawer components to reduce initial bundle size
+const Drawer = dynamic(() => import('@/components/ui/drawer').then((mod) => mod.Drawer), {
+  ssr: false,
+});
+const DrawerContent = dynamic(
+  () => import('@/components/ui/drawer').then((mod) => mod.DrawerContent),
+  { ssr: false }
+);
 
 // Use the Movie type from the cached data
 import { type Movie } from '@/lib/data/movies-with-use-cache';
@@ -67,8 +76,9 @@ export function MovieCard({
               alt={movie.title}
               fill
               className="object-cover transition-transform duration-700 group-hover:scale-110"
-              priority={priority || index < 3}
-              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+              priority={priority || index < 4}
+              fetchPriority={index < 4 ? 'high' : 'auto'}
+              sizes="(max-width: 640px) 45vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-100 md:opacity-0 md:group-hover:opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity duration-300" />
@@ -141,7 +151,7 @@ export function MovieCard({
                     width={96}
                     height={144}
                     className="w-full h-full object-cover"
-                    quality={60}
+                    quality={50}
                   />
                 )}
               </div>

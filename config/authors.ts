@@ -10,7 +10,7 @@ export const authors: Author[] = [
     name: 'Adrián Finik',
     email: 'adoos.developer@gmail.com',
     url: 'https://adrianfinik.sk',
-    role: 'Project Author & Maintainer',
+    role: 'Project Author',
   },
 ];
 
