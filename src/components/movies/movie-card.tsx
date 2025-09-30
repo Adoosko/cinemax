@@ -45,10 +45,8 @@ export function MovieCard({
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const router = useRouter();
 
-  // Check if we're on mobile
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-
   const handleCardClick = () => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
     if (isMobile) {
       setIsDrawerOpen(true);
     } else {
@@ -59,11 +57,6 @@ export function MovieCard({
   const handlePlayMovie = () => {
     setIsDrawerOpen(false);
     router.push(`/movies/${movie.slug}/watch`);
-  };
-
-  const handleViewDetails = () => {
-    setIsDrawerOpen(false);
-    router.push(`/movies/${movie.slug}`);
   };
 
   return (
