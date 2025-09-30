@@ -1,6 +1,8 @@
 import { auth } from '@/lib/auth';
+import { slugify } from '@/lib/utils';
 import { PrismaClient } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { headers } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 
 const prisma = new PrismaClient();
@@ -11,9 +13,7 @@ export async function DELETE(
 ) {
   try {
     // Check authentication and admin role
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
+    const session = await auth.api.getSession({ headers: await headers() });
 
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -57,6 +57,7 @@ export async function DELETE(
     revalidatePath('/movies');
     revalidatePath('/admin/movies');
     revalidatePath(`/movies/${existingMovie.slug}`);
+    revalidatePath(`/movies/${existingMovie.slug}/watch`);
 
     return NextResponse.json({ message: 'Movie deleted successfully' });
   } catch (error) {
@@ -67,22 +68,13 @@ export async function DELETE(
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    // Check authentication and admin role
-    const session = await auth.api.getSession({
-      headers: request.headers,
-    });
-
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    if (session.user.role !== 'admin') {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-    }
-
     const { id } = await params;
     const movieId = id;
-    const data = await request.json();
+
+    const clonedRequest = request.clone();
+    const data = await clonedRequest.json();
+
+    // Check authentication and admin role
 
     // Check if movie exists
     const existingMovie = await prisma.movie.findUnique({
@@ -98,6 +90,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       where: { id: movieId },
       data: {
         title: data.title,
+        slug: slugify(data.title),
         description: data.description,
         duration: data.duration,
         genre: data.genre,
@@ -115,6 +108,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     // Revalidate the movies list and specific movie page
     revalidatePath('/movies');
     revalidatePath(`/movies/${updatedMovie.slug}`);
+    revalidatePath(`/movies/${updatedMovie.slug}/watch`);
     revalidatePath('/admin/movies');
 
     return NextResponse.json({ movie: updatedMovie });

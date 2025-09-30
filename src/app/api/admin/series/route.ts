@@ -81,6 +81,7 @@ export async function POST(request: NextRequest) {
     revalidatePath('/series');
     revalidatePath('/admin/series');
     revalidatePath(`/series/${series.slug}`);
+    // Initial seasons/episodes will be added separately, so no need to revalidate those yet
 
     return NextResponse.json({ success: true, series });
   } catch (error) {

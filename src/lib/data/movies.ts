@@ -120,6 +120,7 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     const response = await fetch(`${baseUrl}/api/admin/movies`, {
       method: 'POST',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
       },
@@ -145,12 +146,10 @@ export async function addMovie(movieData: Partial<Movie>): Promise<Movie | null>
 // Update a movie and revalidate the cache
 export async function updateMovie(id: string, movieData: Partial<Movie>): Promise<Movie | null> {
   try {
-    const url = new URL(
-      `/api/admin/movies/${id}`,
-      process.env.NEXT_PUBLIC_APP_URL || 'https://cinemx.adrianfinik.sk'
-    );
-    const response = await fetch(url, {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const response = await fetch(`${baseUrl}/api/admin/movies/${id}`, {
       method: 'PUT',
+      credentials: 'include', // Include cookies for authentication
       headers: {
         'Content-Type': 'application/json',
       },

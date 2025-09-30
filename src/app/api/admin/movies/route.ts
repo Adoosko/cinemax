@@ -56,6 +56,7 @@ export async function POST(request: NextRequest) {
     revalidatePath('/movies');
     revalidatePath('/admin/movies');
     revalidatePath(`/movies/${movie.slug}`);
+    revalidatePath(`/movies/${movie.slug}/watch`);
 
     return NextResponse.json({ movie }, { status: 201 });
   } catch (error) {
@@ -77,4 +78,14 @@ export async function GET() {
     console.error('Failed to fetch movies:', error);
     return NextResponse.json({ error: 'Failed to fetch movies' }, { status: 500 });
   }
+}
+export async function OPTIONS(request: NextRequest) {
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
 }

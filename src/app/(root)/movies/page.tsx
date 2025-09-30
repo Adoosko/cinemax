@@ -39,7 +39,7 @@ export default function MoviesPage() {
             MOVIES{' '}
           </h1>
           <p className="text-xl md:text-2xl text-gray-200 max-w-2xl mx-auto leading-relaxed drop-shadow-lg">
-            Explore classic movies from the public domain
+            Explore classic movies from archive
           </p>
           <div className="mt-8 flex justify-center">
             <div className="w-24 h-1 bg-netflix-red rounded-full"></div>

@@ -58,6 +58,9 @@ export async function DELETE(
     revalidatePath('/series');
     revalidatePath(`/series/${episode.season.series.slug}`);
     revalidatePath(`/series/${episode.season.series.slug}/season/${episode.season.number}`);
+    revalidatePath(
+      `/series/${episode.season.series.slug}/season/${episode.season.number}/episode/${episode.number}`
+    );
 
     return NextResponse.json({ success: true });
   } catch (error) {

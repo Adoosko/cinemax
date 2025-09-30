@@ -88,6 +88,17 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Revalidate the series list and specific series page
     revalidatePath('/series');
     revalidatePath(`/series/${series.slug}`);
+    // Revalidate all season/episode pages for this series
+    const seasons = await prisma.season.findMany({
+      where: { seriesId: id },
+      include: { episodes: true },
+    });
+    for (const season of seasons) {
+      revalidatePath(`/series/${series.slug}/season/${season.number}`);
+      for (const episode of season.episodes) {
+        revalidatePath(`/series/${series.slug}/season/${season.number}/episode/${episode.number}`);
+      }
+    }
 
     return NextResponse.json({ success: true, series });
   } catch (error) {
@@ -130,6 +141,7 @@ export async function DELETE(
     revalidatePath('/series');
     revalidatePath('/admin/series');
     revalidatePath(`/series/${slug}`);
+    // Note: All season/episode pages will be automatically invalidated when series is deleted
 
     return NextResponse.json({ success: true });
   } catch (error) {
