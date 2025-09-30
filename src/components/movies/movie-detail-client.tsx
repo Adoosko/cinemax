@@ -320,22 +320,6 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
       </LazyComponent>
 
       {/* Recommended Movies */}
-      <LazyComponent
-        fallback={
-          <div className="bg-netflix-black pt-4 px-2">
-            <div className="h-8 w-40 bg-white/10 rounded mb-4 animate-pulse"></div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="aspect-[2/3] bg-white/10 rounded animate-pulse"></div>
-              ))}
-            </div>
-          </div>
-        }
-      >
-        <div className="bg-netflix-black pt-4 px-2">
-          <DynamicSimilarMovies currentMovie={movie} allMovies={allMovies} />
-        </div>
-      </LazyComponent>
     </div>
   );
 }
