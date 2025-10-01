@@ -12,15 +12,16 @@ import { ArrowLeft, Heart, Play, Share } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 // Lazy load heavy components
-const DynamicCreateWatchPartyButton = dynamic(
-  () =>
-    import('@/components/watch-party/create-watch-party-button').then((mod) => ({
-      default: mod.CreateWatchPartyButton,
-    })),
-  { ssr: false }
-);
+// const DynamicCreateWatchPartyButton = dynamic(
+//   () =>
+//     import('@/components/watch-party/create-watch-party-button').then((mod) => ({
+//       default: mod.CreateWatchPartyButton,
+//     })),
+//   { ssr: false }
+// );
 
 const DynamicAiTrailerPlayer = dynamic(
   () => import('./ai-trailer-player').then((mod) => ({ default: mod.AiTrailerPlayer })),
@@ -96,12 +97,23 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
           text: movie.description,
           url: window.location.href,
         });
-      } catch {
-        // fallback: copy url
-        navigator.clipboard.writeText(window.location.href);
+        toast.success('Shared successfully!');
+      } catch (error) {
+        // User cancelled or error occurred
+        if ((error as Error).name !== 'AbortError') {
+          // fallback: copy url
+          await navigator.clipboard.writeText(window.location.href);
+          toast.success('Link copied to clipboard!');
+        }
       }
     } else {
-      navigator.clipboard.writeText(window.location.href);
+      // Desktop fallback: copy to clipboard
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      } catch (error) {
+        toast.error('Failed to copy link');
+      }
     }
   };
 
@@ -122,20 +134,30 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
             quality={85}
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-netflix-black/80 via-netflix-black/60 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-netflix-black/80 via-netflix-black/60 to-transparent z-0" />
         {/* Actions */}
-        <div className="absolute top-6 left-6 z-20 flex gap-2">
-          <Button variant="glass" size="icon" aria-label="Back" onClick={() => router.back()}>
-            <ArrowLeft className="w-5 h-5" />
+        <div className="absolute top-20 left-4 md:top-6 md:left-6 z-30 flex gap-2">
+          <Button
+            variant="glass"
+            size="icon"
+            aria-label="Back"
+            onClick={() => router.back()}
+            className="backdrop-blur-md bg-black/40 hover:bg-black/60 border border-white/20"
+          >
+            <ArrowLeft className="w-5 h-5 text-white" />
           </Button>
         </div>
-        <div className="absolute top-6 right-6 z-20 flex gap-2">
+        <div className="absolute top-20 right-4 md:top-6 md:right-6 z-30 flex gap-2">
           <Button
             variant={isFavorite ? 'outline' : 'ghost'}
             size="icon"
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
             onClick={toggleFavorite}
-            className={isFavorite ? 'text-netflix-red border-netflix-red' : 'text-white'}
+            className={
+              isFavorite
+                ? 'text-netflix-red border-netflix-red backdrop-blur-md bg-black/40 hover:bg-black/60'
+                : 'text-white backdrop-blur-md bg-black/40 hover:bg-black/60 border border-white/20'
+            }
           >
             <Heart className={`w-5 h-5 ${isFavorite ? 'fill-current' : ''}`} />
           </Button>
@@ -144,7 +166,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
             size="icon"
             aria-label="Share"
             onClick={handleShare}
-            className="text-white"
+            className="text-white backdrop-blur-md bg-black/40 hover:bg-black/60 border border-white/20"
           >
             <Share className="w-5 h-5" />
           </Button>
@@ -152,7 +174,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
         {/* Overlay content */}
         <div className="absolute bottom-0 left-0 right-0 px-6 py-8">
           <div className="max-w-3xl">
-            {movie.streamingUrl && (
+            {/* {movie.streamingUrl && (
               <LazyComponent>
                 <DynamicCreateWatchPartyButton
                   movieId={movie.id}
@@ -160,7 +182,7 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
                   className="mb-4"
                 />
               </LazyComponent>
-            )}
+            )} */}
             <h1 className="text-2xl mt-5 md:text-4xl lg:text-5xl font-bold text-white mb-3">
               {movie.title}
             </h1>
@@ -188,28 +210,24 @@ export function MovieDetailClient({ movie, allMovies = [] }: MovieDetailClientPr
 
             <div className="flex gap-3 flex-wrap">
               {/* Watch Movie */}
-              {movie.streamingUrl && (
-                <Button
-                  size={'sm'}
-                  variant={'premium'}
-                  onClick={() => router.push(`/movies/${movie.slug}/watch`)}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  {movieProgress &&
-                  movieProgress.progress > 0.05 &&
-                  movieProgress.progress < 0.95 ? (
-                    <>
-                      Resume watching at{' '}
-                      {formatProgressTime(
-                        movieProgress.progress,
-                        getTotalDurationMinutes(movie.duration)
-                      )}
-                    </>
-                  ) : (
-                    'Watch Now'
-                  )}
-                </Button>
-              )}
+              <Button
+                size={'sm'}
+                variant={'premium'}
+                onClick={() => router.push(`/movies/${movie.slug}/watch`)}
+              >
+                <Play className="w-4 h-4 mr-2" />
+                {movieProgress && movieProgress.progress > 0.05 && movieProgress.progress < 0.95 ? (
+                  <>
+                    Resume watching at{' '}
+                    {formatProgressTime(
+                      movieProgress.progress,
+                      getTotalDurationMinutes(movie.duration)
+                    )}
+                  </>
+                ) : (
+                  'Watch Now'
+                )}
+              </Button>
               {/* Trailer */}
               <Button
                 size={'sm'}
